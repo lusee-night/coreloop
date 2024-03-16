@@ -1,9 +1,12 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
-
+#ifndef GLOBAL_H
+#define GLOBAL_H
+#define DDR3_SIZE (1024*1024*(1024+512)) // 1.5GB
 
 // Global variables
 
-extern int a;
+extern void* DDR3_BASE_ADDR;
+
+
+void DD3_init();
 
 #endif
