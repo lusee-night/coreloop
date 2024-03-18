@@ -39,6 +39,7 @@ void spec_set_gain(uint8_t ch, uint8_t gain);
 // set routing of channel ch to plus - minus
 void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus);
 
+// set the number of shift bits for Stage 1 averageing (ie. Navg1_shift =10 ->  Navg1 = 1024)
 void spec_set_avg1 (uint8_t Navg1_shift);
 
 
