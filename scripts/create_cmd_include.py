@@ -17,14 +17,17 @@ for line in open("documentation/lusee_commands.md"):
     if len(line)<4:
         continue
     offset, name, desc = line[1:4]
+    name = name.strip()
+    desc = desc.strip()
     if desc[-1]=='\n':
         desc = desc[:-1]
-    print (offset, name, desc)
+    #print (offset, name, desc)
     if offset[:3] != " 0x":
         continue
     if "RFS_SET" not in name:
         continue
     of.write (f"// {desc}\n")
     of.write(f"#define {name} {offset}\n\n")
+    print (f'            case {name}:\n                cdi_not_implemented("{name}");\n                return;')
 
 of.write("\n\n#endif")

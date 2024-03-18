@@ -8,9 +8,9 @@
 |------|----------------|----------------------------------------------------|                             
 | 0x00 | RFS_SET_STOP   | wait mode - disable data taking                         |                                       | 
 | 0x01 | RFS_SET_START  |Start data acquisition. To start anything setup by 0x1x or 0x2x  
-| 0x02 | RFS_SET_RESET  | Restore default configuration (system configuration as after boot)       |
-| 0x03 | RFS_SET_STORE  | Restore default configuration (system configuration as after boot)       |
-| 0x04 | RFS_SET_RECALL | Restore default configuration (system configuration as after boot)       |
+| 0x02 | RFS_SET_RESET  | Restores default configuration (as after boot)       |
+| 0x03 | RFS_SET_STORE  | Stores current configuration    |
+| 0x04 | RFS_SET_RECALL | Recalls configuration from previous store |
 | 0x05 | RFS_SET_HK_REQ  | Return housekeeping data (replace HFS_HK_REQUEST?)        |
 | 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue |
 
@@ -50,7 +50,7 @@ These execute and action and return to mode 00. Mainly designed to be used durin
 
 | 0x4M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x40 | RFS_SET_ROUTE_SET12  | set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the gronud. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
+| 0x40 | RFS_SET_ROUTE_SET12  | set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the ground. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
 | 0x41 | RFS_SET_ROUTE_SET34  | same as 0x40 but for ADC channels 3 and 4
 
 ### 0x5X Averaging Settings

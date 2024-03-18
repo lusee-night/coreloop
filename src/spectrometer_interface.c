@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 
@@ -16,6 +17,8 @@ bool empty_hands_count = 4;  // how many times to return nothing before spectrum
 bool spectrometer_enable = false;
 bool df_flag;
 int32_t* DF_BASE_ADDR;
+uint8_t channel_gain[NINPUT];
+
 
 // Mapping of channels to cross-correlations
 const int ch_ant1[] = {0,1,2,3, 0,0,  0,0,  0,0,  1,1,  1,1, 2, 2};
@@ -98,6 +101,30 @@ bool spec_new_spectrum_ready() {
     return true;
 }
 
+void spec_not_implemented() {
+    printf("Spectrometer command not implemented.\n");
+    exit(1);
+}
+
+// RFS_SET_RESET  Reset default configuration (system configuration as after boot)
+void spec_set_reset() {spec_not_implemented();};
+
+// RFS_SET_STORE Stores current configuration
+void spec_store() {spec_not_implemented();};
+
+// RFS_SET_RECALL  Recalls configuration from previous store 
+void spec_recall() {spec_not_implemented();};
 
 
+// set gain of channel ch to gain
+void spec_set_gain(uint8_t ch, uint8_t gain) {
+    channel_gain[ch] = gain;
+}
 
+// set routing of channel ch to plus - minus
+void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus) {}
+
+
+void spec_set_avg1 (uint8_t Navg1_shift) {
+    Navg1 = (1 << Navg1_shift);
+}
