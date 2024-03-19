@@ -18,6 +18,18 @@ extern bool add_noise;
 extern bool empty_hands_count;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
 extern bool spectrometer_enable;
 
+/******************************************************************************/
+
+struct ADC_stat {
+    uint32_t invalid_count;
+    int32_t min;
+    int32_t max;
+    uint32_t mean;
+    uint64_t var;
+};
+
+
+
 void spectrometer_init();
 
 void spec_set_Navg1(uint32_t Navg1);
@@ -41,6 +53,9 @@ void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus);
 
 // set the number of shift bits for Stage 1 averageing (ie. Navg1_shift =10 ->  Navg1 = 1024)
 void spec_set_avg1 (uint8_t Navg1_shift);
+
+// Get ADC level statistics into 4 element array in order to enable automatic gain, etc
+void spec_get_ADC_stat(struct ADC_stat **stat);
 
 
 //returns true if a new spectrum is ready (DF flag is set)

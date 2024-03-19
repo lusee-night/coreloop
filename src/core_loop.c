@@ -24,7 +24,12 @@ void cdi_not_implemented(const char *msg)
 }
 
 
-void set_spectrometer_to_state(struct core_state state)
+static inline uint8_t gain_to_spec_gain(enum gain_state gain)
+{
+    if (gain<GAIN_AUTO_LOW) return gain; else return gain-GAIN_AUTO_LOW;
+}
+
+void set_spectrometer_to_sequencer(struct sequencer_state state)
 {
     for (int i = 0; i < NINPUT; i++) {
         spec_set_gain(i, state.gain[i]);
@@ -35,18 +40,30 @@ void set_spectrometer_to_state(struct core_state state)
 }
 
 
-void core_init_state(){
+void default_seq (struct sequencer_state *seq)
+{
     for (int i = 0; i < NINPUT; i++) {
-        state.gain[i] = GAIN_MED;
-        state.auto_gain[i] = false;
-        state.route[i].plus = i;
-        state.route[i].minus = 0xFF;
+        seq->gain[i] = GAIN_MED;
+        seq->route[i].plus = i;
+        seq->route[i].minus = 0xFF;
     }
-    state.Navg1 = 2048;
-    state.Navg1_shift = 11;
-    state.Navg2 = 512;
-    state.Navg2_shift = 9;
-    set_spectrometer_to_state(state);
+    seq->Navg1_shift = 11;
+    seq->Navg2_shift = 9;
+}
+
+
+
+
+void core_init_state(){
+    default_seq (&state.seq);
+    state.base.errors = 0;
+    state.base.spectrometer_enable = false;
+    spec_set_spectrometer_enable(false);
+    state.base.sequencer_step = 0xFF;
+    state.Navg1 = 1 << state.seq.Navg1_shift;
+    state.Navg2 = 1 << state.seq.Navg2_shift;
+    state.sequencer_enabled = false;
+    state.Nseq = 0;
 }
 
 
@@ -57,9 +74,11 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
+                state.base.spectrometer_enable = true;
                 spec_set_spectrometer_enable(true);
                 return;
             case RFS_SET_STOP:
+                state.base.spectrometer_enable = false;
                 spec_set_spectrometer_enable(false);
                 return;                
             case RFS_SET_RESET:
@@ -221,7 +240,7 @@ void core_loop()
 
             for (uint16_t i = 0; i < (NCHANNELS*NSPECTRA); i++)
             {
-                *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_shift));
+                *ddr_ptr += ((*df_ptr) / (1 << state.seq.Navg2_shift));
                 df_ptr++;
                 ddr_ptr++;
             }

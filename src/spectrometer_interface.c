@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
-
+#include <assert.h>
 
 const char* true_spectrum_filename = "data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
@@ -127,4 +127,33 @@ void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus) {}
 
 void spec_set_avg1 (uint8_t Navg1_shift) {
     Navg1 = (1 << Navg1_shift);
+}
+
+void spec_get_ADC_stat(struct ADC_stat **stat) {
+
+    struct ADC_stat ms_med, ms_high, ms_low;
+    ms_med.mean = 0;
+    ms_med.var = 200*200;
+    ms_med.max = 200*3;
+    ms_med.min =-200*3;
+    ms_med.invalid_count = 0;
+
+    ms_high.mean = 0;
+    ms_high.var = 200*200*7;
+    ms_high.max = 200*3*7;
+    ms_high.min =-200*3*7;
+    ms_high.invalid_count = 0;
+
+    ms_low.mean = 0;
+    ms_low.var = 200*200/7;
+    ms_low.max = 200*3/7;
+    ms_low.min =-200*3/7;
+    ms_low.invalid_count = 0;
+
+    for (int i=0; i<NINPUT;i++) {
+        assert(channel_gain[i] < 3);
+        if (channel_gain[i] ==0) (*stat)[i] = ms_low;
+        if (channel_gain[i] ==1) (*stat)[i] = ms_med;
+        if (channel_gain[i] ==2) (*stat)[i] = ms_high;
+    }
 }
