@@ -29,7 +29,8 @@ void cdi_init()
     }
 
     int i = 0;
-    while (fscanf(file, "%d %hhx %hhx %hhx ", &wait_list[i], (unsigned char*)&comm_list[i], &arg_high_list[i], &arg_low_list[i]) == 4) {
+    
+    while (fscanf(file, "%d %hhx %hhx %hhx", &wait_list[i], (unsigned char*)&comm_list[i], &arg_high_list[i], &arg_low_list[i]) == 4) {
         i++;
         if (i >= MAX_COMMANDS) {
             break;

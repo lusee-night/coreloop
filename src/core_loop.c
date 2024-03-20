@@ -29,13 +29,13 @@ static inline uint8_t gain_to_spec_gain(enum gain_state gain)
     if (gain<GAIN_AUTO_LOW) return gain; else return gain-GAIN_AUTO_LOW;
 }
 
-void set_spectrometer_to_sequencer(struct sequencer_state state)
+void set_spectrometer_to_sequencer()
 {
     for (int i = 0; i < NINPUT; i++) {
-        spec_set_gain(i, state.gain[i]);
-        spec_set_route(i, state.route[i].plus, state.route[i].minus);
+        spec_set_gain(i, state.seq.gain[i]);
+        spec_set_route(i, state.seq.route[i].plus, state.seq.route[i].minus);
     }
-    spec_set_avg1 (state.Navg1_shift);
+    spec_set_avg1 (state.seq.Navg1_shift);
     return;
 }
 
@@ -49,6 +49,18 @@ void default_seq (struct sequencer_state *seq)
     }
     seq->Navg1_shift = 11;
     seq->Navg2_shift = 9;
+    seq->Navgf = 1;
+}
+
+void fill_derived() {
+    state.Navg1 = 1 << state.seq.Navg1_shift;
+    state.Navg2 = 1 << state.seq.Navg2_shift;
+    // total shift takes into account frequency averaging;
+    state.Navg2_total_shift = state.seq.Navg2_shift;
+    state.Nfreq = NCHANNELS; 
+    if (state.seq.Navgf == 2 ) { state.Navg2_total_shift += 1; state.Nfreq = NCHANNELS/2; }
+    if ((state.seq.Navgf == 3 ) || (state.seq.Navgf == 4)) { state.Navg2_total_shift += 2; state.Nfreq = NCHANNELS/4;} 
+    
 }
 
 
@@ -60,10 +72,10 @@ void core_init_state(){
     state.base.spectrometer_enable = false;
     spec_set_spectrometer_enable(false);
     state.base.sequencer_step = 0xFF;
-    state.Navg1 = 1 << state.seq.Navg1_shift;
-    state.Navg2 = 1 << state.seq.Navg2_shift;
     state.sequencer_enabled = false;
     state.Nseq = 0;
+    fill_derived();
+    set_spectrometer_to_sequencer();
 }
 
 
@@ -83,6 +95,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 return;                
             case RFS_SET_RESET:
                 spec_set_reset();
+                core_init_state();
                 return;
             case RFS_SET_STORE:
                 spec_store();
@@ -139,13 +152,16 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 cdi_not_implemented("RFS_SET_ROUTE_SET34");
                 return;
             case RFS_SET_AVG_SET:
-                cdi_not_implemented("RFS_SET_AVG_SET");
+                state.seq.Navg1_shift = arg_low & 0x0F;
+                state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
+                fill_derived();
                 return;
             case RFS_SET_AVG_OUTLIER:
                 cdi_not_implemented("RFS_SET_AVG_OUTLIER");
                 return;
             case RFS_SET_AVG_FREQ:
-                cdi_not_implemented("RFS_SET_AVG_FREQ");
+                state.seq.Navgf = arg_low;
+                fill_derived();
                 return;
             case RFS_SET_AVG_SET_HI:
                 cdi_not_implemented("RFS_SET_AVG_SET_HI");
@@ -240,12 +256,27 @@ void core_loop()
 
             for (uint16_t i = 0; i < (NCHANNELS*NSPECTRA); i++)
             {
-                *ddr_ptr += ((*df_ptr) / (1 << state.seq.Navg2_shift));
+                *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+                if (state.seq.Navgf == 2) {
+                    df_ptr++;
+                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+                } else if (state.seq.Navgf > 2) {
+                    df_ptr++;
+                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+                    df_ptr++;
+                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+                    df_ptr++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
+                    if (state.seq.Navgf == 4) {
+                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+                    }
+                }   
                 df_ptr++;
                 ddr_ptr++;
             }
             //printf ("Processing spectrum %i\n", avg_counter);
+            if (avg_counter%100 == 0) printf ("Processed %i spectra\n", avg_counter); 
             avg_counter++;
+
             spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
 
             // Check if we have reached filled up Stage 2 averaging
@@ -262,11 +293,11 @@ void core_loop()
                 for (uint8_t ch = 0; ch < NSPECTRA; ch++)
                 {
                     while (!cdi_ready()) {}
-                    memcpy(cdi_ptr, ddr_ptr, NCHANNELS * sizeof(uint32_t));
-                    memset(ddr_ptr, 0, NCHANNELS * sizeof(uint32_t));
+                    memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
+                    memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
                     printf("   Writing spectrum for ch %i\n",ch);
-                    cdi_dispatch(0x210+ch, NCHANNELS*sizeof(int32_t));
-                    ddr_ptr += NCHANNELS;
+                    cdi_dispatch(0x210+ch, state.Nfreq*sizeof(int32_t));
+                    ddr_ptr += state.Nfreq;
                 }
             }
             // make sure we have done this in time

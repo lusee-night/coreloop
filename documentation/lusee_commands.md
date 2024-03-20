@@ -57,9 +57,9 @@ These execute and action and return to mode 00. Mainly designed to be used durin
 
 | 0x5M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x50 | RFS_SET_AVG_SET      |set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 menas 2^9 stage1 averaging and 2^11 stage2 averaging
+| 0x50 | RFS_SET_AVG_SET      |set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
 | 0x51 | RFS_SET_AVG_OUTLIER  |set outlier rejectection. DD specifies the level of rejection with 00 disabled and 10 standard outlier rejection.
-| 0x52 | RFS_SET_AVG_FREQ     |set frequency averaging 
+| 0x52 | RFS_SET_AVG_FREQ     |set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
 | 0x53 | RFS_SET_AVG_SET_HI   |set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
 | 0x54 | RFS_SET_AVGI_SET_MID |set medium priority fraction, low priority is 1-high-medium
 

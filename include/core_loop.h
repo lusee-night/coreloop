@@ -14,7 +14,7 @@ enum gain_state {
     GAIN_HIGH,
     GAIN_AUTO_LOW,
     GAIN_AUTO_MED,
-    GAIN_AUTO_HIGH
+    GAIN_AUTO_HIGH,
 };
 
 
@@ -29,7 +29,8 @@ struct sequencer_state {
     uint8_t gain_auto_min[NINPUT];   
     uint8_t gain_auto_mult[NINPUT];
     struct route_state route[NINPUT];
-    uint8_t Navg1_shift, Navg2_shift;    
+    uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
+    uint8_t Navgf; // frequency averaging
 };
 
 // core state base contains additional information that will be dumped with every metadata packet
@@ -48,6 +49,8 @@ struct core_state {
     struct core_state_base base;
     // A number be utility values 
     uint16_t Navg1, Navg2;
+    uint8_t Navg2_total_shift;
+    uint16_t Nfreq; // number of frequency bins after taking into account averaging
     uint8_t gain_auto_max[NINPUT];
     bool sequencer_enabled;
     uint8_t Nseq; // Number of sequencer steps
