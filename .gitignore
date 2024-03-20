@@ -42,6 +42,10 @@
 *.idb
 *.pdb
 
+# cmake stuff
+build/*
+data/cdi_output/*
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd

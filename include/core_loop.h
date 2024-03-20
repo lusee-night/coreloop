@@ -3,7 +3,7 @@
 
 #include <inttypes.h>
 #include "spectrometer_interface.h"
-
+#include "core_loop_errors.h"
 
 # define NSEQ_MAX 32
 
@@ -16,6 +16,8 @@ enum gain_state {
     GAIN_AUTO_MED,
     GAIN_AUTO_HIGH,
 };
+
+
 
 
 struct route_state {
@@ -39,6 +41,8 @@ struct core_state_base {
     struct ADC_stat stat[4];    
     bool spectrometer_enable;
     uint8_t sequencer_step; // 0xFF is sequencer is disabled
+    uint8_t sequencer_substep; // counting seq_times;
+    uint16_t sequencer_repeat; // number of sequencer repeats remaining, 00 for infinite (RFS_SET_SEQ_REP)
 
 };
 
@@ -53,8 +57,8 @@ struct core_state {
     uint16_t Nfreq; // number of frequency bins after taking into account averaging
     uint8_t gain_auto_max[NINPUT];
     bool sequencer_enabled;
-    uint8_t Nseq; // Number of sequencer steps
-    struct sequencer_state seqs[NSEQ_MAX]; // sequencer states
+    uint8_t Nseq; // Number of sequencer steps in a cycle (See RFS_SET_SEQ_CYC)
+    struct sequencer_state seq_program[NSEQ_MAX]; // sequencer states
     uint16_t seq_times[NSEQ_MAX]; // steps in each sequencer state;
 };
 

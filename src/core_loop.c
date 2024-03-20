@@ -11,7 +11,7 @@
 /***************** GLOBAL STATE ******************/
 
 struct core_state state;
-
+uint16_t avg_counter = 0;
 
 /**************************************************/
 
@@ -87,6 +87,16 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
         switch (arg_high) {
             case RFS_SET_START:
                 state.base.spectrometer_enable = true;
+                avg_counter = 0;
+                int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
+                memset(ddr_ptr, 0, NCHANNELS * sizeof(uint32_t));
+                if (state.sequencer_enabled) {
+                    state.base.sequencer_step = 0;
+                    state.base.sequencer_substep = state.seq_times[0];
+                    state.seq = state.seq_program[0];
+                }
+                fill_derived();
+                set_spectrometer_to_sequencer();
                 spec_set_spectrometer_enable(true);
                 return;
             case RFS_SET_STOP:
@@ -212,17 +222,37 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 cdi_not_implemented("RFS_SET_ZOOM_SET2_HI");
                 return;
             case RFS_SET_SEQ_EN:
-                cdi_not_implemented("RFS_SET_SEQ_EN");
+                if (state.base.spectrometer_enable) {
+                    state.base.errors |= CDI_COMMAND_WRONG;
+                } else {
+                    state.sequencer_enabled = (arg_low>0);
+                }
                 return;
             case RFS_SET_SEQ_REP:
-                cdi_not_implemented("RFS_SET_SEQ_REP");
+                if (state.base.spectrometer_enable) {
+                    state.base.errors |= CDI_COMMAND_WRONG;
+                } else {
+                    state.base.sequencer_repeat = arg_low;
+                }
                 return;
             case RFS_SET_SEQ_CYC:
-                cdi_not_implemented("RFS_SET_SEQ_CYC");
+                if (state.base.spectrometer_enable) {
+                    state.base.errors |= CDI_COMMAND_WRONG;
+                } else {
+                    state.Nseq = arg_low;
+                    state.base.sequencer_step = 0;
+                }
                 return;
             case RFS_SET_SEQ_STO:
-                cdi_not_implemented("RFS_SET_SEQ_STO");
-                return;                           
+                if (state.base.spectrometer_enable) {
+                    state.base.errors |= CDI_COMMAND_WRONG;
+                } else {
+                    state.seq_program[state.base.sequencer_step] = state.seq;
+                    state.seq_times[state.base.sequencer_step] = arg_low;
+                    state.base.sequencer_step++;
+                }
+                return;
+                
             default:
                 cdi_not_implemented("UNRECOGNIZED COMMAND");
                 return;
@@ -233,10 +263,58 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
 }
 
 
+void transfer_from_df ()
+{
+// Want to now transfer all 16 pks worth of data to DDR memory
+    int32_t *df_ptr = (int32_t *)DF_BASE_ADDR;
+    int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
+
+    for (uint16_t i = 0; i < (NCHANNELS*NSPECTRA); i++)
+    {
+        *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+        if (state.seq.Navgf == 2) {
+            df_ptr++;
+            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+        } else if (state.seq.Navgf > 2) {
+            df_ptr++;
+            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+            df_ptr++;
+            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+            df_ptr++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
+            if (state.seq.Navgf == 4) {
+            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+            }
+        }   
+        df_ptr++;
+        ddr_ptr++;
+    }
+    //printf ("Processing spectrum %i\n", avg_counter);
+    if (avg_counter%100 == 0) printf ("Processed %i spectra\n", avg_counter); 
+    avg_counter++;
+
+    spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
+}
+
+
+void transfer_to_cdi () {
+    int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
+    int32_t *cdi_ptr = (int32_t *)CDI_BASE_ADDR;
+    printf ("Dumping averaged spectra to CDI\n");
+    for (uint8_t ch = 0; ch < NSPECTRA; ch++)
+    {
+        while (!cdi_ready()) {}
+        memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
+        memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
+        printf("   Writing spectrum for ch %i\n",ch);
+        cdi_dispatch(0x210+ch, state.Nfreq*sizeof(int32_t));
+        ddr_ptr += state.Nfreq;
+    }
+
+}
+
 void core_loop()
 {
     uint8_t cmd, arg_high, arg_low;
-    uint16_t avg_counter = 0;
 
     core_init_state();
 
@@ -250,35 +328,7 @@ void core_loop()
         // Check if we have a new spectrum packet from the FPGA
         if (spec_new_spectrum_ready())
         {
-            // Want to now transfer all 16 pks worth of data to DDR memory
-            int32_t *df_ptr = (int32_t *)DF_BASE_ADDR;
-            int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
-
-            for (uint16_t i = 0; i < (NCHANNELS*NSPECTRA); i++)
-            {
-                *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
-                if (state.seq.Navgf == 2) {
-                    df_ptr++;
-                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
-                } else if (state.seq.Navgf > 2) {
-                    df_ptr++;
-                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
-                    df_ptr++;
-                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
-                    df_ptr++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
-                    if (state.seq.Navgf == 4) {
-                    *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
-                    }
-                }   
-                df_ptr++;
-                ddr_ptr++;
-            }
-            //printf ("Processing spectrum %i\n", avg_counter);
-            if (avg_counter%100 == 0) printf ("Processed %i spectra\n", avg_counter); 
-            avg_counter++;
-
-            spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-
+            transfer_from_df();
             // Check if we have reached filled up Stage 2 averaging
             // and if so, push things out to CDI
             if (avg_counter == state.Navg2)
@@ -287,19 +337,21 @@ void core_loop()
                 // Now one by one, we will loop through the packets placed in DDR Memory
                 // For each channel, set the APID, send it to the SRAM
                 // Then check to see if this software or the client will control the CDI writes
-                int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
-                int32_t *cdi_ptr = (int32_t *)CDI_BASE_ADDR;
-                printf ("Dumping averaged spectra to CDI\n");
-                for (uint8_t ch = 0; ch < NSPECTRA; ch++)
-                {
-                    while (!cdi_ready()) {}
-                    memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
-                    memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
-                    printf("   Writing spectrum for ch %i\n",ch);
-                    cdi_dispatch(0x210+ch, state.Nfreq*sizeof(int32_t));
-                    ddr_ptr += state.Nfreq;
+                transfer_to_cdi();
+                if (state.sequencer_enabled) {
+                    state.base.sequencer_substep--;
+                    if (state.base.sequencer_substep == 0) {
+                        state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
+                        state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
+                        state.seq = state.seq_program[state.base.sequencer_step];
+                        fill_derived();
+                        set_spectrometer_to_sequencer();
+                    }
                 }
+
             }
+
+
             // make sure we have done this in time
             if (spec_df_flag())
             {

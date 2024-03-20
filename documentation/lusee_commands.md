@@ -94,7 +94,7 @@ These execute and action and return to mode 00. Mainly designed to be used durin
 
 | 0xAM | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0xA0 | RFS_SET_SEQ_EN      | enable, disable sequencer
+| 0xA0 | RFS_SET_SEQ_EN      | enable (DD>0), disable sequencer  (DD=0)
 | 0xA1 | RFS_SET_SEQ_REP     | set number of of cycle repetitions, 00 for infinite repetitions
 | 0xA2 | RFS_SET_SEQ_CYC     | set number of elements in a cycle, restart save counter
 | 0xA3 | RFS_SET_SEQ_STO     | store current configuration, as the next cycle. Store configuration includes settings under 0x30, 0x31, 0x32, 0x33, 0x40, 0x41, 0x50, 0x51, 0x52. DD means the number of integrations under this cycle
