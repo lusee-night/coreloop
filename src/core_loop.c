@@ -18,7 +18,7 @@ uint16_t avg_counter = 0;
 
 void cdi_not_implemented(const char *msg)
 {
-    printf("CDI command not implemented: %s\n",msg);
+    debug_print("CDI command not implemented: %s\n",msg);
     exit(1);
     return;
 }
@@ -78,30 +78,39 @@ void core_init_state(){
     set_spectrometer_to_sequencer();
 }
 
+void RFS_stop() {
+    state.base.spectrometer_enable = false;
+    spec_set_spectrometer_enable(false);
+}
+
+void RFS_start() {
+    state.base.spectrometer_enable = true;
+    avg_counter = 0;
+    int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
+    memset(ddr_ptr, 0, NCHANNELS * sizeof(uint32_t));
+    if (state.sequencer_enabled) {
+        state.base.sequencer_counter = 0;
+        state.base.sequencer_step = 0;
+        state.base.sequencer_substep = state.seq_times[0];
+        state.seq = state.seq_program[0];
+    }
+    fill_derived();
+    set_spectrometer_to_sequencer();
+    spec_set_spectrometer_enable(true);
+
+}
 
 void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
 {
     // Do something with the command
-    printf("Received command: %x %x %x\n", cmd, arg_high, arg_low);
+    debug_print("Received command: %x %x %x\n", cmd, arg_high, arg_low);
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
-                state.base.spectrometer_enable = true;
-                avg_counter = 0;
-                int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
-                memset(ddr_ptr, 0, NCHANNELS * sizeof(uint32_t));
-                if (state.sequencer_enabled) {
-                    state.base.sequencer_step = 0;
-                    state.base.sequencer_substep = state.seq_times[0];
-                    state.seq = state.seq_program[0];
-                }
-                fill_derived();
-                set_spectrometer_to_sequencer();
-                spec_set_spectrometer_enable(true);
+                RFS_start();
                 return;
             case RFS_SET_STOP:
-                state.base.spectrometer_enable = false;
-                spec_set_spectrometer_enable(false);
+                RFS_stop();
                 return;                
             case RFS_SET_RESET:
                 spec_set_reset();
@@ -258,7 +267,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 return;
         } 
     }
-    printf ("   Commmand not implemented, ignoring.\n");
+    debug_print ("   Commmand not implemented, ignoring.\n");
     return;
 }
 
@@ -288,8 +297,8 @@ void transfer_from_df ()
         df_ptr++;
         ddr_ptr++;
     }
-    //printf ("Processing spectrum %i\n", avg_counter);
-    if (avg_counter%100 == 0) printf ("Processed %i spectra\n", avg_counter); 
+    //debug_print ("Processing spectrum %i\n", avg_counter);
+    if (avg_counter%100 == 0) debug_print ("Processed %i spectra\n", avg_counter); 
     avg_counter++;
 
     spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
@@ -299,13 +308,13 @@ void transfer_from_df ()
 void transfer_to_cdi () {
     int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
     int32_t *cdi_ptr = (int32_t *)CDI_BASE_ADDR;
-    printf ("Dumping averaged spectra to CDI\n");
+    debug_print ("Dumping averaged spectra to CDI\n");
     for (uint8_t ch = 0; ch < NSPECTRA; ch++)
     {
         while (!cdi_ready()) {}
         memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
         memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
-        printf("   Writing spectrum for ch %i\n",ch);
+        debug_print("   Writing spectrum for ch %i\n",ch);
         cdi_dispatch(0x210+ch, state.Nfreq*sizeof(int32_t));
         ddr_ptr += state.Nfreq;
     }
@@ -342,6 +351,14 @@ void core_loop()
                     state.base.sequencer_substep--;
                     if (state.base.sequencer_substep == 0) {
                         state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
+                        if (state.base.sequencer_step == 0) {
+                            state.base.sequencer_counter++;
+                            debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
+                            if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
+                                debug_print("Sequencer done.\n");
+                                RFS_stop();
+                            }
+                        }
                         state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
                         state.seq = state.seq_program[state.base.sequencer_step];
                         fill_derived();
@@ -355,7 +372,7 @@ void core_loop()
             // make sure we have done this in time
             if (spec_df_flag())
             {
-                printf("Error: missed a spectrum packet\n");
+                debug_print("Error: missed a spectrum packet\n");
             }
         }
     }

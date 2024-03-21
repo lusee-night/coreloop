@@ -40,6 +40,7 @@ struct core_state_base {
     uint32_t errors;
     struct ADC_stat stat[4];    
     bool spectrometer_enable;
+    uint8_t sequencer_counter; // number of total cycles in the sequencer.
     uint8_t sequencer_step; // 0xFF is sequencer is disabled
     uint8_t sequencer_substep; // counting seq_times;
     uint16_t sequencer_repeat; // number of sequencer repeats remaining, 00 for infinite (RFS_SET_SEQ_REP)

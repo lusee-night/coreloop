@@ -13,4 +13,4 @@ find_library(MATH_LIBRARY m)
 
 add_executable(coreloop ${SOURCE_FILES})
 target_link_libraries(coreloop PUBLIC ${MATH_LIBRARY})
-
+set_property(TARGET coreloop PROPERTY C_STANDARD 99)
