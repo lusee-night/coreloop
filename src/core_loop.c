@@ -331,7 +331,10 @@ void core_loop()
     {
         // Check if we have a new command from the CDI
         if (cdi_new_command(&cmd, &arg_high, &arg_low)) {
-            if ((cmd==RFS_Settings) && (arg_high==RFS_SET_TIME_TO_DIE)) break;
+            if ((cmd==RFS_Settings) && (arg_high==RFS_SET_TIME_TO_DIE)) {
+                debug_print("Received time to die command. \n");   
+                break;
+            }
             cdi_process_command(cmd, arg_high, arg_low);
         }    
         // Check if we have a new spectrum packet from the FPGA
@@ -353,10 +356,11 @@ void core_loop()
                         state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
                         if (state.base.sequencer_step == 0) {
                             state.base.sequencer_counter++;
-                            debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
                             if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
                                 debug_print("Sequencer done.\n");
                                 RFS_stop();
+                            } else {
+                                debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
                             }
                         }
                         state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];

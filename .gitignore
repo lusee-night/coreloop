@@ -46,6 +46,9 @@
 build/*
 data/cdi_output/*
 
+# python work files
+*.pyc
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd

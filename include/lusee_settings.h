@@ -17,7 +17,7 @@
 // Stores current configuration
 #define RFS_SET_STORE  0x03 
 
-// Recalls configuration from previous store 
+// Recalls configuration from previous store
 #define RFS_SET_RECALL  0x04 
 
 // Return housekeeping data (replace HFS_HK_REQUEST?)
@@ -62,19 +62,19 @@
 // set automatic digital gains modes, TBD
 #define RFS_SET_GAIN_DIG_CFG  0x33 
 
-// set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the gronud. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
+// set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the ground. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
 #define RFS_SET_ROUTE_SET12  0x40 
 
 // same as 0x40 but for ADC channels 3 and 4
 #define RFS_SET_ROUTE_SET34  0x41 
 
-// set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 menas 2^9 stage1 averaging and 2^11 stage2 averaging
+// set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
 #define RFS_SET_AVG_SET  0x50 
 
 // set outlier rejectection. DD specifies the level of rejection with 00 disabled and 10 standard outlier rejection.
 #define RFS_SET_AVG_OUTLIER  0x51 
 
-// set frequency averaging
+// set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected)
 #define RFS_SET_AVG_FREQ  0x52 
 
 // set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
@@ -125,7 +125,7 @@
 // set zoom 2 spectral channel# high bits
 #define RFS_SET_ZOOM_SET2_HI  0x76 
 
-// enable, disable sequencer
+// enable (DD>0), disable sequencer  (DD=0)
 #define RFS_SET_SEQ_EN  0xA0 
 
 // set number of of cycle repetitions, 00 for infinite repetitions
