@@ -8,7 +8,7 @@
 
 const char* true_spectrum_filename = "data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
-
+uint32_t packet_id = 27;
 
 /******* Internal state of the spectrometer and simulation options *********/
 uint32_t Navg1 = 512;
@@ -156,4 +156,9 @@ void spec_get_ADC_stat(struct ADC_stat **stat) {
         if (channel_gain[i] ==1) (*stat)[i] = ms_med;
         if (channel_gain[i] ==2) (*stat)[i] = ms_high;
     }
+}
+
+uint32_t get_unique_packet_id() {
+    packet_id+=12;
+    return packet_id;
 }

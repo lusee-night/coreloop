@@ -83,6 +83,9 @@
 // set medium priority fraction, low priority is 1-high-medium
 #define RFS_SET_AVGI_SET_MID  0x54 
 
+// set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
+#define RFS_SET_OUTPUT_FORMAT  0x55 
+
 // set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
 #define RFS_SET_CAL_FRAC_SET  0x60 
 

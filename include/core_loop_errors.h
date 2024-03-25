@@ -3,11 +3,15 @@
 
 
 // unknown CDI command receiver
-#define UNKNOWN_CDI_COMMAND 0x01
+#define UNKNOWN_CDI_COMMAND 1
 // CDI command called at wrong time ((i.e. program sequencer while it is running)
-#define CDI_COMMAND_WRONG 0x02
+#define CDI_COMMAND_WRONG 2
 // CDI command called with wrong arguments
-#define CDI_COMMAND_WRONG_ARGS 0x04
+#define CDI_COMMAND_WRONG_ARGS 4
+// Cannot autogain
+#define ANALOG_AGC_TOO_HIGH 8
+#define ANALOG_AGC_TOO_LOW 16
+
 
 
 #endif

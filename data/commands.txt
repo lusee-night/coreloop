@@ -1,14 +1,15 @@
 # format is 
-# repetetitions CMD       HI            Low
-1       RFS_SETTINGS RFS_SET_SEQ_REP     03 # 3 repetitions
-1       RFS_SETTINGS RFS_SET_SEQ_CYC     02 # cycles
-1       RFS_SETTINGS RFS_SET_AVG_SET     B9 # averaging in cycle once
-1       RFS_SETTINGS RFS_SET_SEQ_STO     01 # do full frequency resolution once
-1       RFS_SETTINGS RFS_SET_AVG_SET     A9 # less averaging in time
-1       RFS_SETTINGS RFS_SET_AVG_FREQ    02 # ... more averaging in frequency
-1       RFS_SETTINGS RFS_SET_SEQ_STO     02 # do this twice
-1       RFS_SETTINGS RFS_SET_SEQ_EN      01 # enable sequencer
-2       RFS_SETTINGS RFS_SET_START       01 # start data acquisition
-200000  RFS_SETTINGS RFS_SET_STOP        01 # stop data acquisition
-2       RFS_SETTINGS RFS_SET_TIME_TO_DIE 01 # game over
+# repetitions CMD       HI            Low
+1       RFS_SETTINGS RFS_SET_OUTPUT_FORMAT   00 # full 32bit
+1       RFS_SETTINGS RFS_SET_SEQ_REP         03 # 3 repetitions
+1       RFS_SETTINGS RFS_SET_SEQ_CYC         02 # cycles
+1       RFS_SETTINGS RFS_SET_AVG_SET         B9 # averaging in cycle once
+1       RFS_SETTINGS RFS_SET_SEQ_STO         01 # do full frequency resolution once
+1       RFS_SETTINGS RFS_SET_AVG_SET         A9 # less averaging in time
+1       RFS_SETTINGS RFS_SET_AVG_FREQ        02 # ... more averaging in frequency
+1       RFS_SETTINGS RFS_SET_SEQ_STO         02 # do this twice
+1       RFS_SETTINGS RFS_SET_SEQ_EN          01 # enable sequencer
+2       RFS_SETTINGS RFS_SET_START           01 # start data acquisition
+200000  RFS_SETTINGS RFS_SET_STOP            01 # stop data acquisition
+2       RFS_SETTINGS RFS_SET_TIME_TO_DIE     01 # game over
 

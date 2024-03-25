@@ -17,6 +17,13 @@ enum gain_state {
     GAIN_AUTO_HIGH,
 };
 
+enum output_format {
+    OUTPUT_32BIT,
+    OUTPUT_16BIT_UPDATES,
+    OUTPUT_16BIT_FLOAT1,
+};
+
+
 
 
 
@@ -33,6 +40,7 @@ struct sequencer_state {
     struct route_state route[NINPUT];
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
     uint8_t Navgf; // frequency averaging
+    enum output_format format;
 };
 
 // core state base contains additional information that will be dumped with every metadata packet
@@ -66,6 +74,7 @@ struct core_state {
 
 // metadata payload, compatible with core_state
 struct meta_data {
+    uint32_t unique_packet_id;
     struct sequencer_state seq;
     struct core_state_base base;
 };

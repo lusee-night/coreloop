@@ -1,7 +1,7 @@
 # we will convert the ../documentation/commands.md to a C header file
 #
 #
-of = open("include/lusee_settings.h", "w")
+of = open("include/lusee_commands.h", "w")
 ofp = open ('scripts/lusee_commands.py', 'w')
 of.write("""
 #ifndef LUSEE_SETTINGS_H

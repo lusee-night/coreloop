@@ -18,8 +18,8 @@
 
 These execute and action and return to mode 00. Mainly designed to be used during transient,  commissioning and interactive debugging.
 
-| 0x1M | Name           |  Description                                       |
-|------|----------------|----------------------------------------------------|                             
+| 0x1M | Name               |  Description                                       |
+|------|--------------------|----------------------------------------------------|                             
 | 0x10 | RFS_SET_TEST_INT   | prepare an internal test and then return the mode 00
 | 0x11 | RFS_SET_TEST_SHORT | prepare a short test on data (take 10s of data with gains at L, M, H for a total of 30 seconds of data with default digital gain), return to the mode 00
 | 0x12 | RFS_SET_TEST_LONG  | prepare a longer test on data (a preset combination of gains and mapping of antennas to ADC inputs)
@@ -53,15 +53,17 @@ These execute and action and return to mode 00. Mainly designed to be used durin
 | 0x40 | RFS_SET_ROUTE_SET12  | set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the ground. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
 | 0x41 | RFS_SET_ROUTE_SET34  | same as 0x40 but for ADC channels 3 and 4
 
-### 0x5X Averaging Settings
+### 0x5X Averaging and Output Settings
 
 | 0x5M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x50 | RFS_SET_AVG_SET      |set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
-| 0x51 | RFS_SET_AVG_OUTLIER  |set outlier rejectection. DD specifies the level of rejection with 00 disabled and 10 standard outlier rejection.
-| 0x52 | RFS_SET_AVG_FREQ     |set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
-| 0x53 | RFS_SET_AVG_SET_HI   |set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
-| 0x54 | RFS_SET_AVGI_SET_MID |set medium priority fraction, low priority is 1-high-medium
+| 0x50 | RFS_SET_AVG_SET      | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
+| 0x51 | RFS_SET_AVG_OUTLIER  | set outlier rejectection. DD specifies the level of rejection with 00 disabled and 10 standard outlier rejection.
+| 0x52 | RFS_SET_AVG_FREQ     | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
+| 0x53 | RFS_SET_AVG_SET_HI   | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
+| 0x54 | RFS_SET_AVGI_SET_MID | set medium priority fraction, low priority is 1-high-medium
+| 0x55 | RFS_SET_OUTPUT_FORMAT| set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
+
 
 ### 0x6X Calibration Settings
 
