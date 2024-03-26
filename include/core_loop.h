@@ -1,10 +1,14 @@
 #ifndef CORE_LOOP_H
 #define CORE_LOOP_H
 
+#define VERSION 0.1-DEV
+
 #include <inttypes.h>
 #include "spectrometer_interface.h"
 #include "core_loop_errors.h"
 
+
+// Constants
 # define NSEQ_MAX 32
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
@@ -46,7 +50,7 @@ struct sequencer_state {
 // core state base contains additional information that will be dumped with every metadata packet
 struct core_state_base {
     uint32_t errors;
-    struct ADC_stat stat[4];    
+    struct ADC_stat ADC_stat[4];    
     bool spectrometer_enable;
     uint8_t sequencer_counter; // number of total cycles in the sequencer.
     uint8_t sequencer_step; // 0xFF is sequencer is disabled

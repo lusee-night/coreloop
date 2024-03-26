@@ -290,6 +290,8 @@ void transfer_from_df ()
     int32_t *df_ptr = (int32_t *)DF_BASE_ADDR;
     int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
 
+    spec_get_ADC_stat(state.base.ADC_stat);
+
     for (uint16_t i = 0; i < (NCHANNELS*NSPECTRA); i++)
     {
         *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));

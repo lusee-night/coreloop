@@ -129,7 +129,7 @@ void spec_set_avg1 (uint8_t Navg1_shift) {
     Navg1 = (1 << Navg1_shift);
 }
 
-void spec_get_ADC_stat(struct ADC_stat **stat) {
+void spec_get_ADC_stat(struct ADC_stat *stat) {
 
     struct ADC_stat ms_med, ms_high, ms_low;
     ms_med.mean = 0;
@@ -152,9 +152,9 @@ void spec_get_ADC_stat(struct ADC_stat **stat) {
 
     for (int i=0; i<NINPUT;i++) {
         assert(channel_gain[i] < 3);
-        if (channel_gain[i] ==0) (*stat)[i] = ms_low;
-        if (channel_gain[i] ==1) (*stat)[i] = ms_med;
-        if (channel_gain[i] ==2) (*stat)[i] = ms_high;
+        if (channel_gain[i] ==0) stat[i] = ms_low;
+        if (channel_gain[i] ==1) stat[i] = ms_med;
+        if (channel_gain[i] ==2) stat[i] = ms_high;
     }
 }
 

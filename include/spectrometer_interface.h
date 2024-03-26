@@ -55,7 +55,7 @@ void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus);
 void spec_set_avg1 (uint8_t Navg1_shift);
 
 // Get ADC level statistics into 4 element array in order to enable automatic gain, etc
-void spec_get_ADC_stat(struct ADC_stat **stat);
+void spec_get_ADC_stat(struct ADC_stat *stat);
 
 
 uint32_t get_unique_packet_id();
