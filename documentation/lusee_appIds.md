@@ -9,8 +9,7 @@
 |    06 | AppID_uC_Housekeeping       | High     | 
 |    07 | AppID_Calibrator_Detect     | High     | 
 |    08 | AppID_uC_Startup            | High     | 
-|    09 | AppID_uC_Sequencer_complete | High     | 
-|-------|-----------------------------|----------|----------------------------------
+|    09 | AppID_uC_Sequencer_complete | High     | For sequencer with a limited number of steps
 |    0F | AppID_MetaData              | High     | x = 0..F for 16 correlations
 |    1x | AppID_SpectraHigh           | High     | 
 |    2x | AppID_SpectraMed            | Med      | 
@@ -21,7 +20,5 @@
 |    7x | AppID_ZoomSpectra           | High     | 
 |    8x | AppID_TimeZoomSpectra       | High     | 
 |    Dx | AppID_SpectraVeryLow        | VeryLow  | Very low priority, not expected to be normally downloaded
-|-------|-----------------------------|----------|---------------------------------
 |    Ex | AppID_FW_DirectSpectrum     | High     | x= 0...4 for 4 autocorrelatins
 |    Fx | AppID_RawADC                | High     | x= 0..4 for 4 raw ADC data streams
-|-----|-----------------------------|----------|-----------------------------------

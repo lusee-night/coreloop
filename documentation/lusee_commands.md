@@ -42,9 +42,10 @@ These execute and action and return to mode 00. Mainly designed to be used durin
 | 0x3M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
 | 0x30 | RFS_SET_GAIN_ANA_SET  |set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
-| 0x31 | RFS_SET_GAIN_ANA_CFG | automatic analog gains setting
-| 0x32 | RFS_SET_GAIN_DIG_SET | set digital gains modes, TBD
-| 0x33 | RFS_SET_GAIN_DIG_CFG |set automatic digital gains modes, TBD
+| 0x31 | RFS_SET_GAIN_ANA_CFG_MIN | automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
+| 0x32 | RFS_SET_GAIN_ANA_CFG_MULT | automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
+| 0x33 | RFS_SET_GAIN_DIG_SET | set digital gains modes, TBD
+| 0x34 | RFS_SET_GAIN_DIG_CFG |set automatic digital gains modes, TBD
 
 ### 0x4X Signal Routing Settings
 

@@ -1,4 +1,5 @@
 #include "spectrometer_interface.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -8,7 +9,7 @@
 
 const char* true_spectrum_filename = "data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
-uint32_t packet_id = 27;
+uint32_t time_seconds=0;
 
 /******* Internal state of the spectrometer and simulation options *********/
 uint32_t Navg1 = 512;
@@ -118,6 +119,7 @@ void spec_recall() {spec_not_implemented();};
 
 // set gain of channel ch to gain
 void spec_set_gain(uint8_t ch, uint8_t gain) {
+    printf("Setting gain of channel %d to %d\n", ch, gain);
     channel_gain[ch] = gain;
 }
 
@@ -158,7 +160,11 @@ void spec_get_ADC_stat(struct ADC_stat *stat) {
     }
 }
 
-uint32_t get_unique_packet_id() {
-    packet_id+=12;
-    return packet_id;
-}
+ void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec){
+    *time_sec = time_seconds;
+    time_seconds++;
+    *time_subsec = 123;
+
+
+
+ }

@@ -57,8 +57,9 @@ void spec_set_avg1 (uint8_t Navg1_shift);
 // Get ADC level statistics into 4 element array in order to enable automatic gain, etc
 void spec_get_ADC_stat(struct ADC_stat *stat);
 
+// get spacecraft time as per commands RFS_SCM_F1-F3
+void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec);
 
-uint32_t get_unique_packet_id();
 
 //returns true if a new spectrum is ready (DF flag is set)
 bool spec_new_spectrum_ready();

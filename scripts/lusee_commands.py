@@ -56,14 +56,17 @@ RFS_SET_SCI_4 =  0x23
 # set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 RFS_SET_GAIN_ANA_SET =  0x30 
 
-# automatic analog gains setting
-RFS_SET_GAIN_ANA_CFG =  0x31 
+# automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
+RFS_SET_GAIN_ANA_CFG_MIN =  0x31 
+
+# automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
+RFS_SET_GAIN_ANA_CFG_MULT =  0x32 
 
 # set digital gains modes, TBD
-RFS_SET_GAIN_DIG_SET =  0x32 
+RFS_SET_GAIN_DIG_SET =  0x33 
 
 # set automatic digital gains modes, TBD
-RFS_SET_GAIN_DIG_CFG =  0x33 
+RFS_SET_GAIN_DIG_CFG =  0x34 
 
 # set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the ground. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
 RFS_SET_ROUTE_SET12 =  0x40 

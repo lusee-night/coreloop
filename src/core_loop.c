@@ -16,8 +16,15 @@
 struct core_state state;
 uint16_t avg_counter = 0;
 uint32_t unique_packet_id;
-
 /**************************************************/
+
+
+
+/************* CODE STARTS HERE **************************************/
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+
 
 
 void cdi_not_implemented(const char *msg)
@@ -27,16 +34,20 @@ void cdi_not_implemented(const char *msg)
     return;
 }
 
-
-static inline uint8_t gain_to_spec_gain(enum gain_state gain)
+static inline void new_unique_packet_id()
 {
-    if (gain<GAIN_AUTO_LOW) return gain; else return gain-GAIN_AUTO_LOW;
+    unique_packet_id++;
+}
+
+static inline void update_time() {
+     spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
 }
 
 void set_spectrometer_to_sequencer()
 {
     for (int i = 0; i < NINPUT; i++) {
-        spec_set_gain(i, state.seq.gain[i]);
+        //if (state.seq.gain[i]!=GAIN_AUTO)  // not needed and can break initialization
+        spec_set_gain(i, state.base.actual_gain[i]);
         spec_set_route(i, state.seq.route[i].plus, state.seq.route[i].minus);
     }
     spec_set_avg1 (state.seq.Navg1_shift);
@@ -50,6 +61,9 @@ void default_seq (struct sequencer_state *seq)
         seq->gain[i] = GAIN_MED;
         seq->route[i].plus = i;
         seq->route[i].minus = 0xFF;
+        seq->gain[i] = GAIN_MED;
+        seq->gain_auto_min[i] = (1 << 7);
+        seq->gain_auto_mult[i] = (1 << 4);
     }
     seq->Navg1_shift = 11;
     seq->Navg2_shift = 9;
@@ -65,20 +79,22 @@ void fill_derived() {
     state.Nfreq = NCHANNELS; 
     if (state.seq.Navgf == 2 ) { state.Navg2_total_shift += 1; state.Nfreq = NCHANNELS/2; }
     if ((state.seq.Navgf == 3 ) || (state.seq.Navgf == 4)) { state.Navg2_total_shift += 2; state.Nfreq = NCHANNELS/4;} 
-    
+    for (int i=0; i<NINPUT; i++) {
+        state.gain_auto_max[i] = (state.seq.gain_auto_min[i] * state.seq.gain_auto_mult[i]);
+    }   
 }
 
-
-
-
-void core_init_state(){
+void core_init_state(){   
     default_seq (&state.seq);
     state.base.errors = 0;
     state.base.spectrometer_enable = false;
+    for (int i=0; i<NINPUT; i++) state.base.actual_gain[i] = GAIN_MED;
     spec_set_spectrometer_enable(false);
     state.base.sequencer_step = 0xFF;
     state.sequencer_enabled = false;
     state.Nseq = 0;
+    update_time();
+    unique_packet_id = state.base.time_seconds;
     fill_derived();
     set_spectrometer_to_sequencer();
 }
@@ -102,8 +118,17 @@ void RFS_start() {
     fill_derived();
     set_spectrometer_to_sequencer();
     spec_set_spectrometer_enable(true);
-
 }
+
+
+void restart_spectrometer()
+{
+    RFS_stop();
+    RFS_start();
+}
+
+
+
 
 void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
 {
@@ -157,12 +182,24 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
             case RFS_SET_SCI_4:
                 cdi_not_implemented("RFS_SET_SCI_4");
                 return;
-            case RFS_SET_GAIN_ANA_SET:
-                cdi_not_implemented("RFS_SET_GAIN_ANA_SET");
+            case RFS_SET_GAIN_ANA_SET:                
+                for (int i=0; i<NINPUT; i++){
+                    uint8_t val = (arg_low >> (2*i)) & 0x03;
+                    state.seq.gain[i] = val;
+                    if (val!=GAIN_AUTO) state.base.actual_gain[i] = val;
+                }
                 return;
-            case RFS_SET_GAIN_ANA_CFG:
-                cdi_not_implemented("RFS_SET_GAIN_ANA_CFG");
+            case RFS_SET_GAIN_ANA_CFG_MIN:
+                int ch = arg_low & 0x03;
+                int val = (arg_low & 0xFC) >> 2;
+                state.seq.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
                 return;
+            case RFS_SET_GAIN_ANA_CFG_MULT:
+                ch = arg_low & 0x03;
+                val = (arg_low & 0xFC) >> 2;
+                state.seq.gain_auto_mult[ch] = val;
+                return;
+
             case RFS_SET_GAIN_DIG_SET:
                 cdi_not_implemented("RFS_SET_GAIN_DIG_SET");
                 return;
@@ -284,13 +321,44 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
 }
 
 
+bool analog_gain_control() {
+
+    bool gains_changed = false;
+    
+    spec_get_ADC_stat(state.base.ADC_stat);
+    for (int i = 0; i < NINPUT; i++) {
+        if (state.seq.gain[i] != GAIN_AUTO) continue; // Don't do anything unless AGC is enabled
+        int32_t cmax = MAX(state.base.ADC_stat[i].max, -state.base.ADC_stat[i].min);
+        //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
+        if (cmax > state.gain_auto_max[i]) {
+            if (state.base.actual_gain[i] > GAIN_LOW) {
+                state.base.actual_gain[i] --;
+                state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
+                gains_changed = true;
+                debug_print("AGC: Channel %i gain decreased to %i\n", i, state.base.actual_gain[i]);
+            } else {
+                state.base.errors |= ANALOG_AGC_TOO_HIGH;
+            }
+        } else if (cmax < state.seq.gain_auto_min[i]) {
+            if (state.base.actual_gain[i] < GAIN_HIGH) {
+                state.base.actual_gain[i] ++;
+                state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
+                gains_changed = true;
+                debug_print("AGC: Channel %i gain increased to %i\n", i, state.base.actual_gain[i]);
+            } else {
+                state.base.errors |= ANALOG_AGC_TOO_LOW;
+            }
+        }
+    }
+    return gains_changed;
+}
+
 void transfer_from_df ()
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)DF_BASE_ADDR;
     int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
 
-    spec_get_ADC_stat(state.base.ADC_stat);
 
     for (uint16_t i = 0; i < (NCHANNELS*NSPECTRA); i++)
     {
@@ -315,7 +383,6 @@ void transfer_from_df ()
     if (avg_counter%100 == 0) debug_print ("Processed %i spectra\n", avg_counter); 
     avg_counter++;
 
-    spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
 }
 
 
@@ -380,9 +447,9 @@ void dispatch_16bit_float1_data() {
 }
 
 void transfer_to_cdi () {
-    debug_print ("Dumping averaged spectra to CDI\n");
-    unique_packet_id = get_unique_packet_id();
-
+    debug_print ("Dumping averaged spectra to CDI\n");      
+    new_unique_packet_id();
+    update_time();
     create_metadata_packet();
     uint32_t base_appid = AppID_SpectraHigh; // fix
 
@@ -410,6 +477,7 @@ void core_loop()
 
     for (;;)
     {
+        update_time();
         // Check if we have a new command from the CDI
         if (cdi_new_command(&cmd, &arg_high, &arg_low)) {
             if ((cmd==RFS_Settings) && (arg_high==RFS_SET_TIME_TO_DIE)) {
@@ -421,39 +489,45 @@ void core_loop()
         // Check if we have a new spectrum packet from the FPGA
         if (spec_new_spectrum_ready())
         {
-            transfer_from_df();
-            // Check if we have reached filled up Stage 2 averaging
-            // and if so, push things out to CDI
-            if (avg_counter == state.Navg2)
-            {
-                avg_counter = 0;
-                // Now one by one, we will loop through the packets placed in DDR Memory
-                // For each channel, set the APID, send it to the SRAM
-                // Then check to see if this software or the client will control the CDI writes
-                transfer_to_cdi();
-                if (state.sequencer_enabled) {
-                    state.base.sequencer_substep--;
-                    if (state.base.sequencer_substep == 0) {
-                        state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
-                        if (state.base.sequencer_step == 0) {
-                            state.base.sequencer_counter++;
-                            if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
-                                debug_print("Sequencer done.\n");
-                                RFS_stop();
-                            } else {
-                                debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
+            bool gains_changed = analog_gain_control();
+            if (gains_changed){
+                spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
+                restart_spectrometer();
+                
+
+            } else {
+                transfer_from_df();
+                spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
+                // Check if we have reached filled up Stage 2 averaging
+                // and if so, push things out to CDI
+                if (avg_counter == state.Navg2)
+                {
+                    avg_counter = 0;
+                    // Now one by one, we will loop through the packets placed in DDR Memory
+                    // For each channel, set the APID, send it to the SRAM
+                    // Then check to see if this software or the client will control the CDI writes
+                    transfer_to_cdi();
+                    if (state.sequencer_enabled) {
+                        state.base.sequencer_substep--;
+                        if (state.base.sequencer_substep == 0) {
+                            state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
+                            if (state.base.sequencer_step == 0) {
+                                state.base.sequencer_counter++;
+                                if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
+                                    debug_print("Sequencer done.\n");
+                                    RFS_stop();
+                                } else {
+                                    debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
+                                }
                             }
+                            state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
+                            state.seq = state.seq_program[state.base.sequencer_step];
+                            fill_derived();
+                            set_spectrometer_to_sequencer();
                         }
-                        state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
-                        state.seq = state.seq_program[state.base.sequencer_step];
-                        fill_derived();
-                        set_spectrometer_to_sequencer();
                     }
                 }
-
             }
-
-
             // make sure we have done this in time
             if (spec_df_flag())
             {
