@@ -407,6 +407,7 @@ uint32_t CRC(const void* data, size_t size) {
 
 void create_metadata_packet() {
     struct meta_data *meta = (struct meta_data *)CDI_BASE_ADDR;
+    meta->metadata_version = METADATA_VERSION;
     meta->unique_packet_id = unique_packet_id;
     meta->seq = state.seq;
     meta->base = state.base;

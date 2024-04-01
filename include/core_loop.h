@@ -9,10 +9,11 @@
 
 
 // Constants
-# define NSEQ_MAX 32
+#define NSEQ_MAX 32
+#define METADATA_VERSION 0x0001
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
-enum gain_state {
+enum gain_state{
     GAIN_LOW,
     GAIN_MED,
     GAIN_HIGH,
@@ -35,18 +36,18 @@ struct route_state {
 
 // sequencer state describes the information needed to set the spectrometer to a given state
 struct sequencer_state {
-    enum gain_state gain [NINPUT]; // this defines the commanded gain state (can be auto)
+    uint8_t gain [NINPUT]; // this defines the commanded gain state (can be auto)
     uint16_t gain_auto_min[NINPUT];   
     uint16_t gain_auto_mult[NINPUT];
     struct route_state route[NINPUT];
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
     uint8_t Navgf; // frequency averaging
-    enum output_format format;
+    uint8_t format;
 };
 
 // core state base contains additional information that will be dumped with every metadata packet
 struct core_state_base {
-    enum gain_state actual_gain[NINPUT]; // this defines the actual gain state (can only be low, med, high);
+    uint8_t actual_gain[NINPUT]; // this defines the actual gain state (can only be low, med, high);
     uint32_t errors;
     uint32_t time_seconds;
     uint16_t time_subseconds;
@@ -78,6 +79,7 @@ struct core_state {
 
 // metadata payload, compatible with core_state
 struct meta_data {
+    uint16_t metadata_version; 
     uint32_t unique_packet_id;
     struct sequencer_state seq;
     struct core_state_base base;
