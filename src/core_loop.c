@@ -411,7 +411,7 @@ void create_metadata_packet() {
     meta->unique_packet_id = unique_packet_id;
     meta->seq = state.seq;
     meta->base = state.base;
-    cdi_dispatch(AppID_MetaData, sizeof(meta));
+    cdi_dispatch(AppID_MetaData, sizeof(struct meta_data));
 }
 
 

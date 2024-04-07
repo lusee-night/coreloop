@@ -43,7 +43,7 @@ struct sequencer_state {
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
     uint8_t Navgf; // frequency averaging
     uint8_t format;
-};
+}__attribute__((packed));
 
 // core state base contains additional information that will be dumped with every metadata packet
 struct core_state_base {
@@ -58,7 +58,7 @@ struct core_state_base {
     uint8_t sequencer_substep; // counting seq_times;
     uint16_t sequencer_repeat; // number of sequencer repeats remaining, 00 for infinite (RFS_SET_SEQ_REP)
 
-};
+}__attribute__((packed));
 
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
@@ -74,7 +74,7 @@ struct core_state {
     uint8_t Nseq; // Number of sequencer steps in a cycle (See RFS_SET_SEQ_CYC)
     struct sequencer_state seq_program[NSEQ_MAX]; // sequencer states
     uint16_t seq_times[NSEQ_MAX]; // steps in each sequencer state;
-};
+}__attribute__((packed));
 
 
 // metadata payload, compatible with core_state
@@ -83,7 +83,7 @@ struct meta_data {
     uint32_t unique_packet_id;
     struct sequencer_state seq;
     struct core_state_base base;
-};
+} __attribute__((packed));
 
 extern struct core_state state;
 
