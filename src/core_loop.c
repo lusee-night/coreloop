@@ -55,6 +55,7 @@ void set_spectrometer_to_sequencer()
     }
     spec_set_bitslice(state.base.actual_bitslice);
     spec_set_avg1 (state.seq.Navg1_shift);
+    spec_notch_enable(state.seq.notch);
     return;
 }
 
@@ -73,7 +74,7 @@ void default_seq (struct sequencer_state *seq)
     seq->Navg2_shift = 9;
     seq->Navgf = 1;
     for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i]=0x1F;
-    
+    seq->notch = 0;
     seq->bitslice_keep_bits=13;
     seq->format = OUTPUT_16BIT_UPDATES;
 
@@ -143,7 +144,16 @@ void restart_spectrometer()
     RFS_start();
 }
 
-
+bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {
+    
+    if (seq1->notch != seq2->notch) return true;
+    for (int i=0; i<NINPUT; i++) { 
+        if (seq1->gain[i] != seq2->gain[i]) return true;
+        if (seq1->route[i].plus != seq2->route[i].plus) return true;
+        if (seq1->route[i].minus != seq2->route[i].minus) return true;
+    }
+    for (int i=0; i<NSPECTRA; i++) if (seq1->bitslice[i] != seq2->bitslice[i]) return true;
+}
 
 
 void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
@@ -274,7 +284,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 fill_derived();
                 return;
             case RFS_SET_AVG_NOTCH:
-                spec_notch_enable(arg_low);
+                state.seq.notch = arg_low;
                 return;
 
             case RFS_SET_AVG_SET_HI:
@@ -621,10 +631,14 @@ void core_loop()
                                     debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
                                 }
                             }
+                            
                             state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
+                            bool restart = restart_needed(&state.seq, &state.seq_program[state.base.sequencer_step]); 
+                            if (restart) RFS_stop();
                             state.seq = state.seq_program[state.base.sequencer_step];
                             fill_derived();
                             set_spectrometer_to_sequencer();
+                            if (restart) RFS_start();
                         }
                     }
                 }

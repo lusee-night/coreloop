@@ -41,6 +41,7 @@ struct sequencer_state {
     uint16_t gain_auto_mult[NINPUT];
     struct route_state route[NINPUT];
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
+    uint8_t notch; // 0 = disable, 1 = x4, 2 = x16, 3=x64, 4=x256
     uint8_t Navgf; // frequency averaging
     uint8_t bitslice[NSPECTRA]; // for spectra 0x1F is all MSB, 0xFF is auto
     uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra
