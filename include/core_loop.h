@@ -42,15 +42,20 @@ struct sequencer_state {
     struct route_state route[NINPUT];
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
     uint8_t Navgf; // frequency averaging
+    uint8_t bitslice[NSPECTRA]; // for spectra 0x1F is all MSB, 0xFF is auto
+    uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra
     uint8_t format;
 }__attribute__((packed));
 
 // core state base contains additional information that will be dumped with every metadata packet
 struct core_state_base {
-    uint8_t actual_gain[NINPUT]; // this defines the actual gain state (can only be low, med, high);
-    uint32_t errors;
     uint32_t time_seconds;
     uint16_t time_subseconds;
+    uint32_t errors;
+    uint8_t actual_gain[NINPUT]; // this defines the actual gain state (can only be low, med, high);
+    uint8_t actual_bitslice[NSPECTRA];
+    uint16_t spec_overflow;  // mean specta overflow mask
+    uint16_t notch_overflow; // notch filter overflow mask
     struct ADC_stat ADC_stat[4];    
     bool spectrometer_enable;
     uint8_t sequencer_counter; // number of total cycles in the sequencer.

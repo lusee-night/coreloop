@@ -16,6 +16,9 @@
 struct core_state state;
 uint16_t avg_counter = 0;
 uint32_t unique_packet_id;
+uint8_t leading_zeros_min[NSPECTRA];
+uint8_t leading_zeros_max[NSPECTRA];
+
 /**************************************************/
 
 
@@ -50,6 +53,7 @@ void set_spectrometer_to_sequencer()
         spec_set_gain(i, state.base.actual_gain[i]);
         spec_set_route(i, state.seq.route[i].plus, state.seq.route[i].minus);
     }
+    spec_set_bitslice(state.base.actual_bitslice);
     spec_set_avg1 (state.seq.Navg1_shift);
     return;
 }
@@ -68,7 +72,11 @@ void default_seq (struct sequencer_state *seq)
     seq->Navg1_shift = 11;
     seq->Navg2_shift = 9;
     seq->Navgf = 1;
+    for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i]=0x1F;
+    
+    seq->bitslice_keep_bits=13;
     seq->format = OUTPUT_16BIT_UPDATES;
+
 }
 
 void fill_derived() {
@@ -89,6 +97,7 @@ void core_init_state(){
     state.base.errors = 0;
     state.base.spectrometer_enable = false;
     for (int i=0; i<NINPUT; i++) state.base.actual_gain[i] = GAIN_MED;
+    for (int i=0; i<NSPECTRA; i++) state.base.actual_bitslice[i] = MIN(state.seq.bitslice[i],0x1F); // to convert FF to 16
     spec_set_spectrometer_enable(false);
     state.base.sequencer_step = 0xFF;
     state.sequencer_enabled = false;
@@ -98,6 +107,13 @@ void core_init_state(){
     fill_derived();
     set_spectrometer_to_sequencer();
 }
+
+void reset_errormasks() {
+    state.base.errors = 0;
+    state.base.spec_overflow = 0;
+    state.base.notch_overflow = 0;
+}
+
 
 void RFS_stop() {
     state.base.spectrometer_enable = false;
@@ -133,6 +149,7 @@ void restart_spectrometer()
 void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
 {
     // Do something with the command
+    uint8_t ch, xcor, val;
     debug_print("Received command: %x %x %x\n", cmd, arg_high, arg_low);
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
@@ -190,8 +207,8 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 }
                 return;
             case RFS_SET_GAIN_ANA_CFG_MIN:
-                int ch = arg_low & 0x03;
-                int val = (arg_low & 0xFC) >> 2;
+                ch = arg_low & 0x03;
+                val = (arg_low & 0xFC) >> 2;
                 state.seq.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
                 return;
             case RFS_SET_GAIN_ANA_CFG_MULT:
@@ -199,19 +216,51 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 val = (arg_low & 0xFC) >> 2;
                 state.seq.gain_auto_mult[ch] = val;
                 return;
+            case RFS_SET_BITSLICE_LOW:
+                xcor = arg_low & 0x07;
+                val = (arg_low & 0xF8) >> 3;
+                state.seq.bitslice[xcor] = val;
+                return;
+            case RFS_SET_BITSLICE_HIGH:
+                xcor = (arg_low & 0x07) + 8;
+                val = (arg_low & 0xF8) >> 3;
+                state.seq.bitslice[xcor] = val;
+                return;
+            case RFS_SET_BITSLICE_AUTO:
+                if (arg_low > 0) {
+                    for (int i=0; i<NSPECTRA; i++) state.seq.bitslice[i] = 0xFF;
+                    state.seq.bitslice_keep_bits = arg_low;
+                } else {
+                    for (int i=0; i<NSPECTRA; i++) state.seq.bitslice[i] = 0x1F;
+                }
+                return;
 
-            case RFS_SET_GAIN_DIG_SET:
-                cdi_not_implemented("RFS_SET_GAIN_DIG_SET");
-                return;
-            case RFS_SET_GAIN_DIG_CFG:
-                cdi_not_implemented("RFS_SET_GAIN_DIG_CFG");
-                return;
             case RFS_SET_ROUTE_SET12:
-                cdi_not_implemented("RFS_SET_ROUTE_SET12");
+                uint8_t ant2low = arg_low & 0x03;
+                uint8_t ant2high = (arg_low & 0x0C) >> 2;
+                uint8_t ant1low = (arg_low & 0x30) >> 4;
+                uint8_t ant1high = (arg_low & 0xC0) >> 6;
+                if (ant2low == ant2high) ant2low = 0xFF;
+                if (ant1low == ant1high) ant1low = 0xFF;
+                state.seq.route[0].plus = ant1high;
+                state.seq.route[0].minus = ant1low;
+                state.seq.route[1].plus = ant2high;
+                state.seq.route[1].minus = ant2low;
                 return;
             case RFS_SET_ROUTE_SET34:
-                cdi_not_implemented("RFS_SET_ROUTE_SET34");
+                uint8_t ant4low = arg_low & 0x03;
+                uint8_t ant4high = (arg_low & 0x0C) >> 2;
+                uint8_t ant3low = (arg_low & 0x30) >> 4;
+                uint8_t ant3high = (arg_low & 0xC0) >> 6;
+                if (ant4low == ant4high) ant4low = 0xFF;
+                if (ant3low == ant3high) ant3low = 0xFF;
+                state.seq.route[2].plus = ant3high;
+                state.seq.route[2].minus = ant3low;
+                state.seq.route[3].plus = ant4high;
+                state.seq.route[3].minus = ant4low;
                 return;
+
+
             case RFS_SET_AVG_SET:
                 state.seq.Navg1_shift = arg_low & 0x0F;
                 state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
@@ -224,6 +273,10 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 state.seq.Navgf = arg_low;
                 fill_derived();
                 return;
+            case RFS_SET_AVG_NOTCH:
+                spec_notch_enable(arg_low);
+                return;
+
             case RFS_SET_AVG_SET_HI:
                 cdi_not_implemented("RFS_SET_AVG_SET_HI");
                 return;
@@ -353,33 +406,70 @@ bool analog_gain_control() {
     return gains_changed;
 }
 
+ 
+  
+bool bitslice_control() {
+    bool bitslice_changed = false;
+    int32_t *ddr_ptr = (int32_t *) DDR3_BASE_ADDR;
+    for (int i = 0; i < NSPECTRA; i++) {
+        if (state.seq.bitslice[i] != 0xFF) continue; // Don't do anything unless bitslice is auto
+        uint8_t keep = 32-leading_zeros_max[i];
+        if (keep>(state.seq.bitslice_keep_bits+1)) { 
+            // we're keeping more bits than we should (with buffer of 1)
+            // slicer should be increased
+            state.base.actual_bitslice[i] += (keep-state.seq.bitslice_keep_bits);
+            if (state.base.actual_bitslice[i] > 0x1F) {
+                state.base.actual_bitslice[i] = 0x1F;
+            }
+            bitslice_changed = true;
+        } else if (keep<(state.seq.bitslice_keep_bits-1)) {
+            // we're keeping fewer bits than we should (with buffer of 1)
+            // slicer should be decreased
+            state.base.actual_bitslice[i] -= MIN(state.seq.bitslice_keep_bits-keep, state.base.actual_bitslice[i]);
+            bitslice_changed = true;
+        }
+    }
+    return bitslice_changed;
+}
+
+int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
+    int32_t zeros = __builtin_clz(abs(val));
+    *min = MIN(*min, zeros);
+    *max = MAX(*max, zeros);
+    return val;
+}
+
+
 void transfer_from_df ()
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)DF_BASE_ADDR;
     int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
 
-
-    for (uint16_t i = 0; i < (NCHANNELS*NSPECTRA); i++)
-    {
-        *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+    for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
+        leading_zeros_min[sp] = 32;
+        leading_zeros_max[sp] = 0;
+        for (uint16_t i = 0; i < NCHANNELS; i++) {
+        *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
         if (state.seq.Navgf == 2) {
             df_ptr++;
-            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
         } else if (state.seq.Navgf > 2) {
             df_ptr++;
-            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
             df_ptr++;
-            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
             df_ptr++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
             if (state.seq.Navgf == 4) {
-            *ddr_ptr += ((*df_ptr) / (1 << state.Navg2_total_shift));
+            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
             }
         }   
         df_ptr++;
         ddr_ptr++;
+        }
+    debug_print ("Processing spectrum %i %i %i %i\n", avg_counter, sp, leading_zeros_min[sp], leading_zeros_max[sp]);
     }
-    //debug_print ("Processing spectrum %i\n", avg_counter);
+    
     if (avg_counter%100 == 0) debug_print ("Processed %i spectra\n", avg_counter); 
     avg_counter++;
 
@@ -490,17 +580,26 @@ void core_loop()
         // Check if we have a new spectrum packet from the FPGA
         if (spec_new_spectrum_ready())
         {
+            // execute analog gain control and restart spectrometer if needed
             bool gains_changed = analog_gain_control();
             if (gains_changed){
                 spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
                 restart_spectrometer();
-                
-
             } else {
                 transfer_from_df();
+                uint16_t corr_owf, notch_owf;
+                spec_get_digital_overflow(&corr_owf, &notch_owf);
+                state.base.spec_overflow |= corr_owf;
+                state.base.notch_overflow |= notch_owf;
+
                 spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
                 // Check if we have reached filled up Stage 2 averaging
                 // and if so, push things out to CDI
+                bool bit_slice_changed = bitslice_control();
+                if (bit_slice_changed) {
+                    restart_spectrometer(); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
+                }
+
                 if (avg_counter == state.Navg2)
                 {
                     avg_counter = 0;
@@ -508,6 +607,7 @@ void core_loop()
                     // For each channel, set the APID, send it to the SRAM
                     // Then check to see if this software or the client will control the CDI writes
                     transfer_to_cdi();
+
                     if (state.sequencer_enabled) {
                         state.base.sequencer_substep--;
                         if (state.base.sequencer_substep == 0) {
@@ -530,10 +630,6 @@ void core_loop()
                 }
             }
             // make sure we have done this in time
-            if (spec_df_flag())
-            {
-                debug_print("Error: missed a spectrum packet\n");
-            }
         }
     }
 }

@@ -43,6 +43,6 @@ for line in open("documentation/lusee_commands.md"):
     of.write(f"#define {name} {offset}\n\n")
     ofp.write(f"# {desc}\n")
     ofp.write(f"{name} = {offset}\n\n")
-    #print (f'            case {name}:\n                cdi_not_implemented("{name}");\n                return;')
+    print (f'            case {name}:\n                cdi_not_implemented("{name}");\n                return;')
 
 of.write("\n\n#endif")

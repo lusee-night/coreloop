@@ -123,6 +123,24 @@ void spec_set_gain(uint8_t ch, uint8_t gain) {
     channel_gain[ch] = gain;
 }
 
+// set auto and cross-correlation bit-slices for 16 products
+void spec_set_bitslice (uint8_t* slice) {}
+
+
+// enable or disable notch filter
+// 0 = disable, 1 = x4, 2 = x16, 3=x64, 4=x256
+void spec_notch_enable (uint8_t arg) {}
+
+// get overflow bitmasks for wf, 16 correlation channels and their notch counter-parts (MSB)
+void spec_get_digital_overflow (uint16_t* corr_owf, uint16_t *notch_owf) {
+    *corr_owf = 0x0;
+    *notch_owf = 0x0;
+}
+
+
+
+
+
 // set routing of channel ch to plus - minus
 void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus) {}
 

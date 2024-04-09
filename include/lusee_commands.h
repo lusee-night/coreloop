@@ -59,11 +59,14 @@
 // automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
 #define RFS_SET_GAIN_ANA_CFG_MULT  0x32 
 
-// set digital gains modes, TBD
-#define RFS_SET_GAIN_DIG_SET  0x33 
+// Sets manual bitslicing for XCOR 1-8 (3 MSB bits) to values 1-32 (5 LSB bits)
+#define RFS_SET_BITSLICE_LOW  0x33 
 
-// set automatic digital gains modes, TBD
-#define RFS_SET_GAIN_DIG_CFG  0x34 
+// Sets manual bitslicing for XCOR 9-16 (3 MSB bits) to values 1-32 (5 LSB bits)
+#define RFS_SET_BITSLICE_HIGH  0x34 
+
+// Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
+#define RFS_SET_BITSLICE_AUTO  0x35 
 
 // set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the ground. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
 #define RFS_SET_ROUTE_SET12  0x40 
@@ -80,14 +83,17 @@
 // set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected)
 #define RFS_SET_AVG_FREQ  0x52 
 
+// set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256
+#define RFS_SET_AVG_NOTCH  0x53 
+
 // set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
-#define RFS_SET_AVG_SET_HI  0x53 
+#define RFS_SET_AVG_SET_HI  0x54 
 
 // set medium priority fraction, low priority is 1-high-medium
-#define RFS_SET_AVGI_SET_MID  0x54 
+#define RFS_SET_AVGI_SET_MID  0x55 
 
 // set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
-#define RFS_SET_OUTPUT_FORMAT  0x55 
+#define RFS_SET_OUTPUT_FORMAT  0x56 
 
 // set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
 #define RFS_SET_CAL_FRAC_SET  0x60 

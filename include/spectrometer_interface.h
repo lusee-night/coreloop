@@ -30,6 +30,8 @@ struct ADC_stat {
 
 
 
+
+
 void spectrometer_init();
 
 void spec_set_Navg1(uint32_t Navg1);
@@ -48,7 +50,19 @@ void spec_recall();
 // set gain of channel ch to gain
 void spec_set_gain(uint8_t ch, uint8_t gain);
 
-// set routing of channel ch to plus - minus
+
+// set auto and cross-correlation bit-slices for 16 products
+void spec_set_bitslice (uint8_t* slice);
+
+// enable or disable notch filter
+// 0 = disable, 1 = x4, 2 = x16, 3=x64, 4=x256
+void spec_notch_enable (uint8_t arg);
+
+// get overflow bitmasks for wf, 16 correlation channels and their notch counter-parts (MSB)
+void spec_get_digital_overflow (uint16_t* corr_owf, uint16_t *notch_owf);
+
+
+// set routing of channel ch to plus - minus.  plus = 0..3, minus = 0..3 or FF for ground
 void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus);
 
 // set the number of shift bits for Stage 1 averageing (ie. Navg1_shift =10 ->  Navg1 = 1024)
