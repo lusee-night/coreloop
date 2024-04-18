@@ -62,10 +62,10 @@ RFS_SET_GAIN_ANA_CFG_MIN =  0x31
 # automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
 RFS_SET_GAIN_ANA_CFG_MULT =  0x32 
 
-# Sets manual bitslicing for XCOR 1-8 (3 MSB bits) to values 1-32 (5 LSB bits)
+# Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
 RFS_SET_BITSLICE_LOW =  0x33 
 
-# Sets manual bitslicing for XCOR 9-16 (3 MSB bits) to values 1-32 (5 LSB bits)
+# Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
 RFS_SET_BITSLICE_HIGH =  0x34 
 
 # Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product

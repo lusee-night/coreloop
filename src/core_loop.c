@@ -37,14 +37,30 @@ void cdi_not_implemented(const char *msg)
     return;
 }
 
+
 static inline void new_unique_packet_id()
 {
     unique_packet_id++;
 }
 
+
+
 static inline void update_time() {
      spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
 }
+
+void send_hello_packet() {
+    struct startup_hello *payload;
+    new_unique_packet_id();
+    update_time();
+    payload.version = VERSION_ID;
+    payload.unique_packet_id = unique_packet_id;
+    payload.time_seconds = state.base.time_seconds;
+    payload.time_subseconds = state.base.time_subseconds;
+    cdi_dispatch()
+
+}
+
 
 void set_spectrometer_to_sequencer()
 {
@@ -505,9 +521,9 @@ uint32_t CRC(const void* data, size_t size) {
     return ~crc;
 }
 
-void create_metadata_packet() {
+void send_metadata_packet() {
     struct meta_data *meta = (struct meta_data *)CDI_BASE_ADDR;
-    meta->metadata_version = METADATA_VERSION;
+    meta->version = VERSION_ID;
     meta->unique_packet_id = unique_packet_id;
     meta->seq = state.seq;
     meta->base = state.base;
@@ -551,7 +567,7 @@ void transfer_to_cdi () {
     debug_print ("Dumping averaged spectra to CDI\n");      
     new_unique_packet_id();
     update_time();
-    create_metadata_packet();
+    send_metadata_packet();
     uint32_t base_appid = AppID_SpectraHigh; // fix
 
     switch (state.seq.format) {

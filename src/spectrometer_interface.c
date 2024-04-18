@@ -182,7 +182,4 @@ void spec_get_ADC_stat(struct ADC_stat *stat) {
     *time_sec = time_seconds;
     time_seconds++;
     *time_subsec = 123;
-
-
-
  }

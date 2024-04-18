@@ -2,6 +2,10 @@
 #define CORE_LOOP_H
 
 #define VERSION 0.1-DEV
+// This 16 bit version ID goes with metadata and startup packets.
+// MSB is code version, LSB is metatada version
+#define VERSION_ID 0x0101
+
 
 #include <inttypes.h>
 #include "spectrometer_interface.h"
@@ -10,7 +14,6 @@
 
 // Constants
 #define NSEQ_MAX 32
-#define METADATA_VERSION 0x0001
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
@@ -83,9 +86,16 @@ struct core_state {
 }__attribute__((packed));
 
 
+struct startup_hello {
+    uint16_t version; 
+    uint32_t unique_packet_id;
+    uint32_t time_seconds;
+    uint16_t time_subseconds;
+};
+
 // metadata payload, compatible with core_state
 struct meta_data {
-    uint16_t metadata_version; 
+    uint16_t version; 
     uint32_t unique_packet_id;
     struct sequencer_state seq;
     struct core_state_base base;
