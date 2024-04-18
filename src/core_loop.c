@@ -53,6 +53,7 @@ void send_hello_packet() {
     struct startup_hello *payload = (struct startup_hello*) (CDI_BASE_ADDR);
     new_unique_packet_id();
     update_time();
+    wait_for_cdi_ready();
     payload->version = VERSION_ID;
     payload->unique_packet_id = unique_packet_id;
     payload->time_seconds = state.base.time_seconds;
@@ -524,6 +525,7 @@ uint32_t CRC(const void* data, size_t size) {
 
 void send_metadata_packet() {
     struct meta_data *meta = (struct meta_data *)CDI_BASE_ADDR;
+    wait_for_cdi_ready();
     meta->version = VERSION_ID;
     meta->unique_packet_id = unique_packet_id;
     meta->seq = state.seq;
@@ -546,7 +548,7 @@ void dispatch_32bit_data(uint32_t base_appid) {
 
     for (uint8_t ch = 0; ch < NSPECTRA; ch++)
     {
-        while (!cdi_ready()) {}
+        wait_for_cdi_ready();
         memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
         memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
         *crc_ptr = CRC(cdi_ptr, data_size);

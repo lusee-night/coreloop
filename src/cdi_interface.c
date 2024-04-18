@@ -63,6 +63,7 @@ bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
 }
 
 bool cdi_ready() {return true;}
+void wait_for_cdi_ready() {}
 
 void cdi_dispatch (uint16_t appID, uint32_t length) {
     char filename[512];
