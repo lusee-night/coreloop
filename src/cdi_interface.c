@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "global.h"
+#include "LuSEE_IO.h"
 #include "cdi_interface.h"
 
 

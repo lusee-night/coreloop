@@ -1,8 +1,8 @@
 #include <string.h> // Add include for memcpy
 #include <stdlib.h>
 #include <stdint.h>
-
-#include "global.h"
+#include "printf.h"
+#include "LuSEE_IO.h"
 #include "core_loop.h"
 #include "spectrometer_interface.h"
 #include "cdi_interface.h"
@@ -50,7 +50,7 @@ static inline void update_time() {
 }
 
 void send_hello_packet() {
-    struct startup_hello *payload = CDI_BASE_ADDR;
+    struct startup_hello *payload = (struct startup_hello*) (CDI_BASE_ADDR);
     new_unique_packet_id();
     update_time();
     payload->version = VERSION_ID;
@@ -176,6 +176,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
 {
     // Do something with the command
     uint8_t ch, xcor, val;
+    uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
     debug_print("Received command: %x %x %x\n", cmd, arg_high, arg_low);
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
@@ -262,10 +263,10 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 return;
 
             case RFS_SET_ROUTE_SET12:
-                uint8_t ant2low = arg_low & 0x03;
-                uint8_t ant2high = (arg_low & 0x0C) >> 2;
-                uint8_t ant1low = (arg_low & 0x30) >> 4;
-                uint8_t ant1high = (arg_low & 0xC0) >> 6;
+                ant2low = arg_low & 0x03;
+                ant2high = (arg_low & 0x0C) >> 2;
+                ant1low = (arg_low & 0x30) >> 4;
+                ant1high = (arg_low & 0xC0) >> 6;
                 if (ant2low == ant2high) ant2low = 0xFF;
                 if (ant1low == ant1high) ant1low = 0xFF;
                 state.seq.route[0].plus = ant1high;
@@ -274,10 +275,10 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 state.seq.route[1].minus = ant2low;
                 return;
             case RFS_SET_ROUTE_SET34:
-                uint8_t ant4low = arg_low & 0x03;
-                uint8_t ant4high = (arg_low & 0x0C) >> 2;
-                uint8_t ant3low = (arg_low & 0x30) >> 4;
-                uint8_t ant3high = (arg_low & 0xC0) >> 6;
+                ant4low = arg_low & 0x03;
+                ant4high = (arg_low & 0x0C) >> 2;
+                ant3low = (arg_low & 0x30) >> 4;
+                ant3high = (arg_low & 0xC0) >> 6;
                 if (ant4low == ant4high) ant4low = 0xFF;
                 if (ant3low == ant3high) ant3low = 0xFF;
                 state.seq.route[2].plus = ant3high;

@@ -3,7 +3,7 @@ project(LN_CORELOOP)               # Create project "simple_example"
 
 # Add main.cpp file of the project root directory as a source file
 
-set(SOURCE_FILES src/main.c src/global.c src/cdi_interface.c src/spectrometer_interface.c src/core_loop.c)
+set(SOURCE_FILES src/main.c src/LuSEE_IO.c src/cdi_interface.c src/spectrometer_interface.c src/core_loop.c)
 
 
 # Add executable target with source files listed in SOURCE_FILES variable

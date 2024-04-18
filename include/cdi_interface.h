@@ -1,12 +1,9 @@
 #ifndef CDI_INTERFACE_H
 #define CDI_INTERFACE_H
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "cdi_interface.h"
-
-extern void* CDI_BASE_ADDR;
+#include "LuSEE_IO.h"
 
 void cdi_init();
 // returns true if a new command is available, and sets the command and arguments

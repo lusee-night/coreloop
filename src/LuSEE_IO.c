@@ -1,4 +1,4 @@
-#include "global.h"
+#include "LuSEE_IO.h"
 #include <stdlib.h>
 
 void* DDR3_BASE_ADDR;    

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "global.h"
+#include "LuSEE_IO.h"
 
 #include "spectrometer_interface.h"
 #include "cdi_interface.h"

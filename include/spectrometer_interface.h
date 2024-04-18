@@ -8,17 +8,6 @@
 #define NSPECTRA 16
 #define NINPUT 4
 
-extern int32_t* DF_BASE_ADDR;
-extern bool df_flag;
-
-/******* Internal state of the spectrometer and simulation options *********/
-
-extern uint32_t Navg1;
-extern bool add_noise;
-extern bool empty_hands_count;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
-extern bool spectrometer_enable;
-
-/******************************************************************************/
 
 struct ADC_stat {
     uint32_t invalid_count;
@@ -77,10 +66,10 @@ void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec);
 
 //returns true if a new spectrum is ready (DF flag is set)
 bool spec_new_spectrum_ready();
+
 // clears the DF flag
-static inline void spec_clear_df_flag() { df_flag = false; }
-// returns the value of the DF flag
-static inline bool spec_df_flag() { return df_flag; }
+void spec_clear_df_flag();
+
 
 
 

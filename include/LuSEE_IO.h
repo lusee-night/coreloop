@@ -1,5 +1,6 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
+#include <stdio.h>
 #define DDR3_SIZE (1024*1024*(1024+512)) // 1.5GB
 
 #define DEBUG 1
@@ -9,7 +10,8 @@
 // Global variables
 
 extern void* DDR3_BASE_ADDR;
-
+extern void* CDI_BASE_ADDR;
+extern void* DF_BASE_ADDR;
 
 void DD3_init();
 

@@ -138,7 +138,7 @@ void spec_get_digital_overflow (uint16_t* corr_owf, uint16_t *notch_owf) {
 }
 
 
-
+void spec_clear_df_flag() {};
 
 
 // set routing of channel ch to plus - minus
