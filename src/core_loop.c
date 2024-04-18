@@ -50,14 +50,14 @@ static inline void update_time() {
 }
 
 void send_hello_packet() {
-    struct startup_hello *payload;
+    struct startup_hello *payload = CDI_BASE_ADDR;
     new_unique_packet_id();
     update_time();
-    payload.version = VERSION_ID;
-    payload.unique_packet_id = unique_packet_id;
-    payload.time_seconds = state.base.time_seconds;
-    payload.time_subseconds = state.base.time_subseconds;
-    cdi_dispatch()
+    payload->version = VERSION_ID;
+    payload->unique_packet_id = unique_packet_id;
+    payload->time_seconds = state.base.time_seconds;
+    payload->time_subseconds = state.base.time_subseconds;
+    cdi_dispatch(AppID_uC_Start, sizeof(struct startup_hello));
 
 }
 
