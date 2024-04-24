@@ -88,8 +88,8 @@ void default_seq (struct sequencer_state *seq)
         seq->gain_auto_min[i] = (1 << 7);
         seq->gain_auto_mult[i] = (1 << 4);
     }
-    seq->Navg1_shift = 11;
-    seq->Navg2_shift = 9;
+    seq->Navg1_shift = 14;
+    seq->Navg2_shift = 3;
     seq->Navgf = 1;
     for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i]=0x1F;
     seq->notch = 0;
@@ -183,9 +183,11 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
+                debug_print ("Starting spectrometer\n");
                 RFS_start();
                 return;
             case RFS_SET_STOP:
+                debug_print ("Stopping spectrometer\n");
                 RFS_stop();
                 return;                
             case RFS_SET_RESET:
@@ -499,7 +501,7 @@ void transfer_from_df ()
     //debug_print ("Processing spectrum %i %i %i %i\n", avg_counter, sp, leading_zeros_min[sp], leading_zeros_max[sp]);
     }
     
-    if (avg_counter%100 == 0) debug_print ("Processed some spectra\n");
+    //if (avg_counter%100 == 0) debug_print ("Processed 100 spectra...\n");
     avg_counter++;
 
 }
@@ -568,7 +570,7 @@ void dispatch_16bit_float1_data() {
 }
 
 void transfer_to_cdi () {
-    //debug_print ("Dumping averaged spectra to CDI\n");      
+    debug_print ("Sending averaged spectra to CDI.\n");      
     new_unique_packet_id();
     update_time();
     send_metadata_packet();

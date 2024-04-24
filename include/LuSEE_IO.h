@@ -4,8 +4,8 @@
 #define DDR3_SIZE (1024*1024*(1024+512)) // 1.5GB
 
 #define DEBUG 1
-#define debug_print(fmt, ...) \
-            do { if (DEBUG) printf(fmt, ##__VA_ARGS__); } while (0);
+#define debug_print(fmt) \
+            do { if (DEBUG) printf(fmt); } while (0);
 
 // Global variables
 
