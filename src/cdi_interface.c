@@ -17,7 +17,7 @@ int cmd_ndx = 0;
 int wait_ndx = 0;
 int out_packet_ndx = 0;
 int Ncommands;
-void* CDI_BASE_ADDR;
+void* TLM_BUF;
 
 
 void cdi_init()
@@ -40,7 +40,7 @@ void cdi_init()
     Ncommands = i;
     cmd_ndx = 0;
     wait_ndx = wait_list[0];
-    CDI_BASE_ADDR = malloc(STAGING_AREA_SIZE);
+    TLM_BUF = malloc(STAGING_AREA_SIZE);
     printf("Read %i CDI commands.\n", Ncommands);
     
 }
@@ -73,7 +73,7 @@ void cdi_dispatch (uint16_t appID, uint32_t length) {
         printf("Failed to open file.\n");
         return;
     }
-    fwrite(CDI_BASE_ADDR, sizeof(uint8_t), length, file);
+    fwrite(TLM_BUF, sizeof(uint8_t), length, file);
     fclose(file);
     out_packet_ndx++;
 }

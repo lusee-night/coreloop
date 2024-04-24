@@ -9,7 +9,7 @@ int main() {
 
     spectrometer_init();
     cdi_init();
-    DD3_init();
+    DDR3_init();
     
     core_loop();
 

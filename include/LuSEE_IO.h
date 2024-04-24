@@ -10,8 +10,8 @@
 // Global variables
 
 extern void* DDR3_BASE_ADDR;
-extern void* CDI_BASE_ADDR;
-extern void* DF_BASE_ADDR;
+extern void* TLM_BUF;
+extern void* SPEC_BUF;
 
 void DD3_init();
 

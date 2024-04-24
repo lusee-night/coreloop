@@ -17,7 +17,7 @@ bool add_noise = true;
 bool empty_hands_count = 4;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
 bool spectrometer_enable = false;
 bool df_flag;
-int32_t* DF_BASE_ADDR;
+int32_t* SPEC_BUF;
 uint8_t channel_gain[NINPUT];
 
 
@@ -43,7 +43,7 @@ void spectrometer_init() {
     }
 
     fclose(file);
-    DF_BASE_ADDR = malloc(NCHANNELS*NSPECTRA*sizeof(int32_t));
+    SPEC_BUF = malloc(NCHANNELS*NSPECTRA*sizeof(int32_t));
     printf("Spectrometer init.\n");
 }
 
@@ -96,7 +96,7 @@ bool spec_new_spectrum_ready() {
                     }
                 }
             }
-            DF_BASE_ADDR[i*NCHANNELS+j] = spec;
+            SPEC_BUF[i*NCHANNELS+j] = spec;
         }
     }
     return true;

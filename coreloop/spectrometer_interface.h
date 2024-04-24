@@ -4,9 +4,28 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
+
+
 #define NCHANNELS 2048
 #define NSPECTRA 16
 #define NINPUT 4
+
+// Registers
+#define DCB_TIMESTAMP1            0x00000020UL
+#define DCB_TIMESTAMP2            0x00000021UL
+
+#define DF_MEM_BUSY               0x00000222UL
+#define DF_DATA_READY             0x00000223UL
+#define ENABLE_SPEC               0x00000401UL
+
+#define CORR_ARRAY                0x00000412UL
+#define NOTCH_ARRAY               0x00000415UL
+
+#define CH0_GAIN_MUX              0x00000500UL
+#define NOTCH_ENABLE             0x00000410UL
+#define NAVG_MAIN                 0x00000411UL
+#define NAVG_NOTCH                0x00000412UL
 
 
 struct ADC_stat {
@@ -16,7 +35,6 @@ struct ADC_stat {
     uint32_t mean;
     uint64_t var;
 };
-
 
 
 

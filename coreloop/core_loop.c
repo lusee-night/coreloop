@@ -1,7 +1,6 @@
 #include <string.h> // Add include for memcpy
 #include <stdlib.h>
 #include <stdint.h>
-#include "printf.h"
 #include "LuSEE_IO.h"
 #include "core_loop.h"
 #include "spectrometer_interface.h"
@@ -32,7 +31,9 @@ uint8_t leading_zeros_max[NSPECTRA];
 
 void cdi_not_implemented(const char *msg)
 {
-    debug_print("CDI command not implemented: %s\n",msg);
+    debug_print("CDI command not implemented: ");
+    debug_print(msg);
+    debug_print("\n")
     exit(1);
     return;
 }
@@ -50,7 +51,7 @@ static inline void update_time() {
 }
 
 void send_hello_packet() {
-    struct startup_hello *payload = (struct startup_hello*) (CDI_BASE_ADDR);
+    struct startup_hello *payload = (struct startup_hello*) (TLM_BUF);
     new_unique_packet_id();
     update_time();
     wait_for_cdi_ready();
@@ -178,7 +179,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
     // Do something with the command
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
-    debug_print("Received command: %x %x %x\n", cmd, arg_high, arg_low);
+    //debug_print("Received command: %x %x %x\n", cmd, arg_high, arg_low);
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
@@ -416,7 +417,7 @@ bool analog_gain_control() {
                 state.base.actual_gain[i] --;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
-                debug_print("AGC: Channel %i gain decreased to %i\n", i, state.base.actual_gain[i]);
+                //debug_print("AGC: Channel %i gain decreased to %i\n", i, state.base.actual_gain[i]);
             } else {
                 state.base.errors |= ANALOG_AGC_TOO_HIGH;
             }
@@ -425,7 +426,7 @@ bool analog_gain_control() {
                 state.base.actual_gain[i] ++;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
-                debug_print("AGC: Channel %i gain increased to %i\n", i, state.base.actual_gain[i]);
+                //debug_print("AGC: Channel %i gain increased to %i\n", i, state.base.actual_gain[i]);
             } else {
                 state.base.errors |= ANALOG_AGC_TOO_LOW;
             }
@@ -471,7 +472,7 @@ int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
 void transfer_from_df ()
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
-    int32_t *df_ptr = (int32_t *)DF_BASE_ADDR;
+    int32_t *df_ptr = (int32_t *)SPEC_BUF;
     int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
 
     for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
@@ -495,10 +496,10 @@ void transfer_from_df ()
         df_ptr++;
         ddr_ptr++;
         }
-    debug_print ("Processing spectrum %i %i %i %i\n", avg_counter, sp, leading_zeros_min[sp], leading_zeros_max[sp]);
+    //debug_print ("Processing spectrum %i %i %i %i\n", avg_counter, sp, leading_zeros_min[sp], leading_zeros_max[sp]);
     }
     
-    if (avg_counter%100 == 0) debug_print ("Processed %i spectra\n", avg_counter); 
+    if (avg_counter%100 == 0) debug_print ("Processed some spectra\n");
     avg_counter++;
 
 }
@@ -524,7 +525,7 @@ uint32_t CRC(const void* data, size_t size) {
 }
 
 void send_metadata_packet() {
-    struct meta_data *meta = (struct meta_data *)CDI_BASE_ADDR;
+    struct meta_data *meta = (struct meta_data *)TLM_BUF;
     wait_for_cdi_ready();
     meta->version = VERSION_ID;
     meta->unique_packet_id = unique_packet_id;
@@ -536,7 +537,7 @@ void send_metadata_packet() {
 
 void dispatch_32bit_data(uint32_t base_appid) {
     int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
-    int32_t *cdi_ptr = (int32_t *)CDI_BASE_ADDR;
+    int32_t *cdi_ptr = (int32_t *)TLM_BUF;
     int32_t *crc_ptr;
 
     *cdi_ptr = (int32_t)(unique_packet_id);
@@ -552,7 +553,7 @@ void dispatch_32bit_data(uint32_t base_appid) {
         memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
         memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
         *crc_ptr = CRC(cdi_ptr, data_size);
-        debug_print("   Writing spectrum for ch %i\n",ch);
+        //debug_print("   Writing spectrum for ch %i\n",ch);
         cdi_dispatch(base_appid+ch, packet_size);
         ddr_ptr += state.Nfreq;
     }
@@ -567,7 +568,7 @@ void dispatch_16bit_float1_data() {
 }
 
 void transfer_to_cdi () {
-    debug_print ("Dumping averaged spectra to CDI\n");      
+    //debug_print ("Dumping averaged spectra to CDI\n");      
     new_unique_packet_id();
     update_time();
     send_metadata_packet();
@@ -601,7 +602,7 @@ void core_loop()
         // Check if we have a new command from the CDI
         if (cdi_new_command(&cmd, &arg_high, &arg_low)) {
             if ((cmd==RFS_Settings) && (arg_high==RFS_SET_TIME_TO_DIE)) {
-                debug_print("Received time to die command. \n");   
+                //debug_print("Received time to die command. \n");   
                 break;
             }
             cdi_process_command(cmd, arg_high, arg_low);
@@ -644,10 +645,10 @@ void core_loop()
                             if (state.base.sequencer_step == 0) {
                                 state.base.sequencer_counter++;
                                 if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
-                                    debug_print("Sequencer done.\n");
+                                    //debug_print("Sequencer done.\n");
                                     RFS_stop();
                                 } else {
-                                    debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
+                                    //debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
                                 }
                             }
                             
