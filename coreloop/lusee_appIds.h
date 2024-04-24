@@ -24,7 +24,7 @@
 #define AppID_uC_Start 0x0209
 
 // For sequencer with a limited number of steps; Priority:  High     
-#define AppID_uC_Sequencer_complete 0x0210
+#define AppID_uC_Sequencer_complete 0x020A
 
 // x = 0..F for 16 correlations; Priority:  High     
 #define AppID_MetaData 0x020F

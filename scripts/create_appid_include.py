@@ -1,7 +1,7 @@
 # we will convert the ../documentation/commands.md to a C header file
 #
 #
-of = open("include/lusee_appIds.h", "w")
+of = open("coreloop/lusee_appIds.h", "w")
 of.write("""
 #ifndef LUSEE_APPIDS_H
 #define LUSEE_APPIDS_H

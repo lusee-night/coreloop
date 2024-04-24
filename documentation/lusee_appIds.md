@@ -10,7 +10,7 @@
 |    07 | AppID_Calibrator_Detect     | High     | Calibrator detected with meta data
 |    08 | AppID_uC_Bootloader         | High     | Data from the bootloader
 |    09 | AppID_uC_Start              | High     | Flight SW has booted
-|    10 | AppID_uC_Sequencer_complete | High     | For sequencer with a limited number of steps
+|    0A | AppID_uC_Sequencer_complete | High     | For sequencer with a limited number of steps
 |    0F | AppID_MetaData              | High     | x = 0..F for 16 correlations
 |    1x | AppID_SpectraHigh           | High     | Main correlation products, high priorty
 |    2x | AppID_SpectraMed            | Med      | Main correlation products, medium priority

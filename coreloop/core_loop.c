@@ -60,7 +60,6 @@ void send_hello_packet() {
     payload->time_seconds = state.base.time_seconds;
     payload->time_subseconds = state.base.time_subseconds;
     cdi_dispatch(AppID_uC_Start, sizeof(struct startup_hello));
-
 }
 
 
@@ -595,7 +594,7 @@ void transfer_to_cdi () {
 void core_loop()
 {
     uint8_t cmd, arg_high, arg_low;
-
+    send_hello_packet();
     core_init_state();
 
     for (;;)
