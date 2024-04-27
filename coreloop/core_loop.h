@@ -15,6 +15,8 @@
 
 // Constants
 #define NSEQ_MAX 32
+#define DISPATCH_DELAY 10 // number of timer interrupts to wait before sending CDI
+#define HEARTBEAT_DELAY 1000 // number of timer interrupts to wait before sending heartbeat
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
@@ -71,12 +73,21 @@ struct core_state_base {
 
 }__attribute__((packed));
 
+struct delayed_cdi_sending {
+    uint32_t appId; 
+    uint16_t int_counter; // counter that will be decremented every timer interrupt
+    uint8_t format;
+    uint8_t prod_count; // product ID that needs to be sent
+    uint32_t packet_id;
+
+} __attribute__((packed));
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
     struct sequencer_state seq;
     struct core_state_base base;
     // A number be utility values 
+    struct delayed_cdi_sending cdi_dispatch;
     uint16_t Navg1, Navg2;
     uint8_t Navg2_total_shift;
     uint16_t Nfreq; // number of frequency bins after taking into account averaging

@@ -23,8 +23,11 @@
 // Flight SW has booted; Priority:  High     
 #define AppID_uC_Start 0x0209
 
+// HeartBeat; Priority:  None     
+#define AppID_uC_HeartBeat 0x020A
+
 // For sequencer with a limited number of steps; Priority:  High     
-#define AppID_uC_Sequencer_complete 0x020A
+#define AppID_uC_Sequencer_complete 0x020B
 
 // x = 0..F for 16 correlations; Priority:  High     
 #define AppID_MetaData 0x020F

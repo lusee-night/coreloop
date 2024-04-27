@@ -17,7 +17,8 @@ uint16_t avg_counter = 0;
 uint32_t unique_packet_id;
 uint8_t leading_zeros_min[NSPECTRA];
 uint8_t leading_zeros_max[NSPECTRA];
-
+bool tick_tock;
+uint32_t heartbeat_counter;
 /**************************************************/
 
 
@@ -61,6 +62,19 @@ void send_hello_packet() {
     payload->time_subseconds = state.base.time_subseconds;
     cdi_dispatch(AppID_uC_Start, sizeof(struct startup_hello));
 }
+
+void process_hearbeat() {
+    if (heartbeat_counter > 0) return;
+    char *msg = TLM_BUF;
+    msg[0] = 'B';
+    msg[1] = 'R';
+    msg[2] = 'N';
+    msg[3] = 'M';
+    msg[4] = 'R';
+    msg[5] = 'L';    
+    cdi_dispatch(AppID_uC_HeartBeat, 6);
+}
+
 
 
 void set_spectrometer_to_sequencer()
@@ -120,10 +134,13 @@ void core_init_state(){
     state.base.sequencer_step = 0xFF;
     state.sequencer_enabled = false;
     state.Nseq = 0;
+    state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
+    tick_tock = true;
     update_time();
     unique_packet_id = state.base.time_seconds;
     fill_derived();
     set_spectrometer_to_sequencer();
+    heartbeat_counter = HEARTBEAT_DELAY;
 }
 
 void reset_errormasks() {
@@ -141,8 +158,8 @@ void RFS_stop() {
 void RFS_start() {
     state.base.spectrometer_enable = true;
     avg_counter = 0;
-    int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
-    memset(ddr_ptr, 0, NCHANNELS * sizeof(uint32_t));
+    memset(SPEC_TICK, 0, NCHANNELS * sizeof(uint32_t));
+    memset(SPEC_TOCK, 0, NCHANNELS * sizeof(uint32_t));
     if (state.sequencer_enabled) {
         state.base.sequencer_counter = 0;
         state.base.sequencer_step = 0;
@@ -173,89 +190,89 @@ bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 
 }
 
 
-void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
+inline static bool process_cdi()
 {
-    // Do something with the command
+    uint8_t cmd, arg_high, arg_low;
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
-    //debug_print("Received command: %x %x %x\n", cmd, arg_high, arg_low);
+    if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
+    debug_print ("Got new CDI command.\n")
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
                 debug_print ("Starting spectrometer\n");
                 RFS_start();
-                return;
+                return false;
             case RFS_SET_STOP:
                 debug_print ("Stopping spectrometer\n");
                 RFS_stop();
-                return;                
+                return false;                
             case RFS_SET_RESET:
                 spec_set_reset();
                 core_init_state();
-                return;
+                return false;
             case RFS_SET_STORE:
                 spec_store();
-                return;
+                return false;
             case RFS_SET_RECALL:
                 spec_recall();
-                return;
+                return false;
             case RFS_SET_HK_REQ:
                 cdi_not_implemented("RFS_SET_HK_REQ");
-                return;
+                return false;
             case RFS_SET_TIME_TO_DIE:
-                // this is handled in the main loop
-                return;
+                return true;
             case RFS_SET_TEST_INT:
                 cdi_not_implemented("RFS_SET_TEST_INT");
-                return;
+                return false;
             case RFS_SET_TEST_SHORT:
                 cdi_not_implemented("RFS_SET_TEST_SHORT");
-                return;
+                return false;
             case RFS_SET_TEST_LONG:
                 cdi_not_implemented("RFS_SET_TEST_LONG");
-                return;
+                return false;
             case RFS_SET_TEST_GAIN:
                 cdi_not_implemented("RFS_SET_TEST_GAIN");
-                return;
+                return false;
             case RFS_SET_SCI_1:
                 cdi_not_implemented("RFS_SET_SCI_1");
-                return;
+                return false;
             case RFS_SET_SCI_2:
                 cdi_not_implemented("RFS_SET_SCI_2");
-                return;
+                return false;
             case RFS_SET_SCI_3:
                 cdi_not_implemented("RFS_SET_SCI_3");
-                return;
+                return false;
             case RFS_SET_SCI_4:
                 cdi_not_implemented("RFS_SET_SCI_4");
-                return;
+                return false;
             case RFS_SET_GAIN_ANA_SET:                
                 for (int i=0; i<NINPUT; i++){
                     uint8_t val = (arg_low >> (2*i)) & 0x03;
                     state.seq.gain[i] = val;
                     if (val!=GAIN_AUTO) state.base.actual_gain[i] = val;
                 }
-                return;
+                return false;
             case RFS_SET_GAIN_ANA_CFG_MIN:
                 ch = arg_low & 0x03;
                 val = (arg_low & 0xFC) >> 2;
                 state.seq.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
-                return;
+                return false;
             case RFS_SET_GAIN_ANA_CFG_MULT:
                 ch = arg_low & 0x03;
                 val = (arg_low & 0xFC) >> 2;
                 state.seq.gain_auto_mult[ch] = val;
-                return;
+                return false;
             case RFS_SET_BITSLICE_LOW:
                 xcor = arg_low & 0x07;
                 val = (arg_low & 0xF8) >> 3;
                 state.seq.bitslice[xcor] = val;
-                return;
+                return false;
             case RFS_SET_BITSLICE_HIGH:
                 xcor = (arg_low & 0x07) + 8;
                 val = (arg_low & 0xF8) >> 3;
                 state.seq.bitslice[xcor] = val;
-                return;
+                return false;
             case RFS_SET_BITSLICE_AUTO:
                 if (arg_low > 0) {
                     for (int i=0; i<NSPECTRA; i++) state.seq.bitslice[i] = 0xFF;
@@ -263,7 +280,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 } else {
                     for (int i=0; i<NSPECTRA; i++) state.seq.bitslice[i] = 0x1F;
                 }
-                return;
+                return false;
 
             case RFS_SET_ROUTE_SET12:
                 ant2low = arg_low & 0x03;
@@ -276,7 +293,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 state.seq.route[0].minus = ant1low;
                 state.seq.route[1].plus = ant2high;
                 state.seq.route[1].minus = ant2low;
-                return;
+                return false;
             case RFS_SET_ROUTE_SET34:
                 ant4low = arg_low & 0x03;
                 ant4high = (arg_low & 0x0C) >> 2;
@@ -288,94 +305,94 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                 state.seq.route[2].minus = ant3low;
                 state.seq.route[3].plus = ant4high;
                 state.seq.route[3].minus = ant4low;
-                return;
+                return false;
 
 
             case RFS_SET_AVG_SET:
                 state.seq.Navg1_shift = arg_low & 0x0F;
                 state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
                 fill_derived();
-                return;
+                return false;
             case RFS_SET_AVG_OUTLIER:
                 cdi_not_implemented("RFS_SET_AVG_OUTLIER");
-                return;
+                return false;
             case RFS_SET_AVG_FREQ:
                 state.seq.Navgf = arg_low;
                 fill_derived();
-                return;
+                return false;
             case RFS_SET_AVG_NOTCH:
                 state.seq.notch = arg_low;
-                return;
+                return false;
 
             case RFS_SET_AVG_SET_HI:
                 cdi_not_implemented("RFS_SET_AVG_SET_HI");
-                return;
+                return false;
             case RFS_SET_AVGI_SET_MID:
                 cdi_not_implemented("RFS_SET_AVGI_SET_MID");
-                return;
+                return false;
             case RFS_SET_OUTPUT_FORMAT:
                 if (arg_low > 2) {
                     state.base.errors |= CDI_COMMAND_WRONG_ARGS;
                 } else {
                     state.seq.format = arg_low;
                 }
-                return;
+                return false;
             case RFS_SET_CAL_FRAC_SET:
                 cdi_not_implemented("RFS_SET_CAL_FRAC_SET");
-                return;
+                return false;
             case RFS_SET_CAL_MAX_SET:
                 cdi_not_implemented("RFS_SET_CAL_MAX_SET");
-                return;
+                return false;
             case RFS_SET_CAL_LOCK_SET:
                 cdi_not_implemented("RFS_SET_CAL_LOCK_SET");
-                return;
+                return false;
             case RFS_SET_CAL_SNR_SET:
                 cdi_not_implemented("RFS_SET_CAL_SNR_SET");
-                return;
+                return false;
             case RFS_SET_CAL_BIN_ST:
                 cdi_not_implemented("RFS_SET_CAL_BIN_ST");
-                return;
+                return false;
             case RFS_SET_CAL_BIN_EN:
                 cdi_not_implemented("RFS_SET_CAL_BIN_EN");
-                return;
+                return false;
             case RFS_SET_CAL_ANT_MASK:
                 cdi_not_implemented("RFS_SET_CAL_ANT_MASK");
-                return;
+                return false;
             case RFS_SET_ZOOM_EN:
                 cdi_not_implemented("RFS_SET_ZOOM_EN");
-                return;
+                return false;
             case RFS_SET_ZOOM_SET1:
                 cdi_not_implemented("RFS_SET_ZOOM_SET1");
-                return;
+                return false;
             case RFS_SET_ZOOM_SET1_LO:
                 cdi_not_implemented("RFS_SET_ZOOM_SET1_LO");
-                return;
+                return false;
             case RFS_SET_ZOOM_SET1_HI:
                 cdi_not_implemented("RFS_SET_ZOOM_SET1_HI");
-                return;
+                return false;
             case RFS_SET_ZOOM_SET2:
                 cdi_not_implemented("RFS_SET_ZOOM_SET2");
-                return;
+                return false;
             case RFS_SET_ZOOM_SET2_LO:
                 cdi_not_implemented("RFS_SET_ZOOM_SET2_LO");
-                return;
+                return false;
             case RFS_SET_ZOOM_SET2_HI:
                 cdi_not_implemented("RFS_SET_ZOOM_SET2_HI");
-                return;
+                return false;
             case RFS_SET_SEQ_EN:
                 if (state.base.spectrometer_enable) {
                     state.base.errors |= CDI_COMMAND_WRONG;
                 } else {
                     state.sequencer_enabled = (arg_low>0);
                 }
-                return;
+                return false;
             case RFS_SET_SEQ_REP:
                 if (state.base.spectrometer_enable) {
                     state.base.errors |= CDI_COMMAND_WRONG;
                 } else {
                     state.base.sequencer_repeat = arg_low;
                 }
-                return;
+                return false;
             case RFS_SET_SEQ_CYC:
                 if (state.base.spectrometer_enable) {
                     state.base.errors |= CDI_COMMAND_WRONG;
@@ -383,7 +400,7 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                     state.Nseq = arg_low;
                     state.base.sequencer_step = 0;
                 }
-                return;
+                return false;
             case RFS_SET_SEQ_STO:
                 if (state.base.spectrometer_enable) {
                     state.base.errors |= CDI_COMMAND_WRONG;
@@ -392,15 +409,15 @@ void cdi_process_command(uint8_t cmd, uint8_t arg_high, uint8_t arg_low)
                     state.seq_times[state.base.sequencer_step] = arg_low;
                     state.base.sequencer_step++;
                 }
-                return;
+                return false;
                 
             default:
                 cdi_not_implemented("UNRECOGNIZED COMMAND");
-                return;
+                return false;
         } 
     }
     debug_print ("   Commmand not implemented, ignoring.\n");
-    return;
+    return false;
 }
 
 
@@ -474,8 +491,7 @@ void transfer_from_df ()
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)SPEC_BUF;
-    int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
-
+    int32_t *ddr_ptr = tick_tock ? (int32_t *)(SPEC_TICK) : (int32_t *)(SPEC_TOCK);
     for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
         leading_zeros_min[sp] = 32;
         leading_zeros_max[sp] = 0;
@@ -536,28 +552,24 @@ void send_metadata_packet() {
 }
 
 
-void dispatch_32bit_data(uint32_t base_appid) {
-    int32_t *ddr_ptr = (int32_t *)DDR3_BASE_ADDR;
+void dispatch_32bit_data() {
+    // if we are in tick, we are copyng over TOCK, otherwise TICK !!
+    int32_t *ddr_ptr = tick_tock ? (int32_t *)(SPEC_TOCK) : (int32_t *)(SPEC_TICK);
+    ddr_ptr += state.cdi_dispatch.prod_count * state.Nfreq;
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
     int32_t *crc_ptr;
 
-    *cdi_ptr = (int32_t)(unique_packet_id);
+    *cdi_ptr = (int32_t)(state.cdi_dispatch.packet_id);
     cdi_ptr++;
     crc_ptr = cdi_ptr;
     cdi_ptr++;
     size_t data_size = state.Nfreq*sizeof(int32_t);
     size_t packet_size = data_size+2*sizeof(int32_t);
-
-    for (uint8_t ch = 0; ch < NSPECTRA; ch++)
-    {
-        wait_for_cdi_ready();
-        memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
-        memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
-        *crc_ptr = CRC(cdi_ptr, data_size);
-        //debug_print("   Writing spectrum for ch %i\n",ch);
-        cdi_dispatch(base_appid+ch, packet_size);
-        ddr_ptr += state.Nfreq;
-    }
+    wait_for_cdi_ready();
+    memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
+    memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
+    *crc_ptr = CRC(cdi_ptr, data_size);
+    cdi_dispatch(state.cdi_dispatch.appId, packet_size);
 }
 
 void dispatch_16bit_updates_data() {
@@ -574,11 +586,19 @@ void transfer_to_cdi () {
     update_time();
     spec_get_TVS(state.base.TVS_sensors);
     send_metadata_packet();
-    uint32_t base_appid = AppID_SpectraHigh; // fix
+    state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
+    state.cdi_dispatch.prod_count = 0; // 
+    state.cdi_dispatch.appId = AppID_SpectraHigh; // fix
+    state.cdi_dispatch.format = state.seq.format;
+    state.cdi_dispatch.packet_id = unique_packet_id;
+}
 
-    switch (state.seq.format) {
+void process_delayed_cdi_dispatch() {
+    if (state.cdi_dispatch.int_counter > 0) return;
+    if (state.cdi_dispatch.prod_count > 0x0F)  return;
+    switch (state.cdi_dispatch.format) {
         case OUTPUT_32BIT:
-            dispatch_32bit_data(base_appid);
+            dispatch_32bit_data();
             break;
         case OUTPUT_16BIT_UPDATES:
             dispatch_16bit_updates_data();
@@ -590,82 +610,94 @@ void transfer_to_cdi () {
             cdi_not_implemented("Unsupported output format");
             break;
     }
+    state.cdi_dispatch.prod_count++;
+    state.cdi_dispatch.appId++;
+    state.cdi_dispatch.int_counter = DISPATCH_DELAY;
 }
+
+void advance_sequencer() {
+
+state.base.sequencer_substep--;
+if (state.base.sequencer_substep == 0) {
+    state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
+    if (state.base.sequencer_step == 0) {
+        state.base.sequencer_counter++;
+        if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
+            //debug_print("Sequencer done.\n");
+            RFS_stop();
+        } else {
+            //debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
+        }
+    }
+    
+    state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
+    bool restart = restart_needed(&state.seq, &state.seq_program[state.base.sequencer_step]); 
+    if (restart) RFS_stop();
+    state.seq = state.seq_program[state.base.sequencer_step];
+    fill_derived();
+    set_spectrometer_to_sequencer();
+    if (restart) RFS_start();
+    }      
+}
+
+static inline void process_spectrometer() {
+// Check if we have a new spectrum packet from the FPGA
+if (spec_new_spectrum_ready())
+    {
+        // execute analog gain control and restart spectrometer if needed
+        bool gains_changed = analog_gain_control();
+        if (gains_changed){
+            spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
+            restart_spectrometer();
+        } else {
+            transfer_from_df();
+            uint16_t corr_owf, notch_owf;
+            spec_get_digital_overflow(&corr_owf, &notch_owf);
+            state.base.spec_overflow |= corr_owf;
+            state.base.notch_overflow |= notch_owf;
+
+            spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
+            bool bit_slice_changed = bitslice_control();
+            if (bit_slice_changed) {
+                restart_spectrometer(); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
+            }
+
+            // Check if we have reached filled up Stage 2 averaging
+            // and if so, push things out to CDI
+            if (avg_counter == state.Navg2)
+            {
+                avg_counter = 0;
+                tick_tock = !tick_tock;
+                // Now one by one, we will loop through the packets placed in DDR Memory
+                // For each channel, set the APID, send it to the SRAM
+                // Then check to see if this software or the client will control the CDI writes
+                transfer_to_cdi();
+                if (state.sequencer_enabled) advance_sequencer();
+
+            }
+        }
+    }
+}
+
 
 void core_loop()
 {
-    uint8_t cmd, arg_high, arg_low;
     send_hello_packet();
     core_init_state();
 
     for (;;)
     {
         update_time();
-        // Check if we have a new command from the CDI
-        if (cdi_new_command(&cmd, &arg_high, &arg_low)) {
-            if ((cmd==RFS_Settings) && (arg_high==RFS_SET_TIME_TO_DIE)) {
-                //debug_print("Received time to die command. \n");   
-                break;
-            }
-            cdi_process_command(cmd, arg_high, arg_low);
-        }    
-        // Check if we have a new spectrum packet from the FPGA
-        if (spec_new_spectrum_ready())
-        {
-            // execute analog gain control and restart spectrometer if needed
-            bool gains_changed = analog_gain_control();
-            if (gains_changed){
-                spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-                restart_spectrometer();
-            } else {
-                transfer_from_df();
-                uint16_t corr_owf, notch_owf;
-                spec_get_digital_overflow(&corr_owf, &notch_owf);
-                state.base.spec_overflow |= corr_owf;
-                state.base.notch_overflow |= notch_owf;
-
-                spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-                // Check if we have reached filled up Stage 2 averaging
-                // and if so, push things out to CDI
-                bool bit_slice_changed = bitslice_control();
-                if (bit_slice_changed) {
-                    restart_spectrometer(); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
-                }
-
-                if (avg_counter == state.Navg2)
-                {
-                    avg_counter = 0;
-                    // Now one by one, we will loop through the packets placed in DDR Memory
-                    // For each channel, set the APID, send it to the SRAM
-                    // Then check to see if this software or the client will control the CDI writes
-                    transfer_to_cdi();
-
-                    if (state.sequencer_enabled) {
-                        state.base.sequencer_substep--;
-                        if (state.base.sequencer_substep == 0) {
-                            state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
-                            if (state.base.sequencer_step == 0) {
-                                state.base.sequencer_counter++;
-                                if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
-                                    //debug_print("Sequencer done.\n");
-                                    RFS_stop();
-                                } else {
-                                    //debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
-                                }
-                            }
-                            
-                            state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
-                            bool restart = restart_needed(&state.seq, &state.seq_program[state.base.sequencer_step]); 
-                            if (restart) RFS_stop();
-                            state.seq = state.seq_program[state.base.sequencer_step];
-                            fill_derived();
-                            set_spectrometer_to_sequencer();
-                            if (restart) RFS_start();
-                        }
-                    }
-                }
-            }
-            // make sure we have done this in time
-        }
+        // Check if we have a new CDI command and process it.
+        // If this functions returns true, it means we got the time-to-die command
+        if (process_cdi()) break;
+        process_spectrometer();
+        process_delayed_cdi_dispatch();
+        process_hearbeat();
+#ifdef NOTREAL
+        // if we are running inside the coreloop test harness.
+        state.cdi_dispatch.int_counter = 0;
+        //if (heartbeat_counter>0) heartbeat_counter--;
+#endif
     }
 }

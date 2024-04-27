@@ -10,9 +10,11 @@
 // Global variables
 
 extern void* DDR3_BASE_ADDR;
+extern void* SPEC_TICK;
+extern void* SPEC_TOCK;
 extern void* TLM_BUF;
 extern void* SPEC_BUF;
 
-void DD3_init();
+void DDR3_init();
 
 #endif

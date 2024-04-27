@@ -14,7 +14,7 @@ uint32_t time_seconds=0;
 /******* Internal state of the spectrometer and simulation options *********/
 uint32_t Navg1 = 512;
 bool add_noise = true;
-bool empty_hands_count = 4;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
+bool empty_hands_count = 32;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
 bool spectrometer_enable = false;
 bool df_flag;
 int32_t* SPEC_BUF;

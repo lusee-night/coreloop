@@ -9,6 +9,9 @@ set(SOURCE_FILES src/main.c src/LuSEE_IO.c src/cdi_interface.c src/spectrometer_
 # Add executable target with source files listed in SOURCE_FILES variable
 include_directories(include)
 include_directories(coreloop)
+add_definitions(-DNOTREAL)
+# Add compiler options
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-format-security -Wno-address-of-packed-member")
 
 find_library(MATH_LIBRARY m)
 
