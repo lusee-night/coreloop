@@ -572,6 +572,7 @@ void transfer_to_cdi () {
     debug_print ("Sending averaged spectra to CDI.\n");      
     new_unique_packet_id();
     update_time();
+    spec_get_TVS(state.base.TVS_sensors);
     send_metadata_packet();
     uint32_t base_appid = AppID_SpectraHigh; // fix
 

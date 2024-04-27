@@ -56,6 +56,7 @@ struct sequencer_state {
 struct core_state_base {
     uint32_t time_seconds;
     uint16_t time_subseconds;
+    uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
     uint32_t errors;
     uint8_t actual_gain[NINPUT]; // this defines the actual gain state (can only be low, med, high);
     uint8_t actual_bitslice[NSPECTRA];

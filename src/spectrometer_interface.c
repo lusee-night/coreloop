@@ -47,6 +47,13 @@ void spectrometer_init() {
     printf("Spectrometer init.\n");
 }
 
+void spec_get_TVS(uint16_t *TVS) {
+    TVS[0] = 10;
+    TVS[1] = 20;
+    TVS[2] = 30;
+    TVS[3] = 40;
+}
+
 
 void spec_set_Navg1(uint32_t Navg1) {
     Navg1 = Navg1;

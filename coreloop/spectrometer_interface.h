@@ -11,22 +11,6 @@
 #define NSPECTRA 16
 #define NINPUT 4
 
-// Registers
-#define DCB_TIMESTAMP1            0x00000020UL
-#define DCB_TIMESTAMP2            0x00000021UL
-
-#define DF_MEM_BUSY               0x00000222UL
-#define DF_DATA_READY             0x00000223UL
-#define ENABLE_SPEC               0x00000401UL
-
-#define CORR_ARRAY                0x00000412UL
-#define NOTCH_ARRAY               0x00000415UL
-
-#define CH0_GAIN_MUX              0x00000500UL
-#define NOTCH_ENABLE             0x00000410UL
-#define NAVG_MAIN                 0x00000411UL
-#define NAVG_NOTCH                0x00000412UL
-
 
 struct ADC_stat {
     uint32_t invalid_count;
@@ -57,6 +41,8 @@ void spec_recall();
 // set gain of channel ch to gain
 void spec_set_gain(uint8_t ch, uint8_t gain);
 
+// get Temmperature and Voltage Telemetry
+void spec_get_TVS(uint16_t *TVS);
 
 // set auto and cross-correlation bit-slices for 16 products
 void spec_set_bitslice (uint8_t* slice);
