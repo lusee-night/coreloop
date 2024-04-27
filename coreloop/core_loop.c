@@ -73,6 +73,7 @@ void process_hearbeat() {
     msg[4] = 'R';
     msg[5] = 'L';    
     cdi_dispatch(AppID_uC_HeartBeat, 6);
+    heartbeat_counter = HEARTBEAT_DELAY;
 }
 
 
@@ -697,7 +698,7 @@ void core_loop()
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.
         state.cdi_dispatch.int_counter = 0;
-        //if (heartbeat_counter>0) heartbeat_counter--;
+        if (heartbeat_counter>0) heartbeat_counter--;
 #endif
     }
 }
