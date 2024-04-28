@@ -159,8 +159,8 @@ void RFS_stop() {
 void RFS_start() {
     state.base.spectrometer_enable = true;
     avg_counter = 0;
-    memset(SPEC_TICK, 0, NCHANNELS * sizeof(uint32_t));
-    memset(SPEC_TOCK, 0, NCHANNELS * sizeof(uint32_t));
+    memset((void *)SPEC_TICK, 0, NCHANNELS * sizeof(uint32_t));
+    memset((void *)SPEC_TOCK, 0, NCHANNELS * sizeof(uint32_t));
     if (state.sequencer_enabled) {
         state.base.sequencer_counter = 0;
         state.base.sequencer_step = 0;
