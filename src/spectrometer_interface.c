@@ -166,7 +166,7 @@ void spec_trigger_ADC_stat(uint16_t Nsamples) {
 
 bool spec_get_ADC_stat(struct ADC_stat *stat) {
     if (!adc_trigger) return false;
-
+    adc_trigger = false;
     struct ADC_stat ms_med, ms_high, ms_low;
     ms_med.mean = 0;
     ms_med.var = 200*200;

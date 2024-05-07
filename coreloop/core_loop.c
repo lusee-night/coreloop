@@ -191,8 +191,7 @@ void trigger_ADC_stat() {
     spec_trigger_ADC_stat(ADC_STAT_SAMPLES);
 }
 
-bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {
-    
+bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {    
     if (seq1->notch != seq2->notch) return true;
     for (int i=0; i<NINPUT; i++) { 
         if (seq1->gain[i] != seq2->gain[i]) return true;
@@ -200,6 +199,7 @@ bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 
         if (seq1->route[i].minus != seq2->route[i].minus) return true;
     }
     for (int i=0; i<NSPECTRA; i++) if (seq1->bitslice[i] != seq2->bitslice[i]) return true;
+    return false;
 }
 
 
@@ -460,7 +460,6 @@ bool analog_gain_control() {
                 state.base.actual_gain[i] --;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
-                //debug_print("AGC: Channel %i gain decreased to %i\n", i, state.base.actual_gain[i]);
             } else {
                 state.base.errors |= ANALOG_AGC_TOO_HIGH;
             }
@@ -469,11 +468,15 @@ bool analog_gain_control() {
                 state.base.actual_gain[i] ++;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
-                //debug_print("AGC: Channel %i gain increased to %i\n", i, state.base.actual_gain[i]);
             } else {
                 state.base.errors |= ANALOG_AGC_TOO_LOW;
             }
         }
+    }
+
+    if (gains_changed) {
+        for (int i = 0; i < NINPUT; i++) spec_set_gain(i, state.base.actual_gain[i]);
+        debug_print("gains changed\n");
     }
     return gains_changed;
 }
@@ -768,8 +771,10 @@ void core_loop()
         if (process_cdi()) break;
         process_spectrometer();
         process_delayed_cdi_dispatch();
-        process_hearbeat();
+        process_gain_range();
         process_housekeeping();
+        process_hearbeat();
+
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.
       MSYS_EI4_IRQHandler();
