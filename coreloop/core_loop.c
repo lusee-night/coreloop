@@ -65,7 +65,7 @@ void send_hello_packet() {
 
 void process_hearbeat() {
     if (heartbeat_counter > 0) return;
-    char *msg = TLM_BUF;
+    char *msg = (char *) TLM_BUF;
     msg[0] = 'B';
     msg[1] = 'R';
     msg[2] = 'N';
@@ -701,4 +701,14 @@ void core_loop()
         if (heartbeat_counter>0) heartbeat_counter--;
 #endif
     }
+}
+
+uint8_t MSYS_EI4_IRQHandler(void)
+{
+
+    /* Clear the interrupt within the timer */
+    if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
+    if (heartbeat_counter > 0) heartbeat_counter--;
+    TMR_clear_int(&g_core_timer_0);
+    return (EXT_IRQ_KEEP_ENABLED);
 }
