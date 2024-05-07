@@ -15,7 +15,7 @@
 extern int g_core_timer_0;
 #define EXT_IRQ_KEEP_ENABLED 1
 uint8_t MSYS_EI4_IRQHandler(void);
-void TMR_clear_int(int);
+void TMR_clear_int(int* );
 
 
 // address stuff

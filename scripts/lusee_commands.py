@@ -14,7 +14,7 @@ RFS_SET_STOP =  0x00
 # Start data acquisition. To start anything setup by 0x1x or 0x2x
 RFS_SET_START =  0x01 
 
-# Restores default configuration (as after boot)
+# Soft reset, restores default configuration (as after boot)
 RFS_SET_RESET =  0x02 
 
 # Stores current configuration
@@ -23,8 +23,14 @@ RFS_SET_STORE =  0x03
 # Recalls configuration from previous store
 RFS_SET_RECALL =  0x04 
 
-# Return housekeeping data (replace HFS_HK_REQUEST?)
+# Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;
 RFS_SET_HK_REQ =  0x05 
+
+# Set ADC mode: 0 ADC disabled, 1 ADC enabled
+RFS_SET_ADC =  0x06 
+
+# Autorange ADC and then set an ADC packet
+RFS_SET_RANGE_ADC =  0x07 
 
 # prepare for power cut -- mode announcing power cut 5 seconds after issue
 RFS_SET_TIME_TO_DIE =  0x0F 

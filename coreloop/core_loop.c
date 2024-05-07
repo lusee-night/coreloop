@@ -17,8 +17,12 @@ uint16_t avg_counter = 0;
 uint32_t unique_packet_id;
 uint8_t leading_zeros_min[NSPECTRA];
 uint8_t leading_zeros_max[NSPECTRA];
+uint8_t housekeeping_request;
+uint8_t range_adc, resettle; 
 bool tick_tock;
 uint32_t heartbeat_counter;
+uint32_t resettle_counter;
+
 /**************************************************/
 
 
@@ -129,6 +133,8 @@ void core_init_state(){
     default_seq (&state.seq);
     state.base.errors = 0;
     state.base.spectrometer_enable = false;
+    housekeeping_request = 0;
+    range_adc = 0;
     for (int i=0; i<NINPUT; i++) state.base.actual_gain[i] = GAIN_MED;
     for (int i=0; i<NSPECTRA; i++) state.base.actual_bitslice[i] = MIN(state.seq.bitslice[i],0x1F); // to convert FF to 16
     spec_set_spectrometer_enable(false);
@@ -152,11 +158,13 @@ void reset_errormasks() {
 
 
 void RFS_stop() {
+    debug_print ("Stopping spectrometer\n");
     state.base.spectrometer_enable = false;
     spec_set_spectrometer_enable(false);
 }
 
 void RFS_start() {
+    debug_print ("Starting spectrometer\n");
     state.base.spectrometer_enable = true;
     avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NCHANNELS * sizeof(uint32_t));
@@ -177,6 +185,10 @@ void restart_spectrometer()
 {
     RFS_stop();
     RFS_start();
+}
+
+void trigger_ADC_stat() {
+    spec_trigger_ADC_stat(ADC_STAT_SAMPLES);
 }
 
 bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {
@@ -209,6 +221,7 @@ inline static bool process_cdi()
                 RFS_stop();
                 return false;                
             case RFS_SET_RESET:
+                RFS_stop();
                 spec_set_reset();
                 core_init_state();
                 return false;
@@ -218,9 +231,21 @@ inline static bool process_cdi()
             case RFS_SET_RECALL:
                 spec_recall();
                 return false;
-            case RFS_SET_HK_REQ:
-                cdi_not_implemented("RFS_SET_HK_REQ");
+            case RFS_SET_HK_REQ:            
+                if (arg_low < 2) {
+                    housekeeping_request = 1+arg_low; 
+                } else {
+                    state.base.errors |= CDI_COMMAND_WRONG_ARGS;
+                }
                 return false;
+            case RFS_SET_ADC:
+                cdi_not_implemented("RFS_SET_ADC");
+                return false;
+            case RFS_SET_RANGE_ADC:
+                range_adc = 1;
+                trigger_ADC_stat();           
+                return false;
+            
             case RFS_SET_TIME_TO_DIE:
                 return true;
             case RFS_SET_TEST_INT:
@@ -426,7 +451,6 @@ bool analog_gain_control() {
 
     bool gains_changed = false;
     
-    spec_get_ADC_stat(state.base.ADC_stat);
     for (int i = 0; i < NINPUT; i++) {
         if (state.seq.gain[i] != GAIN_AUTO) continue; // Don't do anything unless AGC is enabled
         int32_t cmax = MAX(state.base.ADC_stat[i].max, -state.base.ADC_stat[i].min);
@@ -454,7 +478,28 @@ bool analog_gain_control() {
     return gains_changed;
 }
 
- 
+void process_gain_range() {
+    if (spec_get_ADC_stat(state.base.ADC_stat)) {
+        if (analog_gain_control()) {
+            // gains have changed. wait for settle and trigger. 
+            debug_print("Gains changed, resettle\n");
+            resettle = true;
+            resettle_counter = RESETTLE_DELAY;
+        } else {
+            if (range_adc) {
+                range_adc = 0;
+                housekeeping_request = 2;
+            }
+        }
+    }
+    if ((resettle) & (resettle_counter == 0)) {
+        trigger_ADC_stat();
+        resettle = false;
+        if (state.base.spectrometer_enable) {
+            restart_spectrometer();
+        }
+    }
+}
   
 bool bitslice_control() {
     bool bitslice_changed = false;
@@ -542,6 +587,39 @@ uint32_t CRC(const void* data, size_t size) {
     return ~crc;
 }
 
+void process_housekeeping() {
+    if (housekeeping_request == 0) return;
+    housekeeping_request--;
+    switch (housekeeping_request) {
+        case 0:
+            debug_print ("Sending housekeeping type 0\n");
+            struct housekeeping_data_0 *hk0 = (struct housekeeping_data_0 *)TLM_BUF;
+            wait_for_cdi_ready();
+            hk0->version = VERSION_ID;
+            hk0->unique_packet_id = unique_packet_id;
+            hk0->housekeeping_type = 0;
+            hk0->core_state = state;
+            cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_0));
+            break;
+
+        case 1:
+            debug_print ("Sending housekeeping type 1\n");
+            struct housekeeping_data_1 *hk1 = (struct housekeeping_data_1 *)TLM_BUF;
+            wait_for_cdi_ready();
+            hk1->version = VERSION_ID;
+            hk1->unique_packet_id = unique_packet_id;
+            hk1->housekeeping_type = 1;
+            for (int i=0; i<NINPUT; i++) {
+                hk1->ADC_stat[i] = state.base.ADC_stat[i];
+                hk1->actual_gain[i] = state.base.actual_gain[i];
+            }
+            cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_1));
+            break;
+    }
+    housekeeping_request = 0;
+}
+
+
 void send_metadata_packet() {
     struct meta_data *meta = (struct meta_data *)TLM_BUF;
     wait_for_cdi_ready();
@@ -550,6 +628,7 @@ void send_metadata_packet() {
     meta->seq = state.seq;
     meta->base = state.base;
     cdi_dispatch(AppID_MetaData, sizeof(struct meta_data));
+    reset_errormasks();
 }
 
 
@@ -645,40 +724,35 @@ static inline void process_spectrometer() {
 // Check if we have a new spectrum packet from the FPGA
 if (spec_new_spectrum_ready())
     {
-        // execute analog gain control and restart spectrometer if needed
-        bool gains_changed = analog_gain_control();
-        if (gains_changed){
-            spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-            restart_spectrometer();
-        } else {
-            transfer_from_df();
-            uint16_t corr_owf, notch_owf;
-            spec_get_digital_overflow(&corr_owf, &notch_owf);
-            state.base.spec_overflow |= corr_owf;
-            state.base.notch_overflow |= notch_owf;
+        trigger_ADC_stat();
+        transfer_from_df();
+        uint16_t corr_owf, notch_owf;
+        spec_get_digital_overflow(&corr_owf, &notch_owf);
+        state.base.spec_overflow |= corr_owf;
+        state.base.notch_overflow |= notch_owf;
 
-            spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-            bool bit_slice_changed = bitslice_control();
-            if (bit_slice_changed) {
-                restart_spectrometer(); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
-            }
+        spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
+        bool bit_slice_changed = bitslice_control();
+        if (bit_slice_changed) {
+            restart_spectrometer(); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
+        }
 
-            // Check if we have reached filled up Stage 2 averaging
-            // and if so, push things out to CDI
-            if (avg_counter == state.Navg2)
-            {
-                avg_counter = 0;
-                tick_tock = !tick_tock;
-                // Now one by one, we will loop through the packets placed in DDR Memory
-                // For each channel, set the APID, send it to the SRAM
-                // Then check to see if this software or the client will control the CDI writes
-                transfer_to_cdi();
-                if (state.sequencer_enabled) advance_sequencer();
+        // Check if we have reached filled up Stage 2 averaging
+        // and if so, push things out to CDI
+        if (avg_counter == state.Navg2)
+        {
+            avg_counter = 0;
+            tick_tock = !tick_tock;
+            // Now one by one, we will loop through the packets placed in DDR Memory
+            // For each channel, set the APID, send it to the SRAM
+            // Then check to see if this software or the client will control the CDI writes
+            transfer_to_cdi();
+            if (state.sequencer_enabled) advance_sequencer();
 
-            }
         }
     }
 }
+
 
 
 void core_loop()
@@ -695,10 +769,10 @@ void core_loop()
         process_spectrometer();
         process_delayed_cdi_dispatch();
         process_hearbeat();
+        process_housekeeping();
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.
-        state.cdi_dispatch.int_counter = 0;
-        if (heartbeat_counter>0) heartbeat_counter--;
+      MSYS_EI4_IRQHandler();
 #endif
     }
 }
@@ -707,6 +781,7 @@ uint8_t MSYS_EI4_IRQHandler(void)
 {
 
     /* Clear the interrupt within the timer */
+    if (resettle_counter > 0) resettle_counter--;   
     if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
     if (heartbeat_counter > 0) heartbeat_counter--;
     TMR_clear_int(&g_core_timer_0);

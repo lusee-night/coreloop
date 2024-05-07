@@ -16,7 +16,10 @@
 // Constants
 #define NSEQ_MAX 32
 #define DISPATCH_DELAY 10 // number of timer interrupts to wait before sending CDI
+#define RESETTLE_DELAY 2 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1000 // number of timer interrupts to wait before sending heartbeat
+
+#define ADC_STAT_SAMPLES 16384
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
@@ -113,6 +116,23 @@ struct meta_data {
     struct sequencer_state seq;
     struct core_state_base base;
 } __attribute__((packed));
+
+struct housekeeping_data_0 {
+    uint16_t version; 
+    uint32_t unique_packet_id;
+    uint16_t housekeeping_type;
+    struct core_state core_state;
+}__attribute__((packed));
+
+struct housekeeping_data_1 {
+    uint16_t version; 
+    uint32_t unique_packet_id;
+    uint16_t housekeeping_type;
+    struct ADC_stat ADC_stat[NINPUT];
+    uint8_t actual_gain[NINPUT];
+}__attribute__((packed));
+
+
 
 extern struct core_state state;
 

@@ -6,13 +6,15 @@
 
 | 0x0M | Name                |  Description                                       |
 |------|---------------------|----------------------------------------------------|                             
-| 0x00 | RFS_SET_STOP        | wait mode - disable data taking                         |                                       | 
-| 0x01 | RFS_SET_START       | Start data acquisition. To start anything setup by 0x1x or 0x2x  
-| 0x02 | RFS_SET_RESET       | Soft reset, restores default configuration (as after boot)       |
-| 0x03 | RFS_SET_STORE       | Stores current configuration    |
-| 0x04 | RFS_SET_RECALL      | Recalls configuration from previous store |
-| 0x05 | RFS_SET_HK_REQ      | Return housekeeping data (replace HFS_HK_REQUEST?)    
-| 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue |
+| 0x00 | RFS_SET_STOP        | wait mode - disable data taking                         |                              | 
+| 0x01 | RFS_SET_START       | Start data acquisition. To start anything setup by 0x1x or 0x2x                        | 
+| 0x02 | RFS_SET_RESET       | Soft reset, restores default configuration (as after boot)                             |
+| 0x03 | RFS_SET_STORE       | Stores current configuration                                                           |
+| 0x04 | RFS_SET_RECALL      | Recalls configuration from previous store                                              |
+| 0x05 | RFS_SET_HK_REQ      | Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;        |
+| 0x06 | RFS_SET_ADC         | Set ADC mode: 0 ADC disabled, 1 ADC enabled                                            |
+| 0x07 | RFS_SET_RANGE_ADC   | Autorange ADC and then set an ADC packet                                               | 
+| 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue               |
 
 ### 0x1X Test and Debug Modes 
 

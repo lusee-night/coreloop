@@ -12,4 +12,4 @@ void DDR3_init() {
     SPEC_TOCK = DDR3_BASE_ADDR + 2048*16*sizeof(uint32_t);    
 }
 
-void TMR_clear_int(int) {};
+void TMR_clear_int(int* ) {};

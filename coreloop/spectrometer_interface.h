@@ -13,10 +13,9 @@
 
 
 struct ADC_stat {
-    uint32_t invalid_count;
-    int32_t min;
-    int32_t max;
-    uint32_t mean;
+    int16_t min, max;
+    uint32_t valid_count, invalid_count_max, invalid_count_min;
+    int32_t mean;
     uint64_t var;
 };
 
@@ -61,8 +60,10 @@ void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus);
 // set the number of shift bits for Stage 1 averageing (ie. Navg1_shift =10 ->  Navg1 = 1024)
 void spec_set_avg1 (uint8_t Navg1_shift);
 
-// Get ADC level statistics into 4 element array in order to enable automatic gain, etc
-void spec_get_ADC_stat(struct ADC_stat *stat);
+// fires up the ADC statistic engine
+void spec_trigger_ADC_stat(uint16_t Nsamples); 
+// If we have ADC results, return true and get ADC level statistics into 4 element array in order to enable automatic gain, etc
+bool spec_get_ADC_stat(struct ADC_stat *stat);
 
 // get spacecraft time as per commands RFS_SCM_F1-F3
 void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec);

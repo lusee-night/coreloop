@@ -34,7 +34,7 @@ for line in open("documentation/lusee_commands.md"):
     desc = desc.strip()
     if desc[-1]=='\n':
         desc = desc[:-1]
-    #print (offset, name, desc)
+    print (offset, name, desc)
     if offset[:3] != " 0x":
         continue
     if "RFS_SET" not in name:

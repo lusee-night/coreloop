@@ -17,6 +17,7 @@ bool add_noise = true;
 bool empty_hands_count = 32;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
 bool spectrometer_enable = false;
 bool df_flag;
+bool adc_trigger;
 int32_t* SPEC_BUF;
 uint8_t channel_gain[NINPUT];
 
@@ -44,6 +45,7 @@ void spectrometer_init() {
 
     fclose(file);
     SPEC_BUF = malloc(NCHANNELS*NSPECTRA*sizeof(int32_t));
+    adc_trigger = false;
     printf("Spectrometer init.\n");
 }
 
@@ -156,26 +158,36 @@ void spec_set_avg1 (uint8_t Navg1_shift) {
     Navg1 = (1 << Navg1_shift);
 }
 
-void spec_get_ADC_stat(struct ADC_stat *stat) {
+
+
+void spec_trigger_ADC_stat(uint16_t Nsamples) {
+    adc_trigger = true;
+}
+
+bool spec_get_ADC_stat(struct ADC_stat *stat) {
+    if (!adc_trigger) return false;
 
     struct ADC_stat ms_med, ms_high, ms_low;
     ms_med.mean = 0;
     ms_med.var = 200*200;
     ms_med.max = 200*3;
     ms_med.min =-200*3;
-    ms_med.invalid_count = 0;
+    ms_med.invalid_count_max = ms_med.invalid_count_min = 0;
+    ms_med.valid_count = 1<<15;
 
     ms_high.mean = 0;
     ms_high.var = 200*200*7;
     ms_high.max = 200*3*7;
     ms_high.min =-200*3*7;
-    ms_high.invalid_count = 0;
-
+    ms_high.invalid_count_max = ms_high.invalid_count_min = 0;
+    ms_high.valid_count = 1<<15;
+    
     ms_low.mean = 0;
     ms_low.var = 200*200/7;
     ms_low.max = 200*3/7;
     ms_low.min =-200*3/7;
-    ms_low.invalid_count = 0;
+    ms_low.invalid_count_max = ms_low.invalid_count_min = 0;
+    ms_low.valid_count = 1<<15;
 
     for (int i=0; i<NINPUT;i++) {
         assert(channel_gain[i] < 3);
@@ -183,6 +195,7 @@ void spec_get_ADC_stat(struct ADC_stat *stat) {
         if (channel_gain[i] ==1) stat[i] = ms_med;
         if (channel_gain[i] ==2) stat[i] = ms_high;
     }
+    return true;
 }
 
  void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec){
