@@ -32,29 +32,17 @@
 // prepare for power cut -- mode announcing power cut 5 seconds after issue
 #define RFS_SET_TIME_TO_DIE  0x0F 
 
-// prepare an internal test and then return the mode 00
-#define RFS_SET_TEST_INT  0x10 
+// Test modes stored internally, by number in argument
+#define RFS_SET_TEST  0x10 
 
-// prepare a short test on data (take 10s of data with gains at L, M, H for a total of 30 seconds of data with default digital gain), return to the mode 00
-#define RFS_SET_TEST_SHORT  0x11 
+// Science modes stored internally, by number in argument
+#define RFS_SET_SCIENCE  0x11 
 
-// prepare a longer test on data (a preset combination of gains and mapping of antennas to ADC inputs)
-#define RFS_SET_TEST_LONG  0x12 
+// Load sequencer mode from flash
+#define RFS_SET_LOAD_FL  0x12 
 
-// take sufficient data to set the analog and digital gains automatically
-#define RFS_SET_TEST_GAIN  0x13 
-
-// "simple science mode" - automatic gain control and input mapping disabled
-#define RFS_SET_SCI_1  0x20 
-
-// "science mode with gain control" - science mode with automatic analog and digital gain control
-#define RFS_SET_SCI_2  0x21 
-
-// "science mode with default sequencer 1
-#define RFS_SET_SCI_3  0x22 
-
-// "science mode with default sequencer 2
-#define RFS_SET_SCI_4  0x23 
+// Store sequencer mode into flash
+#define RFS_SET_STORE_FL  0x13 
 
 // set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 #define RFS_SET_GAIN_ANA_SET  0x30 

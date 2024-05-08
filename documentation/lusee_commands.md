@@ -24,7 +24,7 @@
 | 0x10 | RFS_SET_TEST       | Test modes stored internally, by number in argument
 | 0x11 | RFS_SET_SCIENCE    | Science modes stored internally, by number in argument 
 | 0x12 | RFS_SET_LOAD_FL    | Load sequencer mode from flash
-| 0x12 | RFS_SET_STORE_FL   | Store sequencer mode into flash
+| 0x13 | RFS_SET_STORE_FL   | Store sequencer mode into flash
 
 
 ### 0x3X Gain Settings and Bit slicing
