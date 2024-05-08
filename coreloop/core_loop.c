@@ -38,7 +38,7 @@ void cdi_not_implemented(const char *msg)
 {
     debug_print("CDI command not implemented: ");
     debug_print(msg);
-    debug_print("\n")
+    debug_print("\n\r")
     exit(1);
     return;
 }
@@ -52,10 +52,11 @@ static inline void new_unique_packet_id()
 
 
 static inline void update_time() {
-     spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
+     //spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
 }
 
 void send_hello_packet() {
+    debug_print ("Sending hello packet.\n\r")
     struct startup_hello *payload = (struct startup_hello*) (TLM_BUF);
     new_unique_packet_id();
     update_time();
@@ -69,7 +70,7 @@ void send_hello_packet() {
 
 void process_hearbeat() {
     if (heartbeat_counter > 0) return;
-    debug_print("Sending heartbeat.\n");
+    debug_print("Sending heartbeat.\n\r");
     char *msg = (char *) TLM_BUF;
     msg[0] = 'B';
     msg[1] = 'R';
@@ -159,13 +160,13 @@ void reset_errormasks() {
 
 
 void RFS_stop() {
-    debug_print ("Stopping spectrometer\n");
+    debug_print ("Stopping spectrometer\n\r");
     state.base.spectrometer_enable = false;
     spec_set_spectrometer_enable(false);
 }
 
 void RFS_start() {
-    debug_print ("Starting spectrometer\n");
+    debug_print ("Starting spectrometer\n\r");
     state.base.spectrometer_enable = true;
     avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NCHANNELS * sizeof(uint32_t));
@@ -217,15 +218,13 @@ inline static bool process_cdi()
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
-    debug_print ("Got new CDI command.\n")
+    debug_print ("Got new CDI command.\n\r")
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
-                debug_print ("Starting spectrometer\n");
                 RFS_start();
                 break;
             case RFS_SET_STOP:
-                debug_print ("Stopping spectrometer\n");
                 RFS_stop();
                 break;                
             case RFS_SET_RESET:
@@ -255,6 +254,7 @@ inline static bool process_cdi()
                 break;
             
             case RFS_SET_TIME_TO_DIE:
+                debug_print("Recevied time-to-die.\n\r")
                 return true;
 
            case RFS_SET_TEST:
@@ -436,12 +436,12 @@ inline static bool process_cdi()
                 break;
                 
             default:
-                debug_print ("UNRECOGNIZED RFS_SET COMMAND");
+                debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
                 state.base.errors |= CDI_COMMAND_UNKNOWN;
                 break;
         } 
     } else {
-        debug_print ("   Commmand not implemented, ignoring.\n");
+        debug_print ("   Commmand not implemented, ignoring.\n\r");
         state.base.errors |= CDI_COMMAND_UNKNOWN;
     }
     return false;
@@ -483,7 +483,7 @@ void process_gain_range() {
     if (spec_get_ADC_stat(state.base.ADC_stat)) {
         if (analog_gain_control()) {
             // gains have changed. wait for settle and trigger. 
-            debug_print("Gains changed, resettle\n");
+            debug_print("Gains changed, resettle\n\r");
             resettle = true;
             resettle_counter = RESETTLE_DELAY;
         } else {
@@ -593,7 +593,7 @@ void process_housekeeping() {
     housekeeping_request--;
     switch (housekeeping_request) {
         case 0:
-            debug_print ("Sending housekeeping type 0\n");
+            debug_print ("Sending housekeeping type 0\n\r");
             struct housekeeping_data_0 *hk0 = (struct housekeeping_data_0 *)TLM_BUF;
             wait_for_cdi_ready();
             hk0->version = VERSION_ID;
@@ -604,7 +604,7 @@ void process_housekeeping() {
             break;
 
         case 1:
-            debug_print ("Sending housekeeping type 1\n");
+            debug_print ("Sending housekeeping type 1\n\r");
             struct housekeeping_data_1 *hk1 = (struct housekeeping_data_1 *)TLM_BUF;
             wait_for_cdi_ready();
             hk1->version = VERSION_ID;
@@ -662,7 +662,7 @@ void dispatch_16bit_float1_data() {
 }
 
 void transfer_to_cdi () {
-    debug_print ("Sending averaged spectra to CDI.\n");      
+    debug_print ("Sending averaged spectra to CDI.\n\r");
     new_unique_packet_id();
     update_time();
     spec_get_TVS(state.base.TVS_sensors);
@@ -754,7 +754,7 @@ if (spec_new_spectrum_ready())
     }
 }
 
-
+uint32_t dwait = 0;
 
 void core_loop()
 {
@@ -772,10 +772,21 @@ void core_loop()
         process_gain_range();
         process_housekeeping();
         process_hearbeat();
+        //debug_print("still alive.\n\r")
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.
       MSYS_EI4_IRQHandler();
+
+#else
+        dwait ++;
+        if (dwait == 256) {
+            if (resettle_counter > 0) resettle_counter--;
+            if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
+            if (heartbeat_counter > 0) heartbeat_counter--;
+            dwait=0;
+        }
+
 #endif
     }
 }
