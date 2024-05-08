@@ -16,27 +16,15 @@
 | 0x07 | RFS_SET_RANGE_ADC   | Autorange ADC and then set an ADC packet                                               | 
 | 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue               |
 
-### 0x1X Test and Debug Modes 
+### 0x1X Stored sequencer modes
 
-These execute and action and return to mode 00. Mainly designed to be used during transient,  commissioning and interactive debugging.
 
 | 0x1M | Name               |  Description                                       |
 |------|--------------------|----------------------------------------------------|                             
-| 0x10 | RFS_SET_TEST_INT   | prepare an internal test and then return the mode 00
-| 0x11 | RFS_SET_TEST_SHORT | prepare a short test on data (take 10s of data with gains at L, M, H for a total of 30 seconds of data with default digital gain), return to the mode 00
-| 0x12 | RFS_SET_TEST_LONG  | prepare a longer test on data (a preset combination of gains and mapping of antennas to ADC inputs)
-| 0x13 | RFS_SET_TEST_GAIN  | take sufficient data to set the analog and digital gains automatically
-
-
-
-### 0x2X Global Science Modes
-
-| 0x2M | Name           |  Description                                       |
-|------|----------------|----------------------------------------------------|                             
-| 0x20 | RFS_SET_SCI_1  | "simple science mode" - automatic gain control and input mapping disabled
-| 0x21 | RFS_SET_SCI_2  | "science mode with gain control" - science mode with automatic analog and digital gain control
-| 0x22 | RFS_SET_SCI_3  | "science mode with default sequencer 1
-| 0x23 | RFS_SET_SCI_4  | "science mode with default sequencer 2
+| 0x10 | RFS_SET_TEST       | Test modes stored internally, by number in argument
+| 0x11 | RFS_SET_SCIENCE    | Science modes stored internally, by number in argument 
+| 0x12 | RFS_SET_LOAD_FL    | Load sequencer mode from flash
+| 0x12 | RFS_SET_STORE_FL   | Store sequencer mode into flash
 
 
 ### 0x3X Gain Settings and Bit slicing

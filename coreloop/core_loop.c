@@ -191,6 +191,13 @@ void trigger_ADC_stat() {
     spec_trigger_ADC_stat(ADC_STAT_SAMPLES);
 }
 
+void update_spec_gains() {
+    for (int i = 0; i < NINPUT; i++) {
+        spec_set_gain(i, state.base.actual_gain[i]);
+    }
+    debug_print("gains changed\n");
+}
+
 bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {    
     if (seq1->notch != seq2->notch) return true;
     for (int i=0; i<NINPUT; i++) { 
@@ -278,6 +285,7 @@ inline static bool process_cdi()
                     state.seq.gain[i] = val;
                     if (val!=GAIN_AUTO) state.base.actual_gain[i] = val;
                 }
+                update_spec_gains();
                 return false;
             case RFS_SET_GAIN_ANA_CFG_MIN:
                 ch = arg_low & 0x03;
@@ -474,10 +482,7 @@ bool analog_gain_control() {
         }
     }
 
-    if (gains_changed) {
-        for (int i = 0; i < NINPUT; i++) spec_set_gain(i, state.base.actual_gain[i]);
-        debug_print("gains changed\n");
-    }
+    if (gains_changed) update_spec_gains();
     return gains_changed;
 }
 

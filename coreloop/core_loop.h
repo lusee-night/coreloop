@@ -54,8 +54,20 @@ struct sequencer_state {
     uint8_t Navgf; // frequency averaging
     uint8_t bitslice[NSPECTRA]; // for spectra 0x1F is all MSB, 0xFF is auto
     uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra
-    uint8_t format;
+    uint8_t format; // output format to save data in
 }__attribute__((packed));
+
+
+struct sequencer_program {
+    uint8_t sequencer_counter; // number of total cycles in the sequencer.
+    uint8_t sequencer_step; // normally 00 to start, but can imagine storing an intermediate state
+    uint8_t sequencer_substep; // counting seq_times;
+    uint16_t sequencer_repeat; // number of sequencer repeats remaining, 00 for infinite (RFS_SET_SEQ_REP)
+    struct sequencer_state seq_program[NSEQ_MAX]; // sequencer states
+    uint16_t seq_times[NSEQ_MAX]; // steps in each sequencer state;
+}__attribute__((packed));
+
+
 
 // core state base contains additional information that will be dumped with every metadata packet
 struct core_state_base {
@@ -73,8 +85,9 @@ struct core_state_base {
     uint8_t sequencer_step; // 0xFF is sequencer is disabled
     uint8_t sequencer_substep; // counting seq_times;
     uint16_t sequencer_repeat; // number of sequencer repeats remaining, 00 for infinite (RFS_SET_SEQ_REP)
-
 }__attribute__((packed));
+
+
 
 struct delayed_cdi_sending {
     uint32_t appId; 
