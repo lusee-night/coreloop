@@ -52,7 +52,13 @@ static inline void new_unique_packet_id()
 
 
 static inline void update_time() {
-     //spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
+    // why is this not working is not clear.
+    //spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
+    uint32_t sec;
+    uint16_t subsec;
+    spec_get_time(&sec, &subsec);
+    state.base.time_seconds = sec;
+    state.base.time_subseconds = subsec;
 }
 
 void send_hello_packet() {
@@ -754,8 +760,6 @@ if (spec_new_spectrum_ready())
     }
 }
 
-uint32_t dwait = 0;
-
 void core_loop()
 {
     send_hello_packet();
@@ -772,26 +776,15 @@ void core_loop()
         process_gain_range();
         process_housekeeping();
         process_hearbeat();
-        //debug_print("still alive.\n\r")
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.
-      MSYS_EI4_IRQHandler();
-
-#else
-        dwait ++;
-        if (dwait == 256) {
-            if (resettle_counter > 0) resettle_counter--;
-            if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
-            if (heartbeat_counter > 0) heartbeat_counter--;
-            dwait=0;
-        }
-
+uint8_t      MSYS_EI5_IRQHandler();
 #endif
     }
 }
 
-uint8_t MSYS_EI4_IRQHandler(void)
+uint8_t MSYS_EI5_IRQHandler(void)
 {
 
     /* Clear the interrupt within the timer */
