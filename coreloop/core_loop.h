@@ -120,7 +120,7 @@ struct startup_hello {
     uint32_t unique_packet_id;
     uint32_t time_seconds;
     uint16_t time_subseconds;
-};
+}__attribute__((packed));
 
 // metadata payload, compatible with core_state
 struct meta_data {

@@ -17,7 +17,7 @@ struct ADC_stat {
     uint32_t valid_count, invalid_count_max, invalid_count_min;
     int32_t mean;
     uint64_t var;
-};
+}__attribute__((packed));
 
 
 

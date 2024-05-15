@@ -780,6 +780,7 @@ void core_loop()
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.
 uint8_t      MSYS_EI5_IRQHandler();
+          MSYS_EI5_IRQHandler();
 #endif
     }
 }
