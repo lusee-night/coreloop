@@ -39,7 +39,6 @@ void cdi_not_implemented(const char *msg)
     debug_print("CDI command not implemented: ");
     debug_print(msg);
     debug_print("\n\r")
-    exit(1);
     return;
 }
 
@@ -67,7 +66,11 @@ void send_hello_packet() {
     new_unique_packet_id();
     update_time();
     wait_for_cdi_ready();
-    payload->version = VERSION_ID;
+    payload->SW_version = VERSION_ID;
+    payload->FW_Version = spec_get_version(0);;
+    payload->FW_ID = spec_get_version(1);
+    payload->FW_Date = spec_get_version(2);
+    payload->FW_Time = spec_get_version(3);
     payload->unique_packet_id = unique_packet_id;
     payload->time_seconds = state.base.time_seconds;
     payload->time_subseconds = state.base.time_subseconds;

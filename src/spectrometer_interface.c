@@ -49,6 +49,16 @@ void spectrometer_init() {
     printf("Spectrometer init.\n");
 }
 
+uint32_t spec_get_version(int s) {
+    switch (s) {
+        case 0: return 0x12345678;
+        case 1: return 0x87654321;
+        case 2: return 0x20240101;
+        case 3: return 0x12330000;
+        default: return 0;
+    }
+}
+
 void spec_get_TVS(uint16_t *TVS) {
     TVS[0] = 10;
     TVS[1] = 20;

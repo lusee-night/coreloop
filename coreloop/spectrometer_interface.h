@@ -28,6 +28,10 @@ void spec_set_Navg1(uint32_t Navg1);
 void spec_set_spectrometer_enable(bool on);
 
 
+// Get various version ID
+// subfield s=0 (Version) 1(FW_ID) 2 (FW_Date) 3(FW_Time)
+uint32_t spec_get_version(int s);
+
 // RFS_SET_RESET  Reset default configuration (system configuration as after boot)
 void spec_set_reset();
 

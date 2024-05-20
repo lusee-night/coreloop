@@ -1,0 +1,12 @@
+# format is 
+# repetitions CMD       HI            Low
+#1       RFS_SETTINGS RFS_SET_OUTPUT_FORMAT   00 # full 32bit
+#2       RFS_SETTINGS RFS_SET_START           01 # start data acquisition
+#2000  RFS_SETTINGS RFS_SET_STOP            01 # stop data acquisition
+#2       RFS_SETTINGS RFS_SET_TIME_TO_DIE     01 # game over
+10       RFS_SETTINGS RFS_SET_GAIN_ANA_SET    22 # HLHL
+10       RFS_SETTINGS RFS_SET_GAIN_ANA_SET    FF # all auto 
+10       RFS_SETTINGS RFS_SET_RANGE_ADC      00 ## RANGE ADC
+10       RFS_SETTINGS RFS_SET_RANGE_ADC      00 ## RANGE ADC
+10       RFS_SETTINGS RFS_SET_RANGE_ADC      00 ## RANGE ADC
+10000       RFS_SETTINGS RFS_SET_TIME_TO_DIE     01 # game over
