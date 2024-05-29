@@ -65,11 +65,17 @@ RFS_SET_BITSLICE_HIGH =  0x34
 # Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
 RFS_SET_BITSLICE_AUTO =  0x35 
 
-# set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the ground. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
-RFS_SET_ROUTE_SET12 =  0x40 
+# set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+RFS_SET_ROUTE_SET1 =  0x40 
 
-# same as 0x40 but for ADC channels 3 and 4
-RFS_SET_ROUTE_SET34 =  0x41 
+# set routing for ADC channels 2
+RFS_SET_ROUTE_SET2 =  0x41 
+
+# set routing for ADC channels 3
+RFS_SET_ROUTE_SET3 =  0x42 
+
+# set routing for ADC channels 4
+RFS_SET_ROUTE_SET4 =  0x43 
 
 # set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
 RFS_SET_AVG_SET =  0x50 

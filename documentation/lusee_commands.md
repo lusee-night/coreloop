@@ -42,8 +42,11 @@
 
 | 0x4M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x40 | RFS_SET_ROUTE_SET12  | set routing for ADC channels 1 and 2, 4 DD bits each. First two bits are antenna1 number, second two bits are antenna2 number. If antenna1==antenna2, we are subtracting from the ground. I.e. 1101 meand A4-A2. 0101 menas A2-gronud.
-| 0x41 | RFS_SET_ROUTE_SET34  | same as 0x40 but for ADC channels 3 and 4
+| 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+| 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 2
+| 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
+| 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4
+
 
 ### 0x5X Averaging and Output Settings
 

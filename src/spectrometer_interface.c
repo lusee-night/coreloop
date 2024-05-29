@@ -178,22 +178,22 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     if (!adc_trigger) return false;
     adc_trigger = false;
     struct ADC_stat ms_med, ms_high, ms_low;
-    ms_med.mean = 0;
-    ms_med.var = 200*200;
+    ms_med.sumv = 0;
+    ms_med.sumv2 = 200*200*(1<15);
     ms_med.max = 200*3;
     ms_med.min =-200*3;
     ms_med.invalid_count_max = ms_med.invalid_count_min = 0;
     ms_med.valid_count = 1<<15;
 
-    ms_high.mean = 0;
-    ms_high.var = 200*200*7;
+    ms_high.sumv = 0;
+    ms_high.sumv2 = 200*200*7*(1<<15);
     ms_high.max = 200*3*7;
     ms_high.min =-200*3*7;
     ms_high.invalid_count_max = ms_high.invalid_count_min = 0;
     ms_high.valid_count = 1<<15;
     
-    ms_low.mean = 0;
-    ms_low.var = 200*200/7;
+    ms_low.sumv = 0;
+    ms_low.sumv2 = 200*200/7*(1<<15);
     ms_low.max = 200*3/7;
     ms_low.min =-200*3/7;
     ms_low.invalid_count_max = ms_low.invalid_count_min = 0;

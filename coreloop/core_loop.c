@@ -20,6 +20,7 @@ uint8_t leading_zeros_max[NSPECTRA];
 uint8_t housekeeping_request;
 uint8_t range_adc, resettle; 
 bool tick_tock;
+bool soft_reset_flag;
 uint32_t heartbeat_counter;
 uint32_t resettle_counter;
 
@@ -203,10 +204,10 @@ void trigger_ADC_stat() {
 }
 
 void update_spec_gains() {
-    for (int i = 0; i < NINPUT; i++) {
+    for (int8_t i = 0; i < NINPUT; i++) {
         spec_set_gain(i, state.base.actual_gain[i]);
     }
-    debug_print("gains changed\n");
+    debug_print("gains changed\r\n");
 }
 
 bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {    
@@ -239,8 +240,8 @@ inline static bool process_cdi()
             case RFS_SET_RESET:
                 RFS_stop();
                 spec_set_reset();
-                core_init_state();
-                break;
+                soft_reset_flag = true;
+                return true;
             case RFS_SET_STORE:
                 spec_store();
                 break;
@@ -316,29 +317,28 @@ inline static bool process_cdi()
                 }
                 break;
 
-            case RFS_SET_ROUTE_SET12:
-                ant2low = arg_low & 0x03;
-                ant2high = (arg_low & 0x0C) >> 2;
-                ant1low = (arg_low & 0x30) >> 4;
-                ant1high = (arg_low & 0xC0) >> 6;
-                if (ant2low == ant2high) ant2low = 0xFF;
-                if (ant1low == ant1high) ant1low = 0xFF;
-                state.seq.route[0].plus = ant1high;
-                state.seq.route[0].minus = ant1low;
-                state.seq.route[1].plus = ant2high;
-                state.seq.route[1].minus = ant2low;
+            case RFS_SET_ROUTE_SET1:
+                state.seq.route[0].plus = arg_low & 0xb111;
+                state.seq.route[0].minus = (arg_low & 0b111000) >> 3;;
+                spec_set_route(0, state.seq.route[0].plus, state.seq.route[0].minus);
                 break;
-            case RFS_SET_ROUTE_SET34:
-                ant4low = arg_low & 0x03;
-                ant4high = (arg_low & 0x0C) >> 2;
-                ant3low = (arg_low & 0x30) >> 4;
-                ant3high = (arg_low & 0xC0) >> 6;
-                if (ant4low == ant4high) ant4low = 0xFF;
-                if (ant3low == ant3high) ant3low = 0xFF;
-                state.seq.route[2].plus = ant3high;
-                state.seq.route[2].minus = ant3low;
-                state.seq.route[3].plus = ant4high;
-                state.seq.route[3].minus = ant4low;
+
+            case RFS_SET_ROUTE_SET2:
+                state.seq.route[1].plus = arg_low & 0xb111;
+                state.seq.route[1].minus = (arg_low & 0b111000) >> 3;;
+                spec_set_route(1, state.seq.route[0].plus, state.seq.route[0].minus);
+                break;
+
+            case RFS_SET_ROUTE_SET3:
+                state.seq.route[2].plus = arg_low & 0xb111;
+                state.seq.route[2].minus = (arg_low & 0b111000) >> 3;;
+                spec_set_route(2, state.seq.route[0].plus, state.seq.route[0].minus);
+                break;
+
+            case RFS_SET_ROUTE_SET4:
+                state.seq.route[3].plus = arg_low & 0xb111;
+                state.seq.route[3].minus = (arg_low & 0b111000) >> 3;;
+                spec_set_route(3, state.seq.route[0].plus, state.seq.route[0].minus);
                 break;
 
 
@@ -463,7 +463,7 @@ bool analog_gain_control() {
     
     for (int i = 0; i < NINPUT; i++) {
         if (state.seq.gain[i] != GAIN_AUTO) continue; // Don't do anything unless AGC is enabled
-        int32_t cmax = MAX(state.base.ADC_stat[i].max, -state.base.ADC_stat[i].min);
+        int32_t cmax = MAX(state.base.ADC_stat[i].max-0x1FFF, state.base.ADC_stat[i].min-0x1FFF);
         //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
         if (cmax > state.gain_auto_max[i]) {
             if (state.base.actual_gain[i] > GAIN_LOW) {
@@ -497,11 +497,19 @@ void process_gain_range() {
             resettle_counter = RESETTLE_DELAY;
         } else {
             if (range_adc) {
-                range_adc = 0;
-                housekeeping_request = 2;
+                if (analog_gain_control()) {
+                    debug_print("adjusting gains\n");
+                    trigger_ADC_stat();
+                } else {
+                    range_adc = 0;
+                    housekeeping_request = 2;
+                }
             }
         }
+    } else  {
+        //if (range_adc) debug_print("not yet \n");
     }
+
     if ((resettle) & (resettle_counter == 0)) {
         trigger_ADC_stat();
         resettle = false;
@@ -765,6 +773,7 @@ if (spec_new_spectrum_ready())
 
 void core_loop()
 {
+    soft_reset_flag = false;
     send_hello_packet();
     core_init_state();
 
