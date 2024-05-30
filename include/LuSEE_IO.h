@@ -9,6 +9,13 @@
 #define debug_print(fmt) \
             do { if (DEBUG) printf(fmt); } while (0);
 
+#define debug_print_dec(fmt) \
+            do { if (DEBUG) printf("%i", fmt); } while (0);
+
+#define debug_print_hex(fmt) \
+            do { if (DEBUG) printf("%x",fmt); } while (0);
+
+
 // Global variables
 
 // timer stuff

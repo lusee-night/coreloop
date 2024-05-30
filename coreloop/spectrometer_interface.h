@@ -41,6 +41,13 @@ void spec_store();
 // RFS_SET_RECALL  Recalls configuration from previous store 
 void spec_recall();
 
+// make the CDI interface generate raw waveform;
+void spec_request_waveform(uint8_t ch);
+
+
+// disable certain channels (by connecting it to ground)
+void spec_disable_channel (uint8_t ch);
+
 // set gain of channel ch to gain
 void spec_set_gain(uint8_t ch, uint8_t gain);
 

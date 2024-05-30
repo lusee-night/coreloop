@@ -18,10 +18,11 @@ uint32_t unique_packet_id;
 uint8_t leading_zeros_min[NSPECTRA];
 uint8_t leading_zeros_max[NSPECTRA];
 uint8_t housekeeping_request;
-uint8_t range_adc, resettle; 
+uint8_t range_adc, resettle, request_waveform; 
 bool tick_tock;
 bool soft_reset_flag;
-uint32_t heartbeat_counter;
+uint32_t heartbeat_counter, heartbeat_packet_count;
+
 uint32_t resettle_counter;
 
 /**************************************************/
@@ -81,14 +82,16 @@ void send_hello_packet() {
 void process_hearbeat() {
     if (heartbeat_counter > 0) return;
     debug_print("Sending heartbeat.\n\r");
+    wait_for_cdi_ready();
     char *msg = (char *) TLM_BUF;
-    msg[0] = 'B';
-    msg[1] = 'R';
-    msg[2] = 'N';
-    msg[3] = 'M';
-    msg[4] = 'R';
-    msg[5] = 'L';    
-    cdi_dispatch(AppID_uC_HeartBeat, 6);
+    * ((uint32_t*)(TLM_BUF))  =  heartbeat_packet_count;
+    heartbeat_packet_count++;
+    msg[4] = 'B';
+    msg[5] = 'R';
+    msg[6] = 'R';
+    msg[7] = 'L';
+
+    cdi_dispatch(AppID_uC_HeartBeat, 8);
     heartbeat_counter = HEARTBEAT_DELAY;
 }
 
@@ -124,7 +127,7 @@ void default_seq (struct sequencer_state *seq)
     for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i]=0x1F;
     seq->notch = 0;
     seq->bitslice_keep_bits=13;
-    seq->format = OUTPUT_16BIT_UPDATES;
+    seq->format =  OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
 
 }
 
@@ -145,6 +148,7 @@ void core_init_state(){
     default_seq (&state.seq);
     state.base.errors = 0;
     state.base.spectrometer_enable = false;
+    spec_set_spectrometer_enable(false);
     housekeeping_request = 0;
     range_adc = 0;
     for (int i=0; i<NINPUT; i++) state.base.actual_gain[i] = GAIN_MED;
@@ -228,6 +232,10 @@ inline static bool process_cdi()
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
+    debug_print_hex(arg_high);
+    debug_print(" ");
+    debug_print_hex(arg_low);
+    debug_print(" ");
     debug_print ("Got new CDI command.\n\r")
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
@@ -255,13 +263,17 @@ inline static bool process_cdi()
                     state.base.errors |= CDI_COMMAND_BAD_ARGS;
                 }
                 break;
-            case RFS_SET_ADC:
-                cdi_not_implemented("RFS_SET_ADC");
-                break;
+
             case RFS_SET_RANGE_ADC:
                 range_adc = 1;
                 trigger_ADC_stat();           
                 break;
+
+            case RFS_SET_WAVEFORM:
+                if (arg_low<4) request_waveform = arg_low;
+                else state.base.errors |= CDI_COMMAND_BAD_ARGS;
+                break;
+
             
             case RFS_SET_TIME_TO_DIE:
                 debug_print("Recevied time-to-die.\n\r")
@@ -288,6 +300,17 @@ inline static bool process_cdi()
                 }
                 update_spec_gains();
                 break;
+
+            case RFS_SET_DISABLE_ADC:
+                for (int i=0; i<NINPUT; i++){
+                    if ((arg_low >> (i)) & 0x03) {
+                        state.seq.gain[i] = GAIN_DISABLE;
+                        state.base.actual_gain[i] = GAIN_DISABLE;
+                    }
+                }
+                update_spec_gains();
+                break;
+
             case RFS_SET_GAIN_ANA_CFG_MIN:
                 ch = arg_low & 0x03;
                 val = (arg_low & 0xFC) >> 2;
@@ -318,27 +341,29 @@ inline static bool process_cdi()
                 break;
 
             case RFS_SET_ROUTE_SET1:
-                state.seq.route[0].plus = arg_low & 0xb111;
-                state.seq.route[0].minus = (arg_low & 0b111000) >> 3;;
+                state.seq.route[0].plus = arg_low & 0b111;
+                state.seq.route[0].minus = ((arg_low & 0b111000) >> 3);
                 spec_set_route(0, state.seq.route[0].plus, state.seq.route[0].minus);
                 break;
 
             case RFS_SET_ROUTE_SET2:
-                state.seq.route[1].plus = arg_low & 0xb111;
-                state.seq.route[1].minus = (arg_low & 0b111000) >> 3;;
-                spec_set_route(1, state.seq.route[0].plus, state.seq.route[0].minus);
+                state.seq.route[1].plus = arg_low & 0b111;
+                state.seq.route[1].minus = ((arg_low & 0b111000) >> 3);
+
+                spec_set_route(1, state.seq.route[1].plus, state.seq.route[1].minus);
                 break;
 
             case RFS_SET_ROUTE_SET3:
-                state.seq.route[2].plus = arg_low & 0xb111;
-                state.seq.route[2].minus = (arg_low & 0b111000) >> 3;;
-                spec_set_route(2, state.seq.route[0].plus, state.seq.route[0].minus);
+                state.seq.route[2].plus = (arg_low & 0b111);
+                state.seq.route[2].minus = ((arg_low & 0b111000) >> 3);
+
+                spec_set_route(2, state.seq.route[2].plus, state.seq.route[2].minus);
                 break;
 
             case RFS_SET_ROUTE_SET4:
-                state.seq.route[3].plus = arg_low & 0xb111;
-                state.seq.route[3].minus = (arg_low & 0b111000) >> 3;;
-                spec_set_route(3, state.seq.route[0].plus, state.seq.route[0].minus);
+                state.seq.route[3].plus = arg_low & 0b111;
+                state.seq.route[3].minus = ((arg_low & 0b111000) >> 3);
+                spec_set_route(3, state.seq.route[3].plus, state.seq.route[3].minus);
                 break;
 
 
@@ -653,7 +678,7 @@ void send_metadata_packet() {
 void dispatch_32bit_data() {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
     int32_t *ddr_ptr = tick_tock ? (int32_t *)(SPEC_TOCK) : (int32_t *)(SPEC_TICK);
-    ddr_ptr += state.cdi_dispatch.prod_count * state.Nfreq;
+    ddr_ptr += state.cdi_dispatch.prod_count * state.Nfreq; // pointer to current block of data.
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
     int32_t *crc_ptr;
 
@@ -665,6 +690,7 @@ void dispatch_32bit_data() {
     size_t packet_size = data_size+2*sizeof(int32_t);
     wait_for_cdi_ready();
     memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
+
     memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
     *crc_ptr = CRC(cdi_ptr, data_size);
     cdi_dispatch(state.cdi_dispatch.appId, packet_size);
@@ -742,6 +768,7 @@ static inline void process_spectrometer() {
 // Check if we have a new spectrum packet from the FPGA
 if (spec_new_spectrum_ready())
     {
+        //debug_print("Yay!\n");
         trigger_ADC_stat();
         transfer_from_df();
         uint16_t corr_owf, notch_owf;

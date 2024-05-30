@@ -23,11 +23,14 @@
 // Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;
 #define RFS_SET_HK_REQ  0x05 
 
-// Set ADC mode: 0 ADC disabled, 1 ADC enabled
-#define RFS_SET_ADC  0x06 
+// Set ADC mode: optionally disable ADCs (bits 0-3 in arg)
+#define RFS_SET_DISABLE_ADC  0x06 
 
 // Autorange ADC and then set an ADC packet
 #define RFS_SET_RANGE_ADC  0x07 
+
+// Request ADC waform arg contains channel number
+#define RFS_SET_WAVEFORM  0x08 
 
 // prepare for power cut -- mode announcing power cut 5 seconds after issue
 #define RFS_SET_TIME_TO_DIE  0x0F 

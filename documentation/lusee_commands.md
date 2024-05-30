@@ -12,8 +12,9 @@
 | 0x03 | RFS_SET_STORE       | Stores current configuration                                                           |
 | 0x04 | RFS_SET_RECALL      | Recalls configuration from previous store                                              |
 | 0x05 | RFS_SET_HK_REQ      | Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;        |
-| 0x06 | RFS_SET_ADC         | Set ADC mode: 0 ADC disabled, 1 ADC enabled                                            |
-| 0x07 | RFS_SET_RANGE_ADC   | Autorange ADC and then set an ADC packet                                               | 
+| 0x06 | RFS_SET_DISABLE_ADC | Set ADC mode: optionally disable ADCs (bits 0-3 in arg)                                |
+| 0x07 | RFS_SET_RANGE_ADC   | Autorange ADC and then set an ADC packet                                               |
+| 0x08 | RFS_SET_WAVEFORM    | Request ADC waform arg contains channel number                                         |
 | 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue               |
 
 ### 0x1X Stored sequencer modes

@@ -208,6 +208,10 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     return true;
 }
 
+void spec_request_waveform(uint8_t ch) {}
+
+void spec_disable_channel (uint8_t ch) {}
+
  void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec){
     *time_sec = time_seconds;
     time_seconds++;
