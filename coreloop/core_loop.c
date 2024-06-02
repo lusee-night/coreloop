@@ -79,8 +79,8 @@ void send_hello_packet() {
     cdi_dispatch(AppID_uC_Start, sizeof(struct startup_hello));
 }
 
-void process_hearbeat() {
-    if (heartbeat_counter > 0) return;
+bool process_hearbeat() {
+    if (heartbeat_counter > 0) return false;
     debug_print("Sending heartbeat.\n\r");
     wait_for_cdi_ready();
     char *msg = (char *) TLM_BUF;
@@ -93,6 +93,7 @@ void process_hearbeat() {
 
     cdi_dispatch(AppID_uC_HeartBeat, 8);
     heartbeat_counter = HEARTBEAT_DELAY;
+    return true;
 }
 
 
@@ -270,7 +271,7 @@ inline static bool process_cdi()
                 break;
 
             case RFS_SET_WAVEFORM:
-                if (arg_low<4) request_waveform = arg_low;
+                if (arg_low<4) request_waveform = arg_low | 4;
                 else state.base.errors |= CDI_COMMAND_BAD_ARGS;
                 break;
 
@@ -630,8 +631,8 @@ uint32_t CRC(const void* data, size_t size) {
     return ~crc;
 }
 
-void process_housekeeping() {
-    if (housekeeping_request == 0) return;
+bool process_housekeeping() {
+    if (housekeeping_request == 0) return false;
     housekeeping_request--;
     switch (housekeeping_request) {
         case 0:
@@ -660,6 +661,7 @@ void process_housekeeping() {
             break;
     }
     housekeeping_request = 0;
+    return true;
 }
 
 
@@ -717,9 +719,9 @@ void transfer_to_cdi () {
     state.cdi_dispatch.packet_id = unique_packet_id;
 }
 
-void process_delayed_cdi_dispatch() {
-    if (state.cdi_dispatch.int_counter > 0) return;
-    if (state.cdi_dispatch.prod_count > 0x0F)  return;
+bool process_delayed_cdi_dispatch() {
+    if (state.cdi_dispatch.int_counter > 0) return false;
+    if (state.cdi_dispatch.prod_count > 0x0F)  return false;
     switch (state.cdi_dispatch.format) {
         case OUTPUT_32BIT:
             dispatch_32bit_data();
@@ -737,6 +739,16 @@ void process_delayed_cdi_dispatch() {
     state.cdi_dispatch.prod_count++;
     state.cdi_dispatch.appId++;
     state.cdi_dispatch.int_counter = DISPATCH_DELAY;
+    return true;
+}
+
+
+bool process_waveform() {
+    if (!request_waveform) return false;
+    wait_for_cdi_ready();
+    spec_request_waveform(request_waveform & 3);
+    request_waveform = 0;
+    return true;
 }
 
 void advance_sequencer() {
@@ -801,6 +813,8 @@ if (spec_new_spectrum_ready())
 void core_loop()
 {
     soft_reset_flag = false;
+    request_waveform = 0 ;
+    range_adc = 0;
     send_hello_packet();
     core_init_state();
 
@@ -811,10 +825,11 @@ void core_loop()
         // If this functions returns true, it means we got the time-to-die command
         if (process_cdi()) break;
         process_spectrometer();
-        process_delayed_cdi_dispatch();
         process_gain_range();
-        process_housekeeping();
-        process_hearbeat();
+
+        // we always process just one CDI interfacing things
+        process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.
