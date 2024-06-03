@@ -43,7 +43,7 @@
 
 | 0x4M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+| 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus, bits 7-8 are direct gain
 | 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 2
 | 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
 | 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4

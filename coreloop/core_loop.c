@@ -226,6 +226,17 @@ bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 
     return false;
 }
 
+void set_route (uint8_t ch, uint8_t arg_low) {
+    state.seq.route[ch].plus = arg_low & 0b111;
+    state.seq.route[ch].minus = ((arg_low & 0b111000) >> 3);
+    uint8_t gain = ((arg_low & 0b11000000) >> 6);
+    spec_set_route(ch, state.seq.route[ch].plus, state.seq.route[ch].minus);
+    state.seq.gain[ch] = gain;
+    state.base.actual_gain[ch] = gain;
+    spec_set_gain(ch, state.base.actual_gain[ch]);
+}
+
+
 
 inline static bool process_cdi()
 {
@@ -296,15 +307,21 @@ inline static bool process_cdi()
             case RFS_SET_GAIN_ANA_SET:                
                 for (int i=0; i<NINPUT; i++){
                     uint8_t val = (arg_low >> (2*i)) & 0x03;
-                    state.seq.gain[i] = val;
-                    if (val!=GAIN_AUTO) state.base.actual_gain[i] = val;
+                    if (val==3) {
+                        if  (state.seq.gain[i] != GAIN_DISABLE){
+                            state.seq.gain[i] = GAIN_AUTO;
+                        }
+                    } else {
+                       state.seq.gain[i] = val;
+                        state.base.actual_gain[i] = val;
+                    }
                 }
                 update_spec_gains();
                 break;
 
             case RFS_SET_DISABLE_ADC:
                 for (int i=0; i<NINPUT; i++){
-                    if ((arg_low >> (i)) & 0x03) {
+                    if ((arg_low >> (i)) & 0x01) {
                         state.seq.gain[i] = GAIN_DISABLE;
                         state.base.actual_gain[i] = GAIN_DISABLE;
                     }
@@ -342,29 +359,19 @@ inline static bool process_cdi()
                 break;
 
             case RFS_SET_ROUTE_SET1:
-                state.seq.route[0].plus = arg_low & 0b111;
-                state.seq.route[0].minus = ((arg_low & 0b111000) >> 3);
-                spec_set_route(0, state.seq.route[0].plus, state.seq.route[0].minus);
+                set_route (0, arg_low);
                 break;
 
             case RFS_SET_ROUTE_SET2:
-                state.seq.route[1].plus = arg_low & 0b111;
-                state.seq.route[1].minus = ((arg_low & 0b111000) >> 3);
-
-                spec_set_route(1, state.seq.route[1].plus, state.seq.route[1].minus);
+                set_route (1, arg_low);
                 break;
 
             case RFS_SET_ROUTE_SET3:
-                state.seq.route[2].plus = (arg_low & 0b111);
-                state.seq.route[2].minus = ((arg_low & 0b111000) >> 3);
-
-                spec_set_route(2, state.seq.route[2].plus, state.seq.route[2].minus);
+                set_route (2, arg_low);
                 break;
 
             case RFS_SET_ROUTE_SET4:
-                state.seq.route[3].plus = arg_low & 0b111;
-                state.seq.route[3].minus = ((arg_low & 0b111000) >> 3);
-                spec_set_route(3, state.seq.route[3].plus, state.seq.route[3].minus);
+                set_route (3, arg_low);
                 break;
 
 
@@ -490,22 +497,27 @@ bool analog_gain_control() {
     for (int i = 0; i < NINPUT; i++) {
         if (state.seq.gain[i] != GAIN_AUTO) continue; // Don't do anything unless AGC is enabled
         int32_t cmax = MAX(state.base.ADC_stat[i].max-0x1FFF, state.base.ADC_stat[i].min-0x1FFF);
+        if ((state.base.
+                ADC_stat[i].invalid_count_max>0) || (state.base.ADC_stat[i].invalid_count_min>0)) cmax = 10000; // blow through.
         //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
         if (cmax > state.gain_auto_max[i]) {
             if (state.base.actual_gain[i] > GAIN_LOW) {
+                debug_print_dec(i);
                 state.base.actual_gain[i] --;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
             } else {
-                state.base.errors |= ANALOG_AGC_TOO_HIGH;
+                state.base.errors |= (ANALOG_AGC_TOO_HIGH_CH1 <<i);
             }
         } else if (cmax < state.seq.gain_auto_min[i]) {
             if (state.base.actual_gain[i] < GAIN_HIGH) {
+                debug_print_dec(i);
+
                 state.base.actual_gain[i] ++;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
             } else {
-                state.base.errors |= ANALOG_AGC_TOO_LOW;
+                state.base.errors |= (ANALOG_AGC_TOO_LOW_CH1 << i);
             }
         }
     }
@@ -523,15 +535,10 @@ void process_gain_range() {
             resettle_counter = RESETTLE_DELAY;
         } else {
             if (range_adc) {
-                if (analog_gain_control()) {
-                    debug_print("adjusting gains\n");
-                    trigger_ADC_stat();
-                } else {
-                    range_adc = 0;
-                    housekeeping_request = 2;
-                }
-            }
-        }
+                range_adc = 0;
+                housekeeping_request = 2;
+             }
+         }
     } else  {
         //if (range_adc) debug_print("not yet \n");
     }
@@ -641,6 +648,7 @@ bool process_housekeeping() {
             wait_for_cdi_ready();
             hk0->version = VERSION_ID;
             hk0->unique_packet_id = unique_packet_id;
+            hk0->errors = state.base.errors;
             hk0->housekeeping_type = 0;
             hk0->core_state = state;
             cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_0));
@@ -652,6 +660,7 @@ bool process_housekeeping() {
             wait_for_cdi_ready();
             hk1->version = VERSION_ID;
             hk1->unique_packet_id = unique_packet_id;
+            hk1->errors = state.base.errors;
             hk1->housekeeping_type = 1;
             for (int i=0; i<NINPUT; i++) {
                 hk1->ADC_stat[i] = state.base.ADC_stat[i];
@@ -660,7 +669,12 @@ bool process_housekeeping() {
             cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_1));
             break;
     }
+    debug_print("E:");
+    debug_print_dec(state.base.errors);
+    debug_print("\n");
+
     housekeeping_request = 0;
+    state.base.errors = 0;
     return true;
 }
 
@@ -829,7 +843,6 @@ void core_loop()
 
         // we always process just one CDI interfacing things
         process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
-
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness.

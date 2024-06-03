@@ -26,8 +26,8 @@ enum gain_state{
     GAIN_LOW,
     GAIN_MED,
     GAIN_HIGH,
-    GAIN_AUTO,
-    GAIN_DISABLE};
+    GAIN_DISABLE,
+    GAIN_AUTO};
 
 enum output_format {
     OUTPUT_32BIT,
@@ -138,6 +138,7 @@ struct meta_data {
 struct housekeeping_data_0 {
     uint16_t version; 
     uint32_t unique_packet_id;
+    uint32_t errors;
     uint16_t housekeeping_type;
     struct core_state core_state;
 }__attribute__((packed));
@@ -145,6 +146,7 @@ struct housekeeping_data_0 {
 struct housekeeping_data_1 {
     uint16_t version; 
     uint32_t unique_packet_id;
+    uint32_t errors;
     uint16_t housekeeping_type;
     struct ADC_stat ADC_stat[NINPUT];
     uint8_t actual_gain[NINPUT];
