@@ -217,3 +217,7 @@ void spec_disable_channel (uint8_t ch) {}
     time_seconds++;
     *time_subsec = 123;
  }
+
+ bool spec_df_dropped() {
+     return false;
+ }

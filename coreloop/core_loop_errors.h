@@ -24,6 +24,8 @@
 #define ANALOG_AGC_ACTION_CH3 (1<<13)
 #define ANALOG_AGC_ACTION_CH4 (1<<14)
 
+#define DF_SPECTRA_DROPPED (1<<15)
+
 
 
 

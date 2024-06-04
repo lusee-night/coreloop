@@ -83,6 +83,9 @@ void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec);
 //returns true if a new spectrum is ready (DF flag is set)
 bool spec_new_spectrum_ready();
 
+// return true if DF dropped spectra
+bool spec_df_dropped(); 
+
 // clears the DF flag
 void spec_clear_df_flag();
 

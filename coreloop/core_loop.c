@@ -806,6 +806,7 @@ static inline void process_spectrometer() {
 if (spec_new_spectrum_ready())
     {
         //debug_print("Yay!\n");
+        if (spec_df_dropped()) state.base.errors |= DF_SPECTRA_DROPPED;
         trigger_ADC_stat();
         transfer_from_df();
         uint16_t corr_owf, notch_owf;
