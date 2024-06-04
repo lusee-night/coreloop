@@ -148,6 +148,7 @@ void fill_derived() {
 void core_init_state(){   
     default_seq (&state.seq);
     state.base.errors = 0;
+    state.base.corr_products_mask=0b1111111111111111; //65535
     state.base.spectrometer_enable = false;
     spec_set_spectrometer_enable(false);
     housekeeping_request = 0;
@@ -157,7 +158,7 @@ void core_init_state(){
     spec_set_spectrometer_enable(false);
     state.base.sequencer_step = 0xFF;
     state.sequencer_enabled = false;
-    state.Nseq = 0;
+    state.program.Nseq = 0;
     state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
     tick_tock = true;
     update_time();
@@ -189,8 +190,8 @@ void RFS_start() {
     if (state.sequencer_enabled) {
         state.base.sequencer_counter = 0;
         state.base.sequencer_step = 0;
-        state.base.sequencer_substep = state.seq_times[0];
-        state.seq = state.seq_program[0];
+        state.base.sequencer_substep = state.program.seq_times[0];
+        state.seq = state.program.seq[0];
     }
     fill_derived();
     set_spectrometer_to_sequencer();
@@ -291,16 +292,12 @@ inline static bool process_cdi()
                 debug_print("Recevied time-to-die.\n\r")
                 return true;
 
-           case RFS_SET_TEST:
-                cdi_not_implemented("RFS_SET_TEST");
-                break;
-            case RFS_SET_SCIENCE:
-                cdi_not_implemented("RFS_SET_SCIENCE");
-                break;
             case RFS_SET_LOAD_FL:
+                // load the sequencer program # arg_low (0-255) into state.program
                 cdi_not_implemented("RFS_SET_LOAD_FL");
                 break;
             case RFS_SET_STORE_FL:
+                // store the sequencer program # arg_low (0-255) from state.program into flash
                 cdi_not_implemented("RFS_SET_STORE_FL");
                 break;
 
@@ -403,6 +400,13 @@ inline static bool process_cdi()
                     state.seq.format = arg_low;
                 }
                 break;
+
+            case RFS_SET_PRODMASK_LOW:
+                state.base.corr_products_mask = (state.base.corr_products_mask & 0xFF00) | arg_low;
+                break;
+            case RFS_SET_PRODMASK_HIGH:
+                state.base.corr_products_mask = (state.base.corr_products_mask & 0x00FF) | (arg_low << 8);
+                break;
             case RFS_SET_CAL_FRAC_SET:
                 cdi_not_implemented("RFS_SET_CAL_FRAC_SET");
                 break;
@@ -456,14 +460,14 @@ inline static bool process_cdi()
                 if (state.base.spectrometer_enable) {
                     state.base.errors |= CDI_COMMAND_BAD;
                 } else {
-                    state.base.sequencer_repeat = arg_low;
+                    state.program.sequencer_repeat = arg_low;
                 }
                 break;
             case RFS_SET_SEQ_CYC:
                 if (state.base.spectrometer_enable) {
                     state.base.errors |= CDI_COMMAND_BAD;
                 } else {
-                    state.Nseq = arg_low;
+                    state.program.Nseq = arg_low;
                     state.base.sequencer_step = 0;
                 }
                 break;
@@ -471,8 +475,8 @@ inline static bool process_cdi()
                 if (state.base.spectrometer_enable) {
                     state.base.errors |= CDI_COMMAND_BAD;
                 } else {
-                    state.seq_program[state.base.sequencer_step] = state.seq;
-                    state.seq_times[state.base.sequencer_step] = arg_low;
+                    state.program.seq[state.base.sequencer_step] = state.seq;
+                    state.program.seq_times[state.base.sequencer_step] = arg_low;
                     state.base.sequencer_step++;
                 }
                 break;
@@ -589,27 +593,31 @@ void transfer_from_df ()
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)SPEC_BUF;
     int32_t *ddr_ptr = tick_tock ? (int32_t *)(SPEC_TICK) : (int32_t *)(SPEC_TOCK);
+    uint16_t mask = 1;
     for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
         leading_zeros_min[sp] = 32;
         leading_zeros_max[sp] = 0;
-        for (uint16_t i = 0; i < NCHANNELS; i++) {
-        *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-        if (state.seq.Navgf == 2) {
+        if (state.base.corr_products_mask & (mask)) {
+            for (uint16_t i = 0; i < NCHANNELS; i++) {
+            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
+            if (state.seq.Navgf == 2) {
+                df_ptr++; i++;
+                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
+            } else if (state.seq.Navgf > 2) {
+                df_ptr++; i++;
+                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
+                df_ptr++; i++;
+                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
+                df_ptr++; i++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated                
+                if (state.seq.Navgf == 4) {
+                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
+                }
+            }   
             df_ptr++;
-            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-        } else if (state.seq.Navgf > 2) {
-            df_ptr++;
-            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-            df_ptr++;
-            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-            df_ptr++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
-            if (state.seq.Navgf == 4) {
-            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
+            ddr_ptr++;
             }
-        }   
-        df_ptr++;
-        ddr_ptr++;
-        }
+        } else {df_ptr+=NCHANNELS; ddr_ptr+=NCHANNELS;}
+        mask <<= 1;        
     //debug_print ("Processing spectrum %i %i %i %i\n", avg_counter, sp, leading_zeros_min[sp], leading_zeros_max[sp]);
     }
     
@@ -694,7 +702,7 @@ void send_metadata_packet() {
 void dispatch_32bit_data() {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
     int32_t *ddr_ptr = tick_tock ? (int32_t *)(SPEC_TOCK) : (int32_t *)(SPEC_TICK);
-    ddr_ptr += state.cdi_dispatch.prod_count * state.Nfreq; // pointer to current block of data.
+    ddr_ptr += state.cdi_dispatch.prod_count * NCHANNELS; //state.Nfreq; // pointer to current block of data.
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
     int32_t *crc_ptr;
 
@@ -702,12 +710,12 @@ void dispatch_32bit_data() {
     cdi_ptr++;
     crc_ptr = cdi_ptr;
     cdi_ptr++;
-    size_t data_size = state.Nfreq*sizeof(int32_t);
+    size_t data_size = state.cdi_dispatch.Nfreq*sizeof(int32_t);
     size_t packet_size = data_size+2*sizeof(int32_t);
     wait_for_cdi_ready();
-    memcpy(cdi_ptr, ddr_ptr, state.Nfreq * sizeof(uint32_t));
+    memcpy(cdi_ptr, ddr_ptr, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
 
-    memset(ddr_ptr, 0, state.Nfreq * sizeof(uint32_t));
+    memset(ddr_ptr, 0, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
     *crc_ptr = CRC(cdi_ptr, data_size);
     cdi_dispatch(state.cdi_dispatch.appId, packet_size);
 }
@@ -728,6 +736,7 @@ void transfer_to_cdi () {
     send_metadata_packet();
     state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
     state.cdi_dispatch.prod_count = 0; // 
+    state.cdi_dispatch.Nfreq = state.Nfreq;
     state.cdi_dispatch.appId = AppID_SpectraHigh; // fix
     state.cdi_dispatch.format = state.seq.format;
     state.cdi_dispatch.packet_id = unique_packet_id;
@@ -736,19 +745,21 @@ void transfer_to_cdi () {
 bool process_delayed_cdi_dispatch() {
     if (state.cdi_dispatch.int_counter > 0) return false;
     if (state.cdi_dispatch.prod_count > 0x0F)  return false;
-    switch (state.cdi_dispatch.format) {
-        case OUTPUT_32BIT:
-            dispatch_32bit_data();
-            break;
-        case OUTPUT_16BIT_UPDATES:
-            dispatch_16bit_updates_data();
-            break;
-        case OUTPUT_16BIT_FLOAT1:
-            dispatch_16bit_float1_data();
-            break;
-        default:
-            cdi_not_implemented("Unsupported output format");
-            break;
+    if (state.base.corr_products_mask & (1<<state.cdi_dispatch.prod_count)) {
+        switch (state.cdi_dispatch.format) {
+            case OUTPUT_32BIT:
+                dispatch_32bit_data();
+                break;
+            case OUTPUT_16BIT_UPDATES:
+                dispatch_16bit_updates_data();
+                break;
+            case OUTPUT_16BIT_FLOAT1:
+                dispatch_16bit_float1_data();
+                break;
+            default:
+                cdi_not_implemented("Unsupported output format");
+                break;
+        }
     }
     state.cdi_dispatch.prod_count++;
     state.cdi_dispatch.appId++;
@@ -769,10 +780,10 @@ void advance_sequencer() {
 
 state.base.sequencer_substep--;
 if (state.base.sequencer_substep == 0) {
-    state.base.sequencer_step = (state.base.sequencer_step+1)%state.Nseq;
+    state.base.sequencer_step = (state.base.sequencer_step+1)%state.program.Nseq;
     if (state.base.sequencer_step == 0) {
         state.base.sequencer_counter++;
-        if ((state.base.sequencer_repeat>0) & (state.base.sequencer_counter == state.base.sequencer_repeat)) {
+        if ((state.program.sequencer_repeat>0) & (state.base.sequencer_counter == state.program.sequencer_repeat)) {
             //debug_print("Sequencer done.\n");
             RFS_stop();
         } else {
@@ -780,10 +791,10 @@ if (state.base.sequencer_substep == 0) {
         }
     }
     
-    state.base.sequencer_substep = state.seq_times[state.base.sequencer_step];
-    bool restart = restart_needed(&state.seq, &state.seq_program[state.base.sequencer_step]); 
+    state.base.sequencer_substep = state.program.seq_times[state.base.sequencer_step];
+    bool restart = restart_needed(&state.seq, &state.program.seq[state.base.sequencer_step]); 
     if (restart) RFS_stop();
-    state.seq = state.seq_program[state.base.sequencer_step];
+    state.seq = state.program.seq[state.base.sequencer_step];
     fill_derived();
     set_spectrometer_to_sequencer();
     if (restart) RFS_start();

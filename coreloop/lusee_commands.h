@@ -65,7 +65,7 @@
 // Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
 #define RFS_SET_BITSLICE_AUTO  0x35 
 
-// set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+// set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus, bits 7-8 are direct gain
 #define RFS_SET_ROUTE_SET1  0x40 
 
 // set routing for ADC channels 2
@@ -97,6 +97,12 @@
 
 // set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
 #define RFS_SET_OUTPUT_FORMAT  0x56 
+
+// set the output correlation mask products 0-7 (autocorrelations are 4 LSB)
+#define RFS_SET_PRODMASK_LOW  0x57 
+
+// set the output correlation mask products 8-15
+#define RFS_SET_PRODMASK_HIGH  0x58 
 
 // set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
 #define RFS_SET_CAL_FRAC_SET  0x60 

@@ -22,10 +22,8 @@
 
 | 0x1M | Name               |  Description                                       |
 |------|--------------------|----------------------------------------------------|                             
-| 0x10 | RFS_SET_TEST       | Test modes stored internally, by number in argument
-| 0x11 | RFS_SET_SCIENCE    | Science modes stored internally, by number in argument 
-| 0x12 | RFS_SET_LOAD_FL    | Load sequencer mode from flash
-| 0x13 | RFS_SET_STORE_FL   | Store sequencer mode into flash
+| 0x10 | RFS_SET_LOAD_FL    | Load sequencer mode from flash
+| 0x11 | RFS_SET_STORE_FL   | Store sequencer mode into flash
 
 
 ### 0x3X Gain Settings and Bit slicing
@@ -53,13 +51,17 @@
 
 | 0x5M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x50 | RFS_SET_AVG_SET      | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
-| 0x51 | RFS_SET_AVG_OUTLIER  | set outlier rejectection. DD specifies the level of rejection with 00 disabled and 10 standard outlier rejection.
-| 0x52 | RFS_SET_AVG_FREQ     | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
-| 0x53 | RFS_SET_AVG_NOTCH    | set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256 
-| 0x54 | RFS_SET_AVG_SET_HI   | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
-| 0x55 | RFS_SET_AVGI_SET_MID | set medium priority fraction, low priority is 1-high-medium
-| 0x56 | RFS_SET_OUTPUT_FORMAT| set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
+| 0x50 | RFS_SET_AVG_SET       | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
+| 0x51 | RFS_SET_AVG_OUTLIER   | set outlier rejectection. DD specifies the level of rejection with 00 disabled and 10 standard outlier rejection.
+| 0x52 | RFS_SET_AVG_FREQ      | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
+| 0x53 | RFS_SET_AVG_NOTCH     | set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256 
+| 0x54 | RFS_SET_AVG_SET_HI    | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
+| 0x55 | RFS_SET_AVGI_SET_MID  | set medium priority fraction, low priority is 1-high-medium
+| 0x56 | RFS_SET_OUTPUT_FORMAT | set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
+| 0x57 | RFS_SET_PRODMASK_LOW  | set the output correlation mask products 0-7 (autocorrelations are 4 LSB) 
+| 0x58 | RFS_SET_PRODMASK_HIGH | set the output correlation mask products 8-15
+
+
 
 
 ### 0x6X Calibration Settings
