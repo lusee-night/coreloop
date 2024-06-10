@@ -20,6 +20,7 @@ uint8_t leading_zeros_max[NSPECTRA];
 uint8_t housekeeping_request;
 uint8_t range_adc, resettle, request_waveform; 
 bool tick_tock;
+bool drop_df;
 bool soft_reset_flag;
 uint32_t heartbeat_counter, heartbeat_packet_count;
 
@@ -161,9 +162,11 @@ void core_init_state(){
     state.program.Nseq = 0;
     state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
     tick_tock = true;
+    drop_df = false;
     update_time();
     unique_packet_id = state.base.time_seconds;
     fill_derived();
+
     set_spectrometer_to_sequencer();
     heartbeat_counter = HEARTBEAT_DELAY;
 }
@@ -181,12 +184,13 @@ void RFS_stop() {
     spec_set_spectrometer_enable(false);
 }
 
+
 void RFS_start() {
     debug_print ("Starting spectrometer\n\r");
     state.base.spectrometer_enable = true;
     avg_counter = 0;
-    memset((void *)SPEC_TICK, 0, NCHANNELS * sizeof(uint32_t));
-    memset((void *)SPEC_TOCK, 0, NCHANNELS * sizeof(uint32_t));
+    memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
+    memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     if (state.sequencer_enabled) {
         state.base.sequencer_counter = 0;
         state.base.sequencer_step = 0;
@@ -196,6 +200,7 @@ void RFS_start() {
     fill_derived();
     set_spectrometer_to_sequencer();
     spec_set_spectrometer_enable(true);
+    //drop_df = true;
 }
 
 
@@ -340,11 +345,13 @@ inline static bool process_cdi()
                 xcor = arg_low & 0x07;
                 val = (arg_low & 0xF8) >> 3;
                 state.seq.bitslice[xcor] = val;
+                state.base.actual_bitslice[xcor] = val;
                 break;
             case RFS_SET_BITSLICE_HIGH:
                 xcor = (arg_low & 0x07) + 8;
                 val = (arg_low & 0xF8) >> 3;
                 state.seq.bitslice[xcor] = val;
+                state.base.actual_bitslice[xcor] = val;
                 break;
             case RFS_SET_BITSLICE_AUTO:
                 if (arg_low > 0) {
@@ -375,7 +382,13 @@ inline static bool process_cdi()
             case RFS_SET_AVG_SET:
                 state.seq.Navg1_shift = arg_low & 0x0F;
                 state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
+
                 fill_derived();
+                debug_print("NAVG : ")
+                debug_print_dec(state.Navg1);
+                debug_print(" ")
+                debug_print_dec(state.Navg2);
+                debug_print("\n")
                 break;
             case RFS_SET_AVG_OUTLIER:
                 cdi_not_implemented("RFS_SET_AVG_OUTLIER");
@@ -559,7 +572,7 @@ void process_gain_range() {
 bool bitslice_control() {
     bool bitslice_changed = false;
     int32_t *ddr_ptr = (int32_t *) DDR3_BASE_ADDR;
-    for (int i = 0; i < NSPECTRA; i++) {
+    for (int i = 0; i < 4; i++) {
         if (state.seq.bitslice[i] != 0xFF) continue; // Don't do anything unless bitslice is auto
         uint8_t keep = 32-leading_zeros_max[i];
         if (keep>(state.seq.bitslice_keep_bits+1)) { 
@@ -577,11 +590,32 @@ bool bitslice_control() {
             bitslice_changed = true;
         }
     }
+    if (bitslice_changed) {
+
+        uint8_t b1 = state.base.actual_bitslice[0];
+        uint8_t b2 = state.base.actual_bitslice[1];
+        uint8_t b3 = state.base.actual_bitslice[2];
+        uint8_t b4 = state.base.actual_bitslice[3];
+
+        if (state.seq.bitslice[4] == 0xFF) state.base.actual_bitslice[4]= (b1+b2)/2-1;
+        if (state.seq.bitslice[5] == 0xFF) state.base.actual_bitslice[5]= (b1+b2)/2-1;
+        if (state.seq.bitslice[6] == 0xFF) state.base.actual_bitslice[6]= (b1+b3)/2-1;
+        if (state.seq.bitslice[7] == 0xFF) state.base.actual_bitslice[7]= (b1+b3)/2-1;
+        if (state.seq.bitslice[8] == 0xFF) state.base.actual_bitslice[8]= (b1+b4)/2-1;
+        if (state.seq.bitslice[9] == 0xFF) state.base.actual_bitslice[9]= (b1+b4)/2-1;
+        if (state.seq.bitslice[10] == 0xFF) state.base.actual_bitslice[10]= (b2+b3)/2-1;
+        if (state.seq.bitslice[11] == 0xFF) state.base.actual_bitslice[11]= (b2+b3)/2-1;
+        if (state.seq.bitslice[12] == 0xFF) state.base.actual_bitslice[12]= (b2+b4)/2-1;
+        if (state.seq.bitslice[13] == 0xFF) state.base.actual_bitslice[13]= (b2+b4)/2-1;
+        if (state.seq.bitslice[14] == 0xFF) state.base.actual_bitslice[14]= (b3+b4)/2-1;
+        if (state.seq.bitslice[15] == 0xFF) state.base.actual_bitslice[15]= (b3+b4)/2-1;
+    }
+
     return bitslice_changed;
 }
 
-int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
-    int32_t zeros = __builtin_clz(abs(val));
+static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
+    int32_t zeros = __builtin_clz(val);
     *min = MIN(*min, zeros);
     *max = MAX(*max, zeros);
     return val;
@@ -598,27 +632,55 @@ void transfer_from_df ()
         leading_zeros_min[sp] = 32;
         leading_zeros_max[sp] = 0;
         if (state.base.corr_products_mask & (mask)) {
-            for (uint16_t i = 0; i < NCHANNELS; i++) {
-            *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-            if (state.seq.Navgf == 2) {
-                df_ptr++; i++;
-                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-            } else if (state.seq.Navgf > 2) {
-                df_ptr++; i++;
-                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-                df_ptr++; i++;
-                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
-                df_ptr++; i++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated                
-                if (state.seq.Navgf == 4) {
-                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) / (1 << state.Navg2_total_shift));
+            if (sp<4) {
+                for (uint16_t i = 0; i < NCHANNELS; i++) {
+                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                if (state.seq.Navgf == 2) {
+                    df_ptr++; i++;
+                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                } else if (state.seq.Navgf > 2) {
+                    df_ptr++; i++;
+                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                    df_ptr++; i++;
+                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                    df_ptr++; i++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
+                    if (state.seq.Navgf == 4) {
+                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                    }
                 }
-            }   
-            df_ptr++;
-            ddr_ptr++;
+                df_ptr++;
+                ddr_ptr++;
+                }
+                debug_print("LZ: ");
+                debug_print_dec(32-leading_zeros_min[sp]);
+                debug_print(" ");
+                debug_print_dec(32-leading_zeros_max[sp]);
+                debug_print(" \r\n")
+
+            }
+            else    {
+                for (uint16_t i = 0; i < NCHANNELS; i++) {
+                    // FIX FIX for negative numbers
+                *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
+                if (state.seq.Navgf == 2) {
+                    df_ptr++; i++;
+                    *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
+                } else if (state.seq.Navgf > 2) {
+                    df_ptr++; i++;
+                    *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
+                    df_ptr++; i++;
+                    *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
+                    df_ptr++; i++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
+                    if (state.seq.Navgf == 4) {
+                    *ddr_ptr += (*df_ptr << state.Navg2_total_shift);
+                    }
+                }
+                df_ptr++;
+                ddr_ptr++;
+                }
             }
         } else {df_ptr+=NCHANNELS; ddr_ptr+=NCHANNELS;}
         mask <<= 1;        
-    //debug_print ("Processing spectrum %i %i %i %i\n", avg_counter, sp, leading_zeros_min[sp], leading_zeros_max[sp]);
     }
     
     //if (avg_counter%100 == 0) debug_print ("Processed 100 spectra...\n");
@@ -710,8 +772,8 @@ void dispatch_32bit_data() {
     cdi_ptr++;
     crc_ptr = cdi_ptr;
     cdi_ptr++;
-    size_t data_size = state.cdi_dispatch.Nfreq*sizeof(int32_t);
-    size_t packet_size = data_size+2*sizeof(int32_t);
+    uint32_t data_size = state.cdi_dispatch.Nfreq*sizeof(int32_t);
+    uint32_t packet_size = data_size+2*sizeof(int32_t);
     wait_for_cdi_ready();
     memcpy(cdi_ptr, ddr_ptr, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
 
@@ -730,6 +792,7 @@ void dispatch_16bit_float1_data() {
 
 void transfer_to_cdi () {
     debug_print ("Sending averaged spectra to CDI.\n\r");
+
     new_unique_packet_id();
     update_time();
     spec_get_TVS(state.base.TVS_sensors);
@@ -740,6 +803,7 @@ void transfer_to_cdi () {
     state.cdi_dispatch.appId = AppID_SpectraHigh; // fix
     state.cdi_dispatch.format = state.seq.format;
     state.cdi_dispatch.packet_id = unique_packet_id;
+
 }
 
 bool process_delayed_cdi_dispatch() {
@@ -805,33 +869,38 @@ static inline void process_spectrometer() {
 // Check if we have a new spectrum packet from the FPGA
 if (spec_new_spectrum_ready())
     {
-        //debug_print("Yay!\n");
-        if (spec_df_dropped()) state.base.errors |= DF_SPECTRA_DROPPED;
-        trigger_ADC_stat();
-        transfer_from_df();
-        uint16_t corr_owf, notch_owf;
-        spec_get_digital_overflow(&corr_owf, &notch_owf);
-        state.base.spec_overflow |= corr_owf;
-        state.base.notch_overflow |= notch_owf;
+        if (drop_df) {  // we were asked to drop a frame
+            drop_df = false;
+            spec_df_dropped(); // ignore any drooped so far
+            spec_clear_df_flag();
+        } else {
+            if (spec_df_dropped()) state.base.errors |= DF_SPECTRA_DROPPED;
+            trigger_ADC_stat();
+            transfer_from_df();
+            uint16_t corr_owf, notch_owf;
+            spec_get_digital_overflow(&corr_owf, &notch_owf);
+            state.base.spec_overflow |= corr_owf;
+            state.base.notch_overflow |= notch_owf;
 
-        spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-        bool bit_slice_changed = bitslice_control();
-        if (bit_slice_changed) {
-            restart_spectrometer(); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
-        }
+            spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
+            bool bit_slice_changed = bitslice_control();
+            if (bit_slice_changed) {
+                restart_spectrometer(); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
+            }
 
-        // Check if we have reached filled up Stage 2 averaging
-        // and if so, push things out to CDI
-        if (avg_counter == state.Navg2)
-        {
-            avg_counter = 0;
-            tick_tock = !tick_tock;
-            // Now one by one, we will loop through the packets placed in DDR Memory
-            // For each channel, set the APID, send it to the SRAM
-            // Then check to see if this software or the client will control the CDI writes
-            transfer_to_cdi();
-            if (state.sequencer_enabled) advance_sequencer();
+            // Check if we have reached filled up Stage 2 averaging
+            // and if so, push things out to CDI
+            if (avg_counter == state.Navg2)
+            {
+                avg_counter = 0;
+                tick_tock = !tick_tock;
+                // Now one by one, we will loop through the packets placed in DDR Memory
+                // For each channel, set the APID, send it to the SRAM
+                // Then check to see if this software or the client will control the CDI writes
+                transfer_to_cdi();
+                if (state.sequencer_enabled) advance_sequencer();
 
+            }
         }
     }
 }
@@ -852,7 +921,6 @@ void core_loop()
         if (process_cdi()) break;
         process_spectrometer();
         process_gain_range();
-
         // we always process just one CDI interfacing things
         process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
 

@@ -11,6 +11,24 @@
 #define NSPECTRA 16
 #define NINPUT 4
 
+// for bit slicing
+#define bit_select_A1   0x1F
+#define bit_select_A2   0x1F
+#define bit_select A3   0x1F
+#define bit_select_A4   0x1F
+#define bit_select_X12R 0x1F
+#define bit_select_X12I 0x1F
+#define bit_select_X13R 0x1F
+#define bit_select_X13I 0x1F
+#define bit_select_X14R 0x1F
+#define bit_select_X14I 0x1F
+#define bit_select_X23R 0x1F
+#define bit_select_X23I 0x1F
+#define bit_select_X24R 0x1F
+#define bit_select_X24I 0x1F
+#define bit_select_X34R 0x1F
+#define bit_select_X34I 0x1F
+
 
 struct ADC_stat {
     int16_t min, max;
@@ -55,7 +73,8 @@ void spec_set_gain(uint8_t ch, uint8_t gain);
 void spec_get_TVS(uint16_t *TVS);
 
 // set auto and cross-correlation bit-slices for 16 products
-void spec_set_bitslice (uint8_t* slice);
+//void spec_set_bitslice (uint8_t* slice);
+//void compute_index_send(uint32_t in_position, uint32_t inverse_mask, uint32_t reg);
 
 // enable or disable notch filter
 // 0 = disable, 1 = x4, 2 = x16, 3=x64, 4=x256
@@ -88,8 +107,5 @@ bool spec_df_dropped();
 
 // clears the DF flag
 void spec_clear_df_flag();
-
-
-
 
 #endif

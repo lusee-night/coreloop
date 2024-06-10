@@ -92,7 +92,7 @@ struct delayed_cdi_sending {
     uint16_t int_counter; // counter that will be decremented every timer interrupt
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
-    uint8_t Nfreq; // number of frequencies that actually need to be sent
+    uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint32_t packet_id;
 } __attribute__((packed));
 
