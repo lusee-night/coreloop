@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "LuSEE_IO.h"
-#include "spectrometer_registers.h"
 
 
 void cdi_init();

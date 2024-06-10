@@ -21,6 +21,9 @@
 
 #define ADC_STAT_SAMPLES 8000
 
+#define MAX_STATE_SLOTS 64
+
+
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
     GAIN_LOW,
@@ -53,6 +56,7 @@ struct sequencer_state {
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
     uint8_t notch; // 0 = disable, 1 = x4, 2 = x16, 3=x64, 4=x256
     uint8_t Navgf; // frequency averaging
+    uint8_t hi_frac, med_frac;
     uint8_t bitslice[NSPECTRA]; // for spectra 0x1F is all MSB, 0xFF is auto
     uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra
     uint8_t format; // output format to save data in
@@ -83,6 +87,7 @@ struct core_state_base {
     uint8_t sequencer_counter; // number of total cycles in the sequencer (up to sequencer_repeat)
     uint8_t sequencer_step; // 0xFF is sequencer is disabled (up to Nseq)
     uint8_t sequencer_substep; // counting seq_times (up to seq_times[i])
+    uint32_t rand_state;
 }__attribute__((packed));
 
 
@@ -110,6 +115,11 @@ struct core_state {
     struct sequencer_program program;
 }__attribute__((packed));
 
+struct saved_core_state {
+    uint32_t in_use;
+    struct core_state state;
+    uint32_t CRC;
+}__attribute__((packed));
 
 struct startup_hello {
     uint32_t SW_version;

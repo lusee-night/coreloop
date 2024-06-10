@@ -90,6 +90,9 @@ void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus);
 // set the number of shift bits for Stage 1 averageing (ie. Navg1_shift =10 ->  Navg1 = 1024)
 void spec_set_avg1 (uint8_t Navg1_shift);
 
+// set bitislicing for 16 correlation products
+void spec_set_bitslice(uint8_t *bitslice);
+
 // fires up the ADC statistic engine
 void spec_trigger_ADC_stat(uint16_t Nsamples); 
 // If we have ADC results, return true and get ADC level statistics into 4 element array in order to enable automatic gain, etc
@@ -107,5 +110,8 @@ bool spec_df_dropped();
 
 // clears the DF flag
 void spec_clear_df_flag();
+
+// read the argument registers from bootloader
+uint32_t spec_read_uC_register(uint8_t num);
 
 #endif

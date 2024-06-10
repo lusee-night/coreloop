@@ -25,6 +25,7 @@ bool soft_reset_flag;
 uint32_t heartbeat_counter, heartbeat_packet_count;
 
 uint32_t resettle_counter;
+uint16_t flash_store_pointer;
 
 /**************************************************/
 
@@ -46,6 +47,21 @@ void cdi_not_implemented(const char *msg)
 }
 
 
+void flash_state_clear(uint8_t slot) {
+    // zero flash state
+}
+
+void flash_state_store (uint8_t slot) {
+    // store state to flash
+}
+
+bool flash_state_restore(uint8_t slot) {
+    // try to restore state from flash
+    // return true if successful 
+}
+
+
+
 static inline void new_unique_packet_id()
 {
     unique_packet_id++;
@@ -61,6 +77,7 @@ static inline void update_time() {
     spec_get_time(&sec, &subsec);
     state.base.time_seconds = sec;
     state.base.time_subseconds = subsec;
+    state.base.rand_state += sec;
 }
 
 void send_hello_packet() {
@@ -128,6 +145,8 @@ void default_seq (struct sequencer_state *seq)
     seq->Navgf = 1;
     for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i]=0x1F;
     seq->notch = 0;
+    seq->hi_frac = 0xFF;
+    seq->med_frac = 0x00;
     seq->bitslice_keep_bits=13;
     seq->format =  OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
 
@@ -151,6 +170,7 @@ void core_init_state(){
     state.base.errors = 0;
     state.base.corr_products_mask=0b1111111111111111; //65535
     state.base.spectrometer_enable = false;
+    state.base.rand_state = 0xFEEDD0D0;
     spec_set_spectrometer_enable(false);
     housekeeping_request = 0;
     range_adc = 0;
@@ -258,10 +278,17 @@ inline static bool process_cdi()
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
-                RFS_start();
+                if (!state.base.spectrometer_enable) {
+                    flash_state_store(flash_store_pointer);
+                    RFS_start();
+                }
                 break;
             case RFS_SET_STOP:
-                RFS_stop();
+                if (state.base.spectrometer_enable) {
+                    flash_state_clear(flash_store_pointer);
+                    flash_store_pointer = (++flash_store_pointer)%MAX_STATE_SLOTS;  
+                    RFS_stop();
+                }
                 break;                
             case RFS_SET_RESET:
                 RFS_stop();
@@ -401,10 +428,10 @@ inline static bool process_cdi()
                 state.seq.notch = arg_low;
                 break;
             case RFS_SET_AVG_SET_HI:
-                cdi_not_implemented("RFS_SET_AVG_SET_HI");
+                state.seq.hi_frac = arg_low;
                 break;
             case RFS_SET_AVGI_SET_MID:
-                cdi_not_implemented("RFS_SET_AVGI_SET_MID");
+                state.seq.med_frac = arg_low;
                 break;
             case RFS_SET_OUTPUT_FORMAT:
                 if (arg_low > 2) {
@@ -790,6 +817,23 @@ void dispatch_16bit_float1_data() {
     cdi_not_implemented("16bit w float1 data format");    
 }
 
+uint32_t get_next_baseAppID() {
+    // constants from the C standard library implementation of LCG
+    state.base.rand_state = 1103515245 * state.base.rand_state + 12345;
+    uint8_t rand = state.base.rand_state & 0xFF;
+    if (rand <= state.seq.hi_frac) {
+        return AppID_SpectraHigh;
+    } else if (rand <= state.seq.hi_frac + state.seq.med_frac) {
+        return AppID_SpectraMed;
+    } else {
+        return AppID_SpectraLow;
+    }
+    // should never be here, really
+    return AppID_SpectraLow;
+}
+
+
+
 void transfer_to_cdi () {
     debug_print ("Sending averaged spectra to CDI.\n\r");
 
@@ -800,7 +844,7 @@ void transfer_to_cdi () {
     state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
     state.cdi_dispatch.prod_count = 0; // 
     state.cdi_dispatch.Nfreq = state.Nfreq;
-    state.cdi_dispatch.appId = AppID_SpectraHigh; // fix
+    state.cdi_dispatch.appId = get_next_baseAppID();
     state.cdi_dispatch.format = state.seq.format;
     state.cdi_dispatch.packet_id = unique_packet_id;
 
@@ -905,6 +949,38 @@ if (spec_new_spectrum_ready())
     }
 }
 
+
+
+
+void restore_state() {
+    uint32_t arg1 = spec_read_uC_register(0);  // register contains argumed passed from bootloader
+    if (arg1==1) {
+        // remove all slots
+        for (int i=0; i<MAX_STATE_SLOTS; i++) {
+            flash_state_clear(i);
+        }
+        return;
+    }
+
+    flash_store_pointer == 0;
+    while (!flash_state_restore(flash_store_pointer)) {
+        flash_store_pointer++;
+        if (flash_store_pointer == MAX_STATE_SLOTS) {
+            // ideally start with a random store to avoid flash wear, but at this point we have nothing.
+            flash_store_pointer = 0;
+            return;
+        }
+    }
+    debug_print("Restored existing state from slot ")
+    debug_print_dec(flash_store_pointer);
+    debug_print("\r\n");
+    if (state.base.spectrometer_enable) {
+        RFS_start();
+    }
+    
+}
+
+
 void core_loop()
 {
     soft_reset_flag = false;
@@ -912,6 +988,8 @@ void core_loop()
     range_adc = 0;
     send_hello_packet();
     core_init_state();
+    // restore state from flash if unscheduled reset occured
+    restore_state();
 
     for (;;)
     {

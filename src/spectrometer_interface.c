@@ -221,3 +221,6 @@ void spec_disable_channel (uint8_t ch) {}
  bool spec_df_dropped() {
      return false;
  }
+
+
+ uint32_t spec_read_uC_register(uint8_t num) {return 0;}
