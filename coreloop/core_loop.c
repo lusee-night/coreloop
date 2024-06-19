@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "LuSEE_IO.h"
+#include "LuSEE_SPI.h"
+#include "LuSEE_Flash_cntrl.h"
 #include "core_loop.h"
 #include "spectrometer_interface.h"
 #include "cdi_interface.h"
@@ -22,10 +24,26 @@ uint8_t range_adc, resettle, request_waveform;
 bool tick_tock;
 bool drop_df;
 bool soft_reset_flag;
-uint32_t heartbeat_counter, heartbeat_packet_count;
 
-uint32_t resettle_counter;
+uint32_t heartbeat_packet_count;
+
+// thing that are touched in the interrupt need to be proclaimed volatile
+volatile uint32_t heartbeat_counter;
+volatile uint32_t resettle_counter;
 uint16_t flash_store_pointer;
+
+
+// FLASH constrol
+volatile uint32_t flash_clear;
+volatile uint32_t flash_write;
+volatile uint32_t flash_addr;
+void* flash_buf;
+volatile uint32_t flash_size;
+volatile uint32_t flash_wait;
+
+struct saved_core_state tmp_state;
+
+
 
 /**************************************************/
 
@@ -47,17 +65,114 @@ void cdi_not_implemented(const char *msg)
 }
 
 
-void flash_state_clear(uint8_t slot) {
-    // zero flash state
+uint32_t print_buf(const void* data, size_t size) {
+    uint8_t *b = (uint8_t *)(data);
+    for (int i=0; i<size; i++) {
+        debug_print_hex(b[i]);
+        debug_print(" ");
+    }
+    debug_print("\r\n")
 }
 
-void flash_state_store (uint8_t slot) {
-    // store state to flash
+
+
+void set_flash_addr (uint32_t slot) {
+    flash_addr = slot*PAGES_PER_SLOT*256 + Flash_Recov_Region_1;
 }
+
+
+void flash_state_clear(uint8_t slot) {
+   // need to clear just the first 4 bytes;
+    set_flash_addr(slot);
+    flash_clear = 4;
+}
+
+
+
+
+void flash_state_store (uint8_t slot) {
+    debug_print("Storing state to slot ");
+    debug_print_dec(slot);
+    debug_print("\r\n");
+    tmp_state.in_use = 0xBEBEC;
+
+    tmp_state.state = state;
+    /*uint8_t* b = (uint8_t *)(&tmp_state.state);
+    for (int i=0;i<sizeof(struct core_state);i++) b[i] = i%0xff;*/
+
+    tmp_state.CRC = CRC(&tmp_state.state,sizeof(struct core_state));
+    //debug_print("CRC:");
+    //debug_print_hex(tmp_state.CRC);
+    //debug_print("\r\n");
+    //print_buf(&tmp_state,sizeof(tmp_state));
+    set_flash_addr(slot);
+    flash_buf = &tmp_state;
+    flash_size = sizeof(tmp_state);
+    flash_clear = 4;
+}
+
+
+void  Read_Flash_uC (uint32_t size) {
+    // cannot reuse flash_size, since this would trigger write in the interrupt!!
+    while (size>0) {
+        //debug_print("flash read ")
+        //debug_print_dec(size);
+        //debug_print (" ");
+        //debug_print_hex(flash_addr);
+        //debug_print("\r\n");
+
+        SPI_read_page(flash_addr);  //opcode 03h  read page
+
+        uint32_t tocpy = (size<=256) ? size : 256;
+        memcpy (flash_buf, SFL_RD_BUFF, tocpy);
+        if (size>256) size-=256; else size=0;
+        flash_addr += 256;
+        flash_buf += 256;
+    }
+}
+
 
 bool flash_state_restore(uint8_t slot) {
     // try to restore state from flash
     // return true if successful 
+    //memset(&tmp_state, 0,  sizeof(tmp_state));
+    set_flash_addr(slot);
+    flash_buf = &tmp_state;
+    Read_Flash_uC(sizeof(uint32_t)); // first read just a little bit
+    //debug_print ("in use:")
+    //debug_print_hex (tmp_state.in_use);
+    //debug_print ("\r\n")
+    if (tmp_state.in_use == 0xBEBEC) {
+        debug_print("Found an occuped slot ");
+        debug_print_dec(slot);
+        debug_print("\r\n");
+
+        set_flash_addr(slot);
+        flash_buf = &tmp_state;
+        Read_Flash_uC(sizeof(tmp_state));
+        //print_buf(&tmp_state,sizeof(tmp_state));
+
+        uint32_t crc = CRC(&tmp_state.state,sizeof(struct core_state));
+        //debug_print_hex(tmp_state.CRC);
+        //debug_print (" ");
+        //debug_print_hex(crc);
+
+        if (crc == tmp_state.CRC) {
+         // VICTORY
+            debug_print(" CRC match, buying \r\n");
+            state = tmp_state.state;
+            return true;
+        }
+        debug_print(" CRC fail ?! \r\n");
+        state.base.errors |= FLASH_CRC_FAIL;
+        return false;
+     }
+    return false;
+ }
+
+
+void debug_helper(uint8_t arg) {
+    flash_state_restore(arg);
 }
 
 
@@ -270,29 +385,31 @@ inline static bool process_cdi()
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
+    debug_print ("Got new CDI command: ");
     debug_print_hex(arg_high);
     debug_print(" ");
     debug_print_hex(arg_low);
-    debug_print(" ");
-    debug_print ("Got new CDI command.\n\r")
+    debug_print("\r\n");
+
     if (cmd==RFS_Settings)  {
         switch (arg_high) {
             case RFS_SET_START:
                 if (!state.base.spectrometer_enable) {
-                    flash_state_store(flash_store_pointer);
                     RFS_start();
+                    flash_store_pointer = heartbeat_counter%MAX_STATE_SLOTS;
+                    flash_state_store(flash_store_pointer);
                 }
                 break;
             case RFS_SET_STOP:
                 if (state.base.spectrometer_enable) {
                     flash_state_clear(flash_store_pointer);
-                    flash_store_pointer = (++flash_store_pointer)%MAX_STATE_SLOTS;  
                     RFS_stop();
                 }
                 break;                
             case RFS_SET_RESET:
                 RFS_stop();
                 spec_set_reset();
+                spec_write_uC_register(0,arg_low);
                 soft_reset_flag = true;
                 return true;
             case RFS_SET_STORE:
@@ -319,7 +436,10 @@ inline static bool process_cdi()
                 else state.base.errors |= CDI_COMMAND_BAD_ARGS;
                 break;
 
-            
+            case RFS_SET_DEBUG:
+                debug_helper(arg_low);
+                break;
+
             case RFS_SET_TIME_TO_DIE:
                 debug_print("Recevied time-to-die.\n\r")
                 return true;
@@ -678,11 +798,11 @@ void transfer_from_df ()
                 df_ptr++;
                 ddr_ptr++;
                 }
-                debug_print("LZ: ");
+                /*debug_print("LZ: ");
                 debug_print_dec(32-leading_zeros_min[sp]);
                 debug_print(" ");
                 debug_print_dec(32-leading_zeros_max[sp]);
-                debug_print(" \r\n")
+                debug_print(" \r\n") */
 
             }
             else    {
@@ -954,10 +1074,17 @@ if (spec_new_spectrum_ready())
 
 void restore_state() {
     uint32_t arg1 = spec_read_uC_register(0);  // register contains argumed passed from bootloader
-    if (arg1==1) {
+    if (arg1 == 1) {
+        debug_print("Ignoring saved states\r\n");
+        return;
+    } else if (arg1==2) {
         // remove all slots
         for (int i=0; i<MAX_STATE_SLOTS; i++) {
+            debug_print("Deleting slot ");
+            debug_print_dec(i);
+            debug_print("\r\n");
             flash_state_clear(i);
+            while (flash_clear>0) {}
         }
         return;
     }
@@ -986,6 +1113,10 @@ void core_loop()
     soft_reset_flag = false;
     request_waveform = 0 ;
     range_adc = 0;
+    flash_clear = 0;
+    flash_size = 0;
+    flash_write = 0;
+    flash_wait = 0;
     send_hello_packet();
     core_init_state();
     // restore state from flash if unscheduled reset occured
@@ -1013,10 +1144,77 @@ uint8_t      MSYS_EI5_IRQHandler();
 uint8_t MSYS_EI5_IRQHandler(void)
 {
 
+    uint32_t tocpy;
     /* Clear the interrupt within the timer */
     if (resettle_counter > 0) resettle_counter--;   
     if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
     if (heartbeat_counter > 0) heartbeat_counter--;
+     // flash processing.
+    if (flash_wait>0) {
+        flash_wait --;
+    } else if (flash_clear>0) {
+        /*debug_print("flash clear ")
+        debug_print_dec(flash_clear);
+        debug_print("\r\n");*/
+        switch (flash_clear) {
+            case 3:
+                SPI_4k_erase_step1(flash_addr);
+                break;
+            case 2:
+                SPI_4k_erase_step2();
+                break;
+            case 1:
+                SPI_4k_erase_step3();
+                break;
+        }
+        flash_clear --;
+        flash_wait = 1;
+    } else if (flash_size>0) {
+        // after we cleared we can write if needed
+      if (flash_write == 0) flash_write = 4;
+      /*debug_print("flash write ")
+      debug_print_dec(flash_write);
+      debug_print (" ");
+      debug_print_dec(flash_size);
+      debug_print (" ");
+      debug_print_hex(flash_addr);
+      debug_print (" ");
+      uint32_t *v = (uint32_t *)flash_buf;
+      debug_print_hex(*v);
+      debug_print("\r\n");*/
+      switch (flash_write) {
+          case 4:
+              //int tocpy;
+              tocpy = (flash_size<=256) ? flash_size : 256;
+              //print_buf(flash_buf,50);
+              //memcpy (SFL_WR_BUFF, flash_buf, tocpy);
+              uint8_t *src = (uint8_t*) flash_buf;
+              uint8_t *tgt = (uint8_t*) SFL_WR_BUFF;
+              for (int i=0; i<tocpy; i++) tgt[i]=src[i];
+              //print_buf(SFL_WR_BUFF,50);
+              break;
+          case 3:
+              //debug_print (" ");
+              ///uint32_t *v = (uint32_t *)SFL_WR_BUFF;
+              //debug_print_hex(*v);
+              //debug_print("\r\n");
+              SPI_write_page_step1(flash_addr);
+              break;
+          case 2:
+              SPI_write_page_step2();
+              break;
+          case 1:
+              SPI_write_page_step3();
+              if (flash_size>256) flash_size-=256; else flash_size=0;
+              flash_addr+=256;
+              flash_buf+=256;
+              break;
+      }
+      flash_write --;
+      flash_wait = 1;
+  }
+
+
     TMR_clear_int(&g_core_timer_0);
     return (EXT_IRQ_KEEP_ENABLED);
 }

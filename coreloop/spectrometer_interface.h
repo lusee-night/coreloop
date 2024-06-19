@@ -113,5 +113,6 @@ void spec_clear_df_flag();
 
 // read the argument registers from bootloader
 uint32_t spec_read_uC_register(uint8_t num);
+void spec_write_uC_register(uint8_t num, uint32_t value);
 
 #endif

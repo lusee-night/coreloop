@@ -32,6 +32,9 @@
 // Request ADC waform arg contains channel number
 #define RFS_SET_WAVEFORM  0x08 
 
+
+#define RFS_SET_DEBUG 0x0D
+
 // prepare for power cut -- mode announcing power cut 5 seconds after issue
 #define RFS_SET_TIME_TO_DIE  0x0F 
 

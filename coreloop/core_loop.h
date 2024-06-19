@@ -17,11 +17,14 @@
 #define NSEQ_MAX 32
 #define DISPATCH_DELAY 3 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 2 // number of timer interrupts to wait before settling after a change
-#define HEARTBEAT_DELAY 1000 // number of timer interrupts to wait before sending heartbeat
+#define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
 
 #define ADC_STAT_SAMPLES 8000
 
 #define MAX_STATE_SLOTS 64
+//consistent with 4k erases
+#define PAGES_PER_SLOT 256
+
 
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
@@ -163,5 +166,7 @@ extern struct core_state state;
 extern bool soft_reset_flag;
 
 void core_loop();
+
+uint32_t CRC(const void* data, size_t size);
 
 #endif // CORE_LOOP_H

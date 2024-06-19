@@ -25,7 +25,7 @@
 #define ANALOG_AGC_ACTION_CH4 (1<<14)
 
 #define DF_SPECTRA_DROPPED (1<<15)
-
+#define FLASH_CRC_FAIL (1<<16)
 
 
 
