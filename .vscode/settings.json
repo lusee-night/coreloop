@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "cdi_interface.h": "c"
+        "cdi_interface.h": "c",
+        "lusee_io.h": "c"
     }
 }
