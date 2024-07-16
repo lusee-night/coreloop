@@ -13,4 +13,4 @@ void DDR3_init() {
     SPEC_TIME_RESOLVED = DDR3_BASE_ADDR + 2048*16*sizeof(uint32_t)*2; // size = 2048*16*sizeof(uint16_t)
 }
 
-void TMR_clear_int(int* ) {};
+void TMR_clear_int(int* time) {};
