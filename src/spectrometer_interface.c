@@ -21,6 +21,8 @@ bool adc_trigger;
 int32_t* SPEC_BUF;
 uint8_t channel_gain[NINPUT];
 
+#define N_BOOT_REGISTERS 16
+uint32_t boot_registers[N_BOOT_REGISTERS];
 
 // Mapping of channels to cross-correlations
 const int ch_ant1[] = {0,1,2,3, 0,0,  0,0,  0,0,  1,1,  1,1, 2, 2};
@@ -47,6 +49,9 @@ void spectrometer_init() {
     SPEC_BUF = malloc(NCHANNELS*NSPECTRA*sizeof(int32_t));
     adc_trigger = false;
     printf("Spectrometer init.\n");
+    for (int i=0; i<N_BOOT_REGISTERS; i++) {
+        boot_registers[i] = 0;
+    }
 }
 
 uint32_t spec_get_version(int s) {
@@ -223,4 +228,5 @@ void spec_disable_channel (uint8_t ch) {}
  }
 
 
- uint32_t spec_read_uC_register(uint8_t num) {return 0;}
+ uint32_t spec_read_uC_register(uint8_t num) {return boot_registers[num];}
+ void spec_write_uC_register(uint8_t num, uint32_t value) {boot_registers[num] = value;}

@@ -16,12 +16,11 @@
 |    1x | AppID_SpectraHigh           | High     | Main correlation products, high priorty
 |    2x | AppID_SpectraMed            | Med      | Main correlation products, medium priority
 |    3x | AppID_SpectraLow            | Low      | Main correlation products, low priority
-|    4x | AppID_SpectraRejectHigh     | High     | Rejected spectra, high priority
-|    5x | AppID_SpectraRejectMed      | Med      | Rejected spectra, medium priority
-|    6x | AppID_SpectraRejectLow      | Low      | Rejected Spectra, low priority
+|    4x | AppID_SpectraRejectHigh     | High     | Time-resolved spectra, high priority
+|    5x | AppID_SpectraRejectMed      | Med      | Time-resolved spectra, medium priority
+|    6x | AppID_SpectraRejectLow      | Low      | Time-resolved Spectra, low priority
 |    7x | AppID_ZoomSpectra           | High     | Spectral zoom-in spectra
-|    8x | AppID_TimeZoomSpectra       | High     | Time zoom-in spectra
-|    9x | AppID_Calibrator_Data       | High     | Calibrator data
+|    8x | AppID_Calibrator_Data       | High     | Calibrator data
 |    Dx | AppID_SpectraVeryLow        | VeryLow  | Very low priority, not expected to be normally downloaded
 |    Ex | AppID_FW_DirectSpectrum     | High     | x= 0...4 for 4 autocorrelatins
 |    Fx | AppID_RawADC                | High     | x= 0..4 for 4 raw ADC data streams

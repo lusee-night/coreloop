@@ -63,6 +63,9 @@ struct sequencer_state {
     uint8_t bitslice[NSPECTRA]; // for spectra 0x1F is all MSB, 0xFF is auto
     uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra
     uint8_t format; // output format to save data in
+    uint8_t reject_ratio; // how far we should be to reject stuff, zero to remove rejection
+    uint8_t reject_maxbad; // how many need to be bad to reject.
+    uint16_t tr_start, tr_stop, tr_avg_shift; // time resolved start, stop and averaging
 }__attribute__((packed));
 
 
@@ -91,6 +94,7 @@ struct core_state_base {
     uint8_t sequencer_step; // 0xFF is sequencer is disabled (up to Nseq)
     uint8_t sequencer_substep; // counting seq_times (up to seq_times[i])
     uint32_t rand_state;
+    uint8_t weight_previous, weight_current;
 }__attribute__((packed));
 
 
@@ -101,6 +105,7 @@ struct delayed_cdi_sending {
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
     uint16_t Nfreq; // number of frequencies that actually need to be sent
+    uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
 } __attribute__((packed));
 
@@ -110,7 +115,7 @@ struct core_state {
     struct core_state_base base;
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
-    uint16_t Navg1, Navg2;
+    uint16_t Navg1, Navg2, tr_avg;
     uint8_t Navg2_total_shift;
     uint16_t Nfreq; // number of frequency bins after taking into account averaging
     uint16_t gain_auto_max[NINPUT];

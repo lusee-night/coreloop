@@ -29,6 +29,7 @@ void TMR_clear_int(int* );
 extern void* DDR3_BASE_ADDR;
 extern void* SPEC_TICK;
 extern void* SPEC_TOCK;
+extern void* SPEC_TIME_RESOLVED;
 extern void* TLM_BUF;
 extern void* SPEC_BUF;
 
