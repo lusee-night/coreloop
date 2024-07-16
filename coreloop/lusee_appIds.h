@@ -23,8 +23,8 @@
 // Flight SW has booted; Priority:  High     
 #define AppID_uC_Start 0x0209
 
-// HeartBeat; Priority:  None     
-#define AppID_uC_HeartBeat 0x020A
+// Regular hearbeat packet; Priority:  NONE     
+#define AppID_uC_Heartbeat 0x020A
 
 // For sequencer with a limited number of steps; Priority:  High     
 #define AppID_uC_Sequencer_complete 0x020B
@@ -41,23 +41,20 @@
 // Main correlation products, low priority; Priority:  Low      
 #define AppID_SpectraLow 0x0230
 
-// Rejected spectra, high priority; Priority:  High     
+// Time-resolved spectra, high priority; Priority:  High     
 #define AppID_SpectraRejectHigh 0x0240
 
-// Rejected spectra, medium priority; Priority:  Med      
+// Time-resolved spectra, medium priority; Priority:  Med      
 #define AppID_SpectraRejectMed 0x0250
 
-// Rejected Spectra, low priority; Priority:  Low      
+// Time-resolved Spectra, low priority; Priority:  Low      
 #define AppID_SpectraRejectLow 0x0260
 
 // Spectral zoom-in spectra; Priority:  High     
 #define AppID_ZoomSpectra 0x0270
 
-// Time zoom-in spectra; Priority:  High     
-#define AppID_TimeZoomSpectra 0x0280
-
 // Calibrator data; Priority:  High     
-#define AppID_Calibrator_Data 0x0290
+#define AppID_Calibrator_Data 0x0280
 
 // Very low priority, not expected to be normally downloaded; Priority:  VeryLow  
 #define AppID_SpectraVeryLow 0x02D0

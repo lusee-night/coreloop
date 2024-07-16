@@ -35,20 +35,17 @@ RFS_SET_RANGE_ADC =  0x07
 # Request ADC waform arg contains channel number
 RFS_SET_WAVEFORM =  0x08 
 
+# Debug command (used only in debugging)
+RFS_SET_DEBUG =  0x0D 
+
 # prepare for power cut -- mode announcing power cut 5 seconds after issue
 RFS_SET_TIME_TO_DIE =  0x0F 
 
-# Test modes stored internally, by number in argument
-RFS_SET_TEST =  0x10 
-
-# Science modes stored internally, by number in argument
-RFS_SET_SCIENCE =  0x11 
-
 # Load sequencer mode from flash
-RFS_SET_LOAD_FL =  0x12 
+RFS_SET_LOAD_FL =  0x10 
 
 # Store sequencer mode into flash
-RFS_SET_STORE_FL =  0x13 
+RFS_SET_STORE_FL =  0x11 
 
 # set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 RFS_SET_GAIN_ANA_SET =  0x30 
@@ -83,71 +80,86 @@ RFS_SET_ROUTE_SET4 =  0x43
 # set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
 RFS_SET_AVG_SET =  0x50 
 
-# set outlier rejectection. DD specifies the level of rejection with 00 disabled and 10 standard outlier rejection.
-RFS_SET_AVG_OUTLIER =  0x51 
-
 # set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected)
-RFS_SET_AVG_FREQ =  0x52 
+RFS_SET_AVG_FREQ =  0x51 
 
 # set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256
-RFS_SET_AVG_NOTCH =  0x53 
+RFS_SET_AVG_NOTCH =  0x52 
 
 # set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
-RFS_SET_AVG_SET_HI =  0x54 
+RFS_SET_AVG_SET_HI =  0x53 
 
 # set medium priority fraction, low priority is 1-high-medium
-RFS_SET_AVGI_SET_MID =  0x55 
+RFS_SET_AVGI_SET_MID =  0x54 
 
 # set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
-RFS_SET_OUTPUT_FORMAT =  0x56 
+RFS_SET_OUTPUT_FORMAT =  0x55 
 
 # set the output correlation mask products 0-7 (autocorrelations are 4 LSB)
-RFS_SET_PRODMASK_LOW =  0x57 
+RFS_SET_PRODMASK_LOW =  0x56 
 
 # set the output correlation mask products 8-15
-RFS_SET_PRODMASK_HIGH =  0x58 
+RFS_SET_PRODMASK_HIGH =  0x57 
+
+# Set fraction to reject, 0 to disable rejections
+RFS_SET_REJ_SET =  0x60 
+
+# Number of bad samples to reject a spectrum
+RFS_SET_REJ_NBAD =  0x61 
+
+# Time-resolved spectra starting bin, LSB
+RFS_SET_TR_START_LSB =  0x62 
+
+# Time-resolved spectra stopping bin, LSB
+RFS_SET_TR_STOP_LSB =  0x63 
+
+# Time-resolved spectra stopping MSB (b4-7), starting MSB (b0-3)
+RFS_SET_TR_ST_MSB =  0x64 
+
+# frequency averaging
+RFS_SET_TR_AVG_SHIFT =  0x65 
 
 # set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
-RFS_SET_CAL_FRAC_SET =  0x60 
+RFS_SET_CAL_FRAC_SET =  0x70 
 
 # set max drift guard in units of 0.1ppm
-RFS_SET_CAL_MAX_SET =  0x61 
+RFS_SET_CAL_MAX_SET =  0x71 
 
 # set lock drift guard in units of 0.01ppm
-RFS_SET_CAL_LOCK_SET =  0x62 
+RFS_SET_CAL_LOCK_SET =  0x72 
 
 # set snr required for lock
-RFS_SET_CAL_SNR_SET =  0x63 
+RFS_SET_CAL_SNR_SET =  0x73 
 
 # set starting bin (/(2*4))
-RFS_SET_CAL_BIN_ST =  0x64 
+RFS_SET_CAL_BIN_ST =  0x74 
 
 # set end bin (/(2*4))
-RFS_SET_CAL_BIN_EN =  0x65 
+RFS_SET_CAL_BIN_EN =  0x75 
 
 # set antenna mask as the lower 4 bits. 0x00001111 = all antennas enabled
-RFS_SET_CAL_ANT_MASK =  0x66 
+RFS_SET_CAL_ANT_MASK =  0x76 
 
 # enable zoom channel
-RFS_SET_ZOOM_EN =  0x70 
+RFS_SET_ZOOM_EN =  0x80 
 
 # set zoom 1 input channel
-RFS_SET_ZOOM_SET1 =  0x71 
+RFS_SET_ZOOM_SET1 =  0x81 
 
 # set zoom 1 spectral channel low bits
-RFS_SET_ZOOM_SET1_LO =  0x72 
+RFS_SET_ZOOM_SET1_LO =  0x82 
 
 # set zoom 1 spectral channel high bits
-RFS_SET_ZOOM_SET1_HI =  0x73 
+RFS_SET_ZOOM_SET1_HI =  0x83 
 
 # set zoom 2 input channel
-RFS_SET_ZOOM_SET2 =  0x74 
+RFS_SET_ZOOM_SET2 =  0x84 
 
 # set zoom 2 spectral channel# low bits
-RFS_SET_ZOOM_SET2_LO =  0x75 
+RFS_SET_ZOOM_SET2_LO =  0x85 
 
 # set zoom 2 spectral channel# high bits
-RFS_SET_ZOOM_SET2_HI =  0x76 
+RFS_SET_ZOOM_SET2_HI =  0x86 
 
 # enable (DD>0), disable sequencer  (DD=0)
 RFS_SET_SEQ_EN =  0xA0 

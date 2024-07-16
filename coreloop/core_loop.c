@@ -224,7 +224,7 @@ bool process_hearbeat() {
     msg[6] = 'R';
     msg[7] = 'L';
 
-    cdi_dispatch(AppID_uC_HeartBeat, 8);
+    cdi_dispatch(AppID_uC_Heartbeat, 8);
     heartbeat_counter = HEARTBEAT_DELAY;
     return true;
 }
@@ -264,12 +264,16 @@ void default_seq (struct sequencer_state *seq)
     seq->med_frac = 0x00;
     seq->bitslice_keep_bits=13;
     seq->format =  OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
+    seq->reject_ratio = 0; // no rejection by default
+    seq->reject_maxbad = 0;
+
 
 }
 
 void fill_derived() {
     state.Navg1 = 1 << state.seq.Navg1_shift;
     state.Navg2 = 1 << state.seq.Navg2_shift;
+    state.tr_avg = 1 << state.seq.tr_avg_shift; 
     // total shift takes into account frequency averaging;
     state.Navg2_total_shift = state.seq.Navg2_shift;
     state.Nfreq = NCHANNELS; 
@@ -297,6 +301,7 @@ void core_init_state(){
     state.program.Nseq = 0;
     state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
     tick_tock = true;
+    state.base.weight_current = state.base.weight_previous = 0;
     drop_df = false;
     update_time();
     unique_packet_id = state.base.time_seconds;
@@ -531,14 +536,6 @@ inline static bool process_cdi()
                 state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
 
                 fill_derived();
-                debug_print("NAVG : ")
-                debug_print_dec(state.Navg1);
-                debug_print(" ")
-                debug_print_dec(state.Navg2);
-                debug_print("\n")
-                break;
-            case RFS_SET_AVG_OUTLIER:
-                cdi_not_implemented("RFS_SET_AVG_OUTLIER");
                 break;
             case RFS_SET_AVG_FREQ:
                 state.seq.Navgf = arg_low;
@@ -567,6 +564,29 @@ inline static bool process_cdi()
             case RFS_SET_PRODMASK_HIGH:
                 state.base.corr_products_mask = (state.base.corr_products_mask & 0x00FF) | (arg_low << 8);
                 break;
+
+            case RFS_SET_REJ_SET:
+                state.seq.reject_ratio = arg_low;
+                break;
+            case RFS_SET_REJ_NBAD:
+                state.seq.reject_maxbad = arg_low;
+                break;
+            case RFS_SET_TR_START_LSB:
+                state.seq.tr_start = ((state.seq.tr_start & 0xFF00) +arg_low);
+                break;  
+            case RFS_SET_TR_STOP_LSB:
+                state.seq.tr_stop = ((state.seq.tr_stop & 0xFF00) +arg_low);
+                break;
+            case RFS_SET_TR_ST_MSB:
+                state.seq.tr_start = ((state.seq.tr_start & 0x00FF) + ((arg_low & (0x0F)) << 8));
+                state.seq.tr_stop = ((state.seq.tr_stop & 0x00FF) + ((arg_low & (0xF0)) << 4));
+                break;
+            case RFS_SET_TR_AVG_SHIFT:
+                state.seq.tr_avg_shift = arg_low;
+                state.tr_avg = 1 << state.seq.tr_avg_shift;
+                break;
+
+            
             case RFS_SET_CAL_FRAC_SET:
                 cdi_not_implemented("RFS_SET_CAL_FRAC_SET");
                 break;
@@ -768,71 +788,99 @@ static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
     return val;
 }
 
+int16_t encode_12plus4(int32_t val) {
+    int16_t out = 0;
+    uint8_t lz = __builtin_clz(abs(val));
+    if (lz>15) lz=15;
+    // Super important: since the MSB after shifting is zero, we can skip it.
+    out = (val >> (16-lz-1)) & 0xFFF0 + lz; // the first 12 bits are the actual value, the last 4 are the number of leading zeros.
+    return out;
+}
+
+int32_t decode_12plus4(int16_t val) {
+    int16_t out = 0;
+    uint8_t lz = val & 0x0F;
+    out = (0x0100+ (val & 0xFFF0)) << (16-lz-1);
+    return out;
+}
+
 
 void transfer_from_df ()
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)SPEC_BUF;
     int32_t *ddr_ptr = tick_tock ? (int32_t *)(SPEC_TICK) : (int32_t *)(SPEC_TOCK);
+    int32_t *ddr_ptr_previous = tick_tock ? (int32_t *)(SPEC_TOCK) : (int32_t *)(SPEC_TICK);
     uint16_t mask = 1;
-    for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
-        leading_zeros_min[sp] = 32;
-        leading_zeros_max[sp] = 0;
-        if (state.base.corr_products_mask & (mask)) {
-            if (sp<4) {
+    bool accept = true;
+    if ((state.seq.reject_ratio>0) & (state.base.weight_previous>(state.Navg2/2))) {
+        uint32_t bad = 0;
+        for (uint16_t sp = 0; sp< NSPECTRA_AUTO; sp++) {
+            if (state.base.corr_products_mask & (mask)) {
                 for (uint16_t i = 0; i < NCHANNELS; i++) {
-                *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
-                if (state.seq.Navgf == 2) {
-                    df_ptr++; i++;
-                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
-                } else if (state.seq.Navgf > 2) {
-                    df_ptr++; i++;
-                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
-                    df_ptr++; i++;
-                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
-                    df_ptr++; i++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
-                    if (state.seq.Navgf == 4) {
-                    *ddr_ptr += (get_with_zeros(*df_ptr,&leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                    int32_t val = *df_ptr;
+                    int32_t previous_val = *ddr_ptr_previous/state.base.weight_previous;            
+                    if (abs(val-previous_val)>(previous_val/state.seq.reject_ratio)) {
+                        bad++;
                     }
+                    df_ptr++;
+                    ddr_ptr_previous++;
                 }
-                df_ptr++;
-                ddr_ptr++;
-                }
-                /*debug_print("LZ: ");
-                debug_print_dec(32-leading_zeros_min[sp]);
-                debug_print(" ");
-                debug_print_dec(32-leading_zeros_max[sp]);
-                debug_print(" \r\n") */
-
-            }
-            else    {
-                for (uint16_t i = 0; i < NCHANNELS; i++) {
-                    // FIX FIX for negative numbers
-                *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
-                if (state.seq.Navgf == 2) {
-                    df_ptr++; i++;
-                    *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
-                } else if (state.seq.Navgf > 2) {
-                    df_ptr++; i++;
-                    *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
-                    df_ptr++; i++;
-                    *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
-                    df_ptr++; i++; // Skip the 100kHz, 200kHz, etc which are picket-fence contaminated
-                    if (state.seq.Navgf == 4) {
-                    *ddr_ptr += (*df_ptr << state.Navg2_total_shift);
-                    }
-                }
-                df_ptr++;
-                ddr_ptr++;
-                }
-            }
-        } else {df_ptr+=NCHANNELS; ddr_ptr+=NCHANNELS;}
-        mask <<= 1;        
+            } else {df_ptr+=NCHANNELS; ddr_ptr_previous+=NCHANNELS;}
+            mask <<= 1;
+        }   
+        if (bad > state.seq.reject_maxbad)  accept = false;
+        // reinitialize the pointers
+        df_ptr = (int32_t *)SPEC_BUF;
+        mask = 1;
     }
-    
+
+    if (accept) {
+        state.base.weight_current ++;
+        for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
+            leading_zeros_min[sp] = 32;
+            leading_zeros_max[sp] = 0;
+            if (state.base.corr_products_mask & (mask)) {
+                if (sp < NSPECTRA_AUTO) {
+                        for (uint16_t i = 0; i < NCHANNELS; i++) {
+                            ddr_ptr+= get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]);
+                            df_ptr++;
+                            ddr_ptr++;
+                        } 
+                    } else {
+                    for (uint16_t i = 0; i < NCHANNELS; i++) {                        
+                        *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
+                        df_ptr++;
+                        ddr_ptr++;
+                    }
+                }
+            } else {df_ptr+=NCHANNELS; ddr_ptr+=NCHANNELS;}        
+            mask <<= 1;        
+        }   
+    }
+
+    if (state.seq.tr_stop>state.seq.tr_start) {
+        int16_t* tr = (int16_t *)(SPEC_TIME_RESOLVED + NCHANNELS*avg_counter*sizeof(int16_t));
+        df_ptr = (int32_t *)SPEC_BUF;
+        mask = 1;
+        for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
+            if (state.base.corr_products_mask & (mask)) {
+                int32_t *ddr_ptr = (int32_t *)(SPEC_TOCK) + sp*NCHANNELS + state.seq.tr_start;
+                for (uint16_t i = state.seq.tr_start; i <state.seq.tr_stop; i+=state.tr_avg) {
+                    uint32_t val = 0;
+                    for (uint16_t j =0; j<state.tr_avg; j++) {
+                        val += (*df_ptr << state.seq.tr_avg_shift);
+                        df_ptr++;
+                    }
+                    *tr = encode_12plus4(val);
+                }
+            } else {df_ptr+=NCHANNELS;}
+            mask <<= 1;
+        }
+    }
+
     //if (avg_counter%100 == 0) debug_print ("Processed 100 spectra...\n");
     avg_counter++;
-
 }
 
 
@@ -922,7 +970,26 @@ void dispatch_32bit_data() {
     uint32_t data_size = state.cdi_dispatch.Nfreq*sizeof(int32_t);
     uint32_t packet_size = data_size+2*sizeof(int32_t);
     wait_for_cdi_ready();
-    memcpy(cdi_ptr, ddr_ptr, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
+    switch (state.cdi_dispatch.Navgf) {
+        case 1:
+            memcpy(cdi_ptr, ddr_ptr, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
+            break;
+        case 2:
+            for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
+                cdi_ptr[i] = ddr_ptr[i*2]<<1 + ddr_ptr[i*2+1]<<1;
+            }
+            break;
+        case 3:
+            for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
+                cdi_ptr[i] = ddr_ptr[i*4]<<2 + ddr_ptr[i*4+1]<<2 + ddr_ptr[i*4+2]<<2; 
+            }
+            break;
+        case 4:
+            for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
+                cdi_ptr[i] = ddr_ptr[i*4]<<2 + ddr_ptr[i*4+1]<<2 + ddr_ptr[i*4+2]<<2 + ddr_ptr[i*4+3]<<2;
+            }
+            break;
+    }
 
     memset(ddr_ptr, 0, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
     *crc_ptr = CRC(cdi_ptr, data_size);
@@ -964,6 +1031,7 @@ void transfer_to_cdi () {
     state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
     state.cdi_dispatch.prod_count = 0; // 
     state.cdi_dispatch.Nfreq = state.Nfreq;
+    state.cdi_dispatch.Navgf = state.seq.Navgf;
     state.cdi_dispatch.appId = get_next_baseAppID();
     state.cdi_dispatch.format = state.seq.format;
     state.cdi_dispatch.packet_id = unique_packet_id;
@@ -1058,6 +1126,8 @@ if (spec_new_spectrum_ready())
             {
                 avg_counter = 0;
                 tick_tock = !tick_tock;
+                state.base.weight_previous = state.base.weight_current;
+                state.base.weight_current = 0;
                 // Now one by one, we will loop through the packets placed in DDR Memory
                 // For each channel, set the APID, send it to the SRAM
                 // Then check to see if this software or the client will control the CDI writes

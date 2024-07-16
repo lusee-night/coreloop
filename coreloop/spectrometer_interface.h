@@ -9,6 +9,7 @@
 
 #define NCHANNELS 2048
 #define NSPECTRA 16
+#define NSPECTRA_AUTO 4
 #define NINPUT 4
 
 // for bit slicing
