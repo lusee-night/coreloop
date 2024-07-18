@@ -1,7 +1,9 @@
 #ifndef CORE_LOOP_H
 #define CORE_LOOP_H
+#pragma pack(1)
 
-#define VERSION 0.1-DEV
+
+#define VERSIO1N 0.1-DEV
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
 #define VERSION_ID 0x00000100

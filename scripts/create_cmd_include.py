@@ -1,8 +1,9 @@
 # we will convert the ../documentation/commands.md to a C header file
 #
 #
+
 of = open("coreloop/lusee_commands.h", "w")
-ofp = open ('scripts/lusee_commands.py', 'w')
+ofp = open ("pycoreloop/lusee_commands.py", 'w')
 of.write("""
 #ifndef LUSEE_SETTINGS_H
 #define LUSEE_SETTINGS_H
