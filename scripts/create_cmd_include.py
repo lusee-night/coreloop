@@ -10,7 +10,8 @@ of.write("""
 
 // Master mode command for which everything below applies.
 #define RFS_Settings 0x10
-
+// Wait command for control, not recognized by the actual_coreloop
+#define CTRL_WAIT 0XE0
 """
 )
 
@@ -22,6 +23,7 @@ ofp.write("""
 
 # Master CMD
 RFS_SETTINGS = 0x10
+CTRL_WAIT = 0XE0
 
 # Commands
           """)

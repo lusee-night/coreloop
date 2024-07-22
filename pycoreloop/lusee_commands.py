@@ -6,6 +6,7 @@
 
 # Master CMD
 RFS_SETTINGS = 0x10
+CTRL_WAIT = 0XE0
 
 # Commands
           # wait mode - disable data taking

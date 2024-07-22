@@ -4,7 +4,8 @@
 
 // Master mode command for which everything below applies.
 #define RFS_Settings 0x10
-
+// Wait command for control, not recognized by the actual_coreloop
+#define CTRL_WAIT 0XE0
 // wait mode - disable data taking
 #define RFS_SET_STOP  0x00 
 
