@@ -906,15 +906,17 @@ uint32_t CRC(const void* data, size_t size) {
 bool process_housekeeping() {
     if (housekeeping_request == 0) return false;
     housekeeping_request--;
+    struct housekeeping_data_base *base = (struct housekeeping_data_base *)TLM_BUF;
+    wait_for_cdi_ready();
+    base->version = VERSION_ID;
+    base->unique_packet_id = unique_packet_id;
+    base->errors = state.base.errors;
+    base->housekeeping_type = housekeeping_request;
+
     switch (housekeeping_request) {
         case 0:
             debug_print ("Sending housekeeping type 0\n\r");
             struct housekeeping_data_0 *hk0 = (struct housekeeping_data_0 *)TLM_BUF;
-            wait_for_cdi_ready();
-            hk0->version = VERSION_ID;
-            hk0->unique_packet_id = unique_packet_id;
-            hk0->errors = state.base.errors;
-            hk0->housekeeping_type = 0;
             hk0->core_state = state;
             cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_0));
             break;
@@ -922,11 +924,6 @@ bool process_housekeeping() {
         case 1:
             debug_print ("Sending housekeeping type 1\n\r");
             struct housekeeping_data_1 *hk1 = (struct housekeeping_data_1 *)TLM_BUF;
-            wait_for_cdi_ready();
-            hk1->version = VERSION_ID;
-            hk1->unique_packet_id = unique_packet_id;
-            hk1->errors = state.base.errors;
-            hk1->housekeeping_type = 1;
             for (int i=0; i<NINPUT; i++) {
                 hk1->ADC_stat[i] = state.base.ADC_stat[i];
                 hk1->actual_gain[i] = state.base.actual_gain[i];

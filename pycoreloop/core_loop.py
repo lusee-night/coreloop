@@ -1162,48 +1162,54 @@ struct_meta_data._fields_ = [
 ]
 
 # /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 153
+class struct_housekeeping_data_base(Structure):
+    pass
+
+struct_housekeeping_data_base._pack_ = 1
+struct_housekeeping_data_base.__slots__ = [
+    'version',
+    'unique_packet_id',
+    'errors',
+    'housekeeping_type',
+]
+struct_housekeeping_data_base._fields_ = [
+    ('version', uint16_t),
+    ('unique_packet_id', uint32_t),
+    ('errors', uint32_t),
+    ('housekeeping_type', uint16_t),
+]
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 160
 class struct_housekeeping_data_0(Structure):
     pass
 
 struct_housekeeping_data_0._pack_ = 1
 struct_housekeeping_data_0.__slots__ = [
-    'version',
-    'unique_packet_id',
-    'errors',
-    'housekeeping_type',
+    'base',
     'core_state',
 ]
 struct_housekeeping_data_0._fields_ = [
-    ('version', uint16_t),
-    ('unique_packet_id', uint32_t),
-    ('errors', uint32_t),
-    ('housekeeping_type', uint16_t),
+    ('base', struct_housekeeping_data_base),
     ('core_state', struct_core_state),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 161
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 165
 class struct_housekeeping_data_1(Structure):
     pass
 
 struct_housekeeping_data_1._pack_ = 1
 struct_housekeeping_data_1.__slots__ = [
-    'version',
-    'unique_packet_id',
-    'errors',
-    'housekeeping_type',
+    'base',
     'ADC_stat',
     'actual_gain',
 ]
 struct_housekeeping_data_1._fields_ = [
-    ('version', uint16_t),
-    ('unique_packet_id', uint32_t),
-    ('errors', uint32_t),
-    ('housekeeping_type', uint16_t),
+    ('base', struct_housekeeping_data_base),
     ('ADC_stat', struct_ADC_stat * int(4)),
     ('actual_gain', uint8_t * int(4)),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 172
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 173
 for _lib in _libs.values():
     try:
         state = (struct_core_state).in_dll(_lib, "state")
@@ -1211,7 +1217,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 173
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 174
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1219,7 +1225,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 175
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 176
 for _lib in _libs.values():
     if not _lib.has("core_loop", "cdecl"):
         continue
@@ -1228,7 +1234,7 @@ for _lib in _libs.values():
     core_loop.restype = None
     break
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 177
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 178
 for _lib in _libs.values():
     if not _lib.has("CRC", "cdecl"):
         continue
@@ -1303,9 +1309,11 @@ startup_hello = struct_startup_hello# /home/anze/Dropbox/work/lusee/coreloop/cor
 
 meta_data = struct_meta_data# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 146
 
-housekeeping_data_0 = struct_housekeeping_data_0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 153
+housekeeping_data_base = struct_housekeeping_data_base# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 153
 
-housekeeping_data_1 = struct_housekeeping_data_1# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 161
+housekeeping_data_0 = struct_housekeeping_data_0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 160
+
+housekeeping_data_1 = struct_housekeeping_data_1# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 165
 
 # No inserted files
 

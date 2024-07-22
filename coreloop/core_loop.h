@@ -68,7 +68,7 @@ struct sequencer_state {
     uint8_t reject_ratio; // how far we should be to reject stuff, zero to remove rejection
     uint8_t reject_maxbad; // how many need to be bad to reject.
     uint16_t tr_start, tr_stop, tr_avg_shift; // time resolved start, stop and averaging
-}__attribute__((packed));
+};
 
 
 struct sequencer_program {
@@ -76,7 +76,7 @@ struct sequencer_program {
     struct sequencer_state seq[NSEQ_MAX]; // sequencer states
     uint16_t seq_times[NSEQ_MAX]; // steps in each sequencer state;
     uint16_t sequencer_repeat; // number of sequencer repeats, 00 for infinite 
-}__attribute__((packed));
+};
 
 
 // core state base contains additional information that will be dumped with every metadata packet
@@ -97,7 +97,7 @@ struct core_state_base {
     uint8_t sequencer_substep; // counting seq_times (up to seq_times[i])
     uint32_t rand_state;
     uint8_t weight_previous, weight_current;
-}__attribute__((packed));
+};
 
 
 
@@ -109,7 +109,7 @@ struct delayed_cdi_sending {
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
-} __attribute__((packed));
+};
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
@@ -123,13 +123,13 @@ struct core_state {
     uint16_t gain_auto_max[NINPUT];
     bool sequencer_enabled;
     struct sequencer_program program;
-}__attribute__((packed));
+};
 
 struct saved_core_state {
     uint32_t in_use;
     struct core_state state;
     uint32_t CRC;
-}__attribute__((packed));
+};
 
 struct startup_hello {
     uint32_t SW_version;
@@ -140,7 +140,7 @@ struct startup_hello {
     uint32_t unique_packet_id;
     uint32_t time_seconds;
     uint16_t time_subseconds;
-}__attribute__((packed));
+};
 
 // metadata payload, compatible with core_state
 struct meta_data {
@@ -148,24 +148,25 @@ struct meta_data {
     uint32_t unique_packet_id;
     struct sequencer_state seq;
     struct core_state_base base;
-} __attribute__((packed));
+};
+
+struct housekeeping_data_base {
+    uint16_t version; 
+    uint32_t unique_packet_id;
+    uint32_t errors;
+    uint16_t housekeeping_type;
+};
 
 struct housekeeping_data_0 {
-    uint16_t version; 
-    uint32_t unique_packet_id;
-    uint32_t errors;
-    uint16_t housekeeping_type;
+    struct housekeeping_data_base base;
     struct core_state core_state;
-}__attribute__((packed));
+};
 
 struct housekeeping_data_1 {
-    uint16_t version; 
-    uint32_t unique_packet_id;
-    uint32_t errors;
-    uint16_t housekeeping_type;
+    struct housekeeping_data_base base;
     struct ADC_stat ADC_stat[NINPUT];
     uint8_t actual_gain[NINPUT];
-}__attribute__((packed));
+};
 
 
 
