@@ -1,15 +1,17 @@
 # we will convert the ../documentation/commands.md to a C header file
 #
 #
+
 of = open("coreloop/lusee_commands.h", "w")
-ofp = open ('scripts/lusee_commands.py', 'w')
+ofp = open ("pycoreloop/lusee_commands.py", 'w')
 of.write("""
 #ifndef LUSEE_SETTINGS_H
 #define LUSEE_SETTINGS_H
 
 // Master mode command for which everything below applies.
 #define RFS_Settings 0x10
-
+// Wait command for control, not recognized by the actual_coreloop
+#define CTRL_WAIT 0XE0
 """
 )
 
@@ -21,6 +23,7 @@ ofp.write("""
 
 # Master CMD
 RFS_SETTINGS = 0x10
+CTRL_WAIT = 0XE0
 
 # Commands
           """)

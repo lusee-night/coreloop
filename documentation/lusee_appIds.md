@@ -3,7 +3,7 @@
 
 | 0x2XX | Name                        | Priority | Description               |
 |-------|-----------------------------|----------|---------------------------|
-|    00 | AppID Read Response         | High     | RFS register read back
+|    00 | AppID_Read_Response         | High     | RFS register read back
 |    01 | AppID_Reset_Request         | High     | RFS watchdog is requesting a reset + metadata
 |    05 | AppID_Registers_RB          | High     | Dumps all register values from the RFS into packet
 |    06 | AppID_uC_Housekeeping       | High     | uC generater housekeeping

@@ -3,7 +3,7 @@
 #define LUSEE_APPIDS_H
 
 // RFS register read back; Priority:  High     
-#define AppID Read Response 0x0200
+#define AppID_Read_Response 0x0200
 
 // RFS watchdog is requesting a reset + metadata; Priority:  High     
 #define AppID_Reset_Request 0x0201
