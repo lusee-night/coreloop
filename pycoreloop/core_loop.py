@@ -1209,7 +1209,19 @@ struct_housekeeping_data_1._fields_ = [
     ('actual_gain', uint8_t * int(4)),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 173
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 171
+class struct_housekeeping_data_99(Structure):
+    pass
+
+struct_housekeeping_data_99._pack_ = 1
+struct_housekeeping_data_99.__slots__ = [
+    'section_break',
+]
+struct_housekeeping_data_99._fields_ = [
+    ('section_break', uint32_t),
+]
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 177
 for _lib in _libs.values():
     try:
         state = (struct_core_state).in_dll(_lib, "state")
@@ -1217,7 +1229,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 174
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 178
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1225,7 +1237,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 176
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 180
 for _lib in _libs.values():
     if not _lib.has("core_loop", "cdecl"):
         continue
@@ -1234,7 +1246,7 @@ for _lib in _libs.values():
     core_loop.restype = None
     break
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 178
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 182
 for _lib in _libs.values():
     if not _lib.has("CRC", "cdecl"):
         continue
@@ -1314,6 +1326,8 @@ housekeeping_data_base = struct_housekeeping_data_base# /home/anze/Dropbox/work/
 housekeeping_data_0 = struct_housekeeping_data_0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 160
 
 housekeeping_data_1 = struct_housekeeping_data_1# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 165
+
+housekeeping_data_99 = struct_housekeeping_data_99# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 171
 
 # No inserted files
 

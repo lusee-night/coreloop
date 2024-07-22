@@ -168,6 +168,10 @@ struct housekeeping_data_1 {
     uint8_t actual_gain[NINPUT];
 };
 
+struct housekeeping_data_99 {
+    uint32_t section_break;
+};
+
 
 
 extern struct core_state state;

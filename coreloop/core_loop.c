@@ -20,6 +20,7 @@ uint32_t unique_packet_id;
 uint8_t leading_zeros_min[NSPECTRA];
 uint8_t leading_zeros_max[NSPECTRA];
 uint8_t housekeeping_request;
+uint32_t section_break;
 uint8_t range_adc, resettle, request_waveform; 
 bool tick_tock;
 bool drop_df;
@@ -424,7 +425,7 @@ inline static bool process_cdi()
                 spec_recall();
                 break;
             case RFS_SET_HK_REQ:            
-                if (arg_low < 2) {
+                if ((arg_low < 2) || (arg_low == 99)) {
                     housekeeping_request = 1+arg_low; 
                 } else {
                     state.base.errors |= CDI_COMMAND_BAD_ARGS;
@@ -905,7 +906,7 @@ uint32_t CRC(const void* data, size_t size) {
 
 bool process_housekeeping() {
     if (housekeeping_request == 0) return false;
-    housekeeping_request--;
+    housekeeping_request--; // go back to the original one
     struct housekeeping_data_base *base = (struct housekeeping_data_base *)TLM_BUF;
     wait_for_cdi_ready();
     base->version = VERSION_ID;
@@ -929,6 +930,13 @@ bool process_housekeeping() {
                 hk1->actual_gain[i] = state.base.actual_gain[i];
             }
             cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_1));
+            break;
+
+        case 99:
+            debug_print ("Sending section break (hk 99)\n\r");
+            struct housekeeping_data_99 *hk_99 = (struct housekeeping_data_99 *)TLM_BUF;
+            hk_99->section_break = section_break++;
+            cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_99));
             break;
     }
     debug_print("E:");
@@ -1180,6 +1188,7 @@ void core_loop()
     soft_reset_flag = false;
     request_waveform = 0 ;
     range_adc = 0;
+    section_break = 0;
     flash_clear = 0;
     flash_size = 0;
     flash_write = 0;
