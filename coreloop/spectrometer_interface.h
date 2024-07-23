@@ -112,6 +112,9 @@ bool spec_df_dropped();
 // clears the DF flag
 void spec_clear_df_flag();
 
+// 
+void spec_set_ADC_ramp(bool enable);
+
 // read the argument registers from bootloader
 uint32_t spec_read_uC_register(uint8_t num);
 void spec_write_uC_register(uint8_t num, uint32_t value);

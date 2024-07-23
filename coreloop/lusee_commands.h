@@ -12,7 +12,7 @@
 // Start data acquisition. To start anything setup by 0x1x or 0x2x
 #define RFS_SET_START  0x01 
 
-// Soft reset, restores default configuration (as after boot)
+// Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs
 #define RFS_SET_RESET  0x02 
 
 // Stores current configuration
@@ -74,6 +74,9 @@
 
 // set routing for ADC channels 4
 #define RFS_SET_ROUTE_SET4  0x43 
+
+// set ADCs into a ramp mode (1 to enable, 0 distable)
+#define RFS_SET_ADC_RAMP  0x44 
 
 // set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
 #define RFS_SET_AVG_SET  0x50 

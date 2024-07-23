@@ -415,6 +415,7 @@ inline static bool process_cdi()
             case RFS_SET_RESET:
                 RFS_stop();
                 spec_set_reset();
+                // arglow controls what to do with the stored states after reset. 
                 spec_write_uC_register(0,arg_low);
                 soft_reset_flag = true;
                 return true;
@@ -529,6 +530,10 @@ inline static bool process_cdi()
 
             case RFS_SET_ROUTE_SET4:
                 set_route (3, arg_low);
+                break;
+
+            case RFS_SET_ADC_RAMP:
+                spec_set_ADC_ramp(arg_low);
                 break;
 
 
