@@ -1,4 +1,4 @@
-from . import core_loop as struct
+from . import core_loop as pystruct
 
 from . import lusee_commands as command
 command_from_value, value_from_command = {}, {}

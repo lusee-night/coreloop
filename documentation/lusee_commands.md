@@ -8,7 +8,7 @@
 |------|---------------------|----------------------------------------------------|                             
 | 0x00 | RFS_SET_STOP        | wait mode - disable data taking                         |                              | 
 | 0x01 | RFS_SET_START       | Start data acquisition. To start anything setup by 0x1x or 0x2x                        | 
-| 0x02 | RFS_SET_RESET       | Soft reset, restores default configuration (as after boot)                             |
+| 0x02 | RFS_SET_RESET       | Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs                            |
 | 0x03 | RFS_SET_STORE       | Stores current configuration                                                           |
 | 0x04 | RFS_SET_RECALL      | Recalls configuration from previous store                                              |
 | 0x05 | RFS_SET_HK_REQ      | Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;        |
@@ -46,6 +46,7 @@
 | 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 2
 | 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
 | 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4
+| 0x44 | RFS_SET_ADC_RAMP     | set ADCs into a ramp mode (1 to enable, 0 distable)                   |
 
 
 ### 0x5X Averaging and Output Settings
