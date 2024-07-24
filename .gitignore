@@ -62,3 +62,7 @@ cphere.sh
 cpthere.sh
 cpdiff.sh
 **~
+
+# JetBrains stuff
+.idea/
+cmake-build-debug/
