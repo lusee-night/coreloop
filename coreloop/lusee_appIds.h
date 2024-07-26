@@ -42,13 +42,13 @@
 #define AppID_SpectraLow 0x0230
 
 // Time-resolved spectra, high priority; Priority:  High     
-#define AppID_SpectraRejectHigh 0x0240
+#define AppID_SpectraTRHigh 0x0240
 
 // Time-resolved spectra, medium priority; Priority:  Med      
-#define AppID_SpectraRejectMed 0x0250
+#define AppID_SpectraTRMed 0x0250
 
 // Time-resolved Spectra, low priority; Priority:  Low      
-#define AppID_SpectraRejectLow 0x0260
+#define AppID_SpectraTRLow 0x0260
 
 // Spectral zoom-in spectra; Priority:  High     
 #define AppID_ZoomSpectra 0x0270
