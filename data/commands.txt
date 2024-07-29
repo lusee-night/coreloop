@@ -1,7 +1,6 @@
 # format is 
 # repetitions CMD       HI            Low
 1       RFS_SETTINGS RFS_SET_OUTPUT_FORMAT   00 # full 32bit
-1       RFS_SETTINGS RFS_SET_HK_REQ          01 # housekeeping type
 1       RFS_SETTINGS RFS_SET_GAIN_ANA_SET    22 # HLHL
 1       RFS_SETTINGS RFS_SET_GAIN_ANA_SET    FF # all auto 
 1       RFS_SETTINGS RFS_SET_SEQ_REP         03 # 3 repetitions

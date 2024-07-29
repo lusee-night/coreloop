@@ -43,7 +43,11 @@ enum output_format {
     OUTPUT_16BIT_FLOAT1,
 };
 
-
+enum cmd_format {
+    UNSPECIFIED,
+    CMD_FILE,
+    CMD_PORT,
+};
 
 
 
