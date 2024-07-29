@@ -227,7 +227,7 @@ void spec_disable_channel (uint8_t ch) {}
      return false;
  }
 
-void spec_set_ADC_ramp(bool enable) {};
+void spec_set_ADC_ramp() {};
 
  uint32_t spec_read_uC_register(uint8_t num) {return boot_registers[num];}
  void spec_write_uC_register(uint8_t num, uint32_t value) {boot_registers[num] = value;}
