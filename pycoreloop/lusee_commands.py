@@ -78,8 +78,8 @@ RFS_SET_ROUTE_SET3 =  0x42
 # set routing for ADC channels 4
 RFS_SET_ROUTE_SET4 =  0x43 
 
-# set ADCs into a ramp mode (1 to enable, 0 distable)
-RFS_SET_ADC_RAMP =  0x44 
+# set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones)
+RFS_SET_ADC_SPECIAL =  0x44 
 
 # set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
 RFS_SET_AVG_SET =  0x50 

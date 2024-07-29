@@ -532,8 +532,29 @@ inline static bool process_cdi()
                 set_route (3, arg_low);
                 break;
 
-            case RFS_SET_ADC_RAMP:
-                spec_set_ADC_ramp(arg_low);
+            case RFS_SET_ADC_SPECIAL:
+                switch(arg_low) {
+                    case 0:
+                        spec_set_enable_digital_func(false);
+                        spec_set_ADC_normal_ops();
+                        break;
+                    case 1:
+                        spec_set_enable_digital_func(true);
+                        spec_set_ADC_ramp();
+                        break;
+                    case 2:
+                        spec_set_enable_digital_func(true);
+                        spec_set_ADC_all_ones();
+                        break;
+                    case 3:
+                        spec_set_enable_digital_func(true);
+                        spec_set_ADC_all_zeros();
+                        break;
+                    default:
+                        state.base.errors |= CDI_COMMAND_BAD_ARGS;
+                        break;
+                }
+                 spec_set_ADC_ramp(arg_low);
                 break;
 
 
@@ -1111,6 +1132,7 @@ static inline void process_spectrometer() {
 // Check if we have a new spectrum packet from the FPGA
 if (spec_new_spectrum_ready())
     {
+        debug_print ("Got frame from spectrometer\n\r");
         if (drop_df) {  // we were asked to drop a frame
             drop_df = false;
             spec_df_dropped(); // ignore any drooped so far

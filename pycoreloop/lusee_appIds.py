@@ -45,13 +45,13 @@ AppID_SpectraMed = 0x0220
 AppID_SpectraLow = 0x0230
 
 # Time-resolved spectra, high priority; Priority:  High     
-AppID_SpectraRejectHigh = 0x0240
+AppID_SpectraTRHigh = 0x0240
 
 # Time-resolved spectra, medium priority; Priority:  Med      
-AppID_SpectraRejectMed = 0x0250
+AppID_SpectraTRMed = 0x0250
 
 # Time-resolved Spectra, low priority; Priority:  Low      
-AppID_SpectraRejectLow = 0x0260
+AppID_SpectraTRLow = 0x0260
 
 # Spectral zoom-in spectra; Priority:  High     
 AppID_ZoomSpectra = 0x0270

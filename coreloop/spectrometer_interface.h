@@ -112,8 +112,16 @@ bool spec_df_dropped();
 // clears the DF flag
 void spec_clear_df_flag();
 
-// 
-void spec_set_ADC_ramp(bool enable);
+// ADC test pattern generation
+
+void spec_set_ADC_normal_ops();
+void spec_set_ADC_ramp();
+void spec_set_enable_digital_func(bool enable);
+void spec_set_ADC_all_zeros();
+void spec_set_ADC_all_ones();
+void spec_set_ADC_toggle_pattern();
+void spec_set_ADC_load_custom_pattern();
+void spec_set_ADC_custom_pattern();
 
 // read the argument registers from bootloader
 uint32_t spec_read_uC_register(uint8_t num);

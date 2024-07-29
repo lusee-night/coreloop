@@ -46,7 +46,7 @@
 | 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 2
 | 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
 | 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4
-| 0x44 | RFS_SET_ADC_RAMP     | set ADCs into a ramp mode (1 to enable, 0 distable)                   |
+| 0x44 | RFS_SET_ADC_SPECIAL  | set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones) |
 
 
 ### 0x5X Averaging and Output Settings
