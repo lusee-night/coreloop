@@ -765,7 +765,7 @@ void process_gain_range() {
   
 bool bitslice_control() {
     bool bitslice_changed = false;
-    int32_t *ddr_ptr = (int32_t *) DDR3_BASE_ADDR;
+
     for (int i = 0; i < 4; i++) {
         if (state.seq.bitslice[i] != 0xFF) continue; // Don't do anything unless bitslice is auto
         uint8_t keep = 32-leading_zeros_max[i];
@@ -840,7 +840,9 @@ void transfer_from_df ()
     int32_t *ddr_ptr_previous = tick_tock ? (int32_t *)(SPEC_TOCK) : (int32_t *)(SPEC_TICK);
     uint16_t mask = 1;
     bool accept = true;
+    //debug_print("Processing spectra...\n\r");
     if ((state.seq.reject_ratio>0) & (state.base.weight_previous>(state.Navg2/2))) {
+        //debug_print("Check for outlier....")
         uint32_t bad = 0;
         for (uint16_t sp = 0; sp< NSPECTRA_AUTO; sp++) {
             if (state.base.corr_products_mask & (mask)) {
@@ -861,22 +863,36 @@ void transfer_from_df ()
         df_ptr = (int32_t *)SPEC_BUF;
         mask = 1;
     }
+    //debug_print_dec(accept);
+    //debug_print("done.\n\r");
 
     if (accept) {
+        //debug_print("actuall transferring\n\r");
         state.base.weight_current ++;
         for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
+            //debug_print_dec(sp); debug_print("\n\r");
             leading_zeros_min[sp] = 32;
             leading_zeros_max[sp] = 0;
             if (state.base.corr_products_mask & (mask)) {
                 if (sp < NSPECTRA_AUTO) {
                         for (uint16_t i = 0; i < NCHANNELS; i++) {
-                            ddr_ptr+= get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]);
+                            int32_t data =  (get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                            if (avg_counter) {
+                                *ddr_ptr += data;
+                            } else {
+                                *ddr_ptr = data;
+                            }
                             df_ptr++;
                             ddr_ptr++;
                         } 
                     } else {
                     for (uint16_t i = 0; i < NCHANNELS; i++) {                        
-                        *ddr_ptr += (*df_ptr >> state.Navg2_total_shift);
+                        int32_t data = (*df_ptr >> state.Navg2_total_shift);
+                        if (avg_counter) {
+                            *ddr_ptr += data;
+                        } else {
+                            *ddr_ptr = data;
+                        }
                         df_ptr++;
                         ddr_ptr++;
                     }
@@ -885,8 +901,9 @@ void transfer_from_df ()
             mask <<= 1;        
         }   
     }
-
+    //debug_print("done.\n\r");
     if (state.seq.tr_stop>state.seq.tr_start) {
+        debug_print("doing time resolved\n\r");
         int16_t* tr = (int16_t *)(SPEC_TIME_RESOLVED + NCHANNELS*avg_counter*sizeof(int16_t));
         df_ptr = (int32_t *)SPEC_BUF;
         mask = 1;
@@ -905,7 +922,7 @@ void transfer_from_df ()
             mask <<= 1;
         }
     }
-
+    //debug_print("totally done.\n\r")
     //if (avg_counter%100 == 0) debug_print ("Processed 100 spectra...\n");
     avg_counter++;
 }
@@ -1022,7 +1039,9 @@ void dispatch_32bit_data() {
             break;
     }
 
-    memset(ddr_ptr, 0, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
+    // we don't want to do this ,since the incoming data are still compared
+    // against this. Instead, we will zero it in df_transfer
+    //memset(ddr_ptr, 0, state.cdi_dispatch.Nfreq * sizeof(uint32_t));
     *crc_ptr = CRC(cdi_ptr, data_size);
     cdi_dispatch(state.cdi_dispatch.appId, packet_size);
 }
