@@ -437,7 +437,7 @@ inline static bool process_cdi()
                 break;
 
             case RFS_SET_WAVEFORM:
-                if (arg_low<4) request_waveform = arg_low | 4;
+                if (arg_low<8) request_waveform = arg_low | 8;
                 else state.base.errors |= CDI_COMMAND_BAD_ARGS;
                 break;
 
@@ -1112,7 +1112,7 @@ bool process_delayed_cdi_dispatch() {
 bool process_waveform() {
     if (!request_waveform) return false;
     wait_for_cdi_ready();
-    spec_request_waveform(request_waveform & 3);
+    spec_request_waveform(request_waveform & 7);
     request_waveform = 0;
     return true;
 }
