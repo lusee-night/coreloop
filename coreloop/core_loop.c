@@ -59,9 +59,8 @@ struct saved_core_state tmp_state;
 
 void cdi_not_implemented(const char *msg)
 {
-    debug_print("CDI command not implemented: ");
+    debug_print("\r\nCDI command not implemented: ");
     debug_print(msg);
-    debug_print("\n\r")
     return;
 }
 
@@ -92,7 +91,7 @@ void flash_state_clear(uint8_t slot) {
 
 
 void flash_state_store (uint8_t slot) {
-    debug_print("Storing state to slot ");
+    debug_print("\r\nStoring state to slot ");
     debug_print_dec(slot);
     debug_print("\r\n");
     tmp_state.in_use = 0xBEBEC;
@@ -144,9 +143,8 @@ bool flash_state_restore(uint8_t slot) {
     //debug_print_hex (tmp_state.in_use);
     //debug_print ("\r\n")
     if (tmp_state.in_use == 0xBEBEC) {
-        debug_print("Found an occuped slot ");
+        debug_print("\r\nFound an occuped slot ");
         debug_print_dec(slot);
-        debug_print("\r\n");
 
         set_flash_addr(slot);
         flash_buf = &tmp_state;
@@ -160,11 +158,11 @@ bool flash_state_restore(uint8_t slot) {
 
         if (crc == tmp_state.CRC) {
          // VICTORY
-            debug_print(" CRC match, buying \r\n");
+            debug_print("\r\nCRC match, buying ");
             state = tmp_state.state;
             return true;
         }
-        debug_print(" CRC fail ?! \r\n");
+        debug_print("\r\n CRC fail ?!");
         state.base.errors |= FLASH_CRC_FAIL;
         return false;
      }
@@ -215,7 +213,7 @@ void send_hello_packet() {
 
 bool process_hearbeat() {
     if (heartbeat_counter > 0) return false;
-    debug_print("Sending heartbeat.\n\r");
+    debug_print("H");
     wait_for_cdi_ready();
     char *msg = (char *) TLM_BUF;
     * ((uint32_t*)(TLM_BUF))  =  heartbeat_packet_count;
@@ -320,14 +318,14 @@ void reset_errormasks() {
 
 
 void RFS_stop() {
-    debug_print ("Stopping spectrometer\n\r");
+    debug_print ("\n\rStopping spectrometer\n\r");
     state.base.spectrometer_enable = false;
     spec_set_spectrometer_enable(false);
 }
 
 
 void RFS_start() {
-    debug_print ("Starting spectrometer\n\r");
+    debug_print ("\n\rStarting spectrometer\n\r");
     state.base.spectrometer_enable = true;
     avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
@@ -391,7 +389,7 @@ inline static bool process_cdi()
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
-    debug_print ("Got new CDI command: ");
+    debug_print ("\r\nGot new CDI command: ");
     debug_print_hex(arg_high);
     debug_print(" ");
     debug_print_hex(arg_low);
@@ -439,7 +437,7 @@ inline static bool process_cdi()
                 break;
 
             case RFS_SET_WAVEFORM:
-                if (arg_low<4) request_waveform = arg_low | 4;
+                if (arg_low<8) request_waveform = arg_low | 8;
                 else state.base.errors |= CDI_COMMAND_BAD_ARGS;
                 break;
 
@@ -713,7 +711,6 @@ bool analog_gain_control() {
         //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
         if (cmax > state.gain_auto_max[i]) {
             if (state.base.actual_gain[i] > GAIN_LOW) {
-                debug_print_dec(i);
                 state.base.actual_gain[i] --;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
@@ -722,8 +719,6 @@ bool analog_gain_control() {
             }
         } else if (cmax < state.seq.gain_auto_min[i]) {
             if (state.base.actual_gain[i] < GAIN_HIGH) {
-                debug_print_dec(i);
-
                 state.base.actual_gain[i] ++;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
                 gains_changed = true;
@@ -741,7 +736,7 @@ void process_gain_range() {
     if (spec_get_ADC_stat(state.base.ADC_stat)) {
         if (analog_gain_control()) {
             // gains have changed. wait for settle and trigger. 
-            debug_print("Gains changed, resettle\n\r");
+            debug_print("\n\rGains changed, resettle\n\r");
             resettle = true;
             resettle_counter = RESETTLE_DELAY;
         } else {
@@ -867,7 +862,6 @@ void transfer_from_df ()
     //debug_print("done.\n\r");
 
     if (accept) {
-        //debug_print("actuall transferring\n\r");
         state.base.weight_current ++;
         for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
             //debug_print_dec(sp); debug_print("\n\r");
@@ -1072,7 +1066,7 @@ uint32_t get_next_baseAppID() {
 
 
 void transfer_to_cdi () {
-    debug_print ("Sending averaged spectra to CDI.\n\r");
+    debug_print ("$");
 
     new_unique_packet_id();
     update_time();
@@ -1092,6 +1086,7 @@ bool process_delayed_cdi_dispatch() {
     if (state.cdi_dispatch.int_counter > 0) return false;
     if (state.cdi_dispatch.prod_count > 0x0F)  return false;
     if (state.base.corr_products_mask & (1<<state.cdi_dispatch.prod_count)) {
+        debug_print(".");
         switch (state.cdi_dispatch.format) {
             case OUTPUT_32BIT:
                 dispatch_32bit_data();
@@ -1117,7 +1112,7 @@ bool process_delayed_cdi_dispatch() {
 bool process_waveform() {
     if (!request_waveform) return false;
     wait_for_cdi_ready();
-    spec_request_waveform(request_waveform & 3);
+    spec_request_waveform(request_waveform & 7);
     request_waveform = 0;
     return true;
 }
@@ -1151,7 +1146,7 @@ static inline void process_spectrometer() {
 // Check if we have a new spectrum packet from the FPGA
 if (spec_new_spectrum_ready())
     {
-        debug_print ("Got frame from spectrometer\n\r");
+        debug_print ("*");
         if (drop_df) {  // we were asked to drop a frame
             drop_df = false;
             spec_df_dropped(); // ignore any drooped so far
