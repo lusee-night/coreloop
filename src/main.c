@@ -8,10 +8,13 @@
 
 int main(int argc, char *argv[]) {
     int opt;
-    enum cmd_format format;
+    enum cmd_format format = UNSPECIFIED;
     while ((opt = getopt(argc, argv, "fpi:o:")) != -1) {
         switch (opt) {
             case 'f':
+                if (format != UNSPECIFIED) {
+
+                }
                 format = CMD_FILE;
                 break;
             case 'p':
@@ -20,11 +23,16 @@ int main(int argc, char *argv[]) {
             case 'i':
                 break;
             case 'o':
-
+                break;
             default:
                 fprintf(stderr, "Usage: %s [-f|p] -i [file|port] -o [file|port]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
+    }
+    if (format == UNSPECIFIED) {
+        fprintf(stderr, "Must specify either file mode or port mode\n"
+                        "Usage: %s -[f|p] -i [file|port] -o [file|port]\n", argv[0]);
+        exit(EXIT_FAILURE);
     }
 
     spectrometer_init();
