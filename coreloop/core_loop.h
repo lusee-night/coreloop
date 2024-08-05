@@ -17,7 +17,7 @@
 
 // Constants
 #define NSEQ_MAX 32
-#define DISPATCH_DELAY 3 // number of timer interrupts to wait before sending CDI
+#define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 2 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
 
