@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "LuSEE_IO.h"
-#include "cdi_interface.h"
+#include "spectrometer_interface.h"
 
 
 #define MAX_COMMANDS 1000

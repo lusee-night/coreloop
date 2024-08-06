@@ -10,6 +10,7 @@
 
 
 #include <inttypes.h>
+#include <stddef.h>
 #include "spectrometer_interface.h"
 #include "core_loop_errors.h"
 
@@ -17,7 +18,7 @@
 
 // Constants
 #define NSEQ_MAX 32
-#define DISPATCH_DELAY 3 // number of timer interrupts to wait before sending CDI
+#define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 2 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
 
@@ -26,6 +27,23 @@
 #define MAX_STATE_SLOTS 64
 //consistent with 4k erases
 #define PAGES_PER_SLOT 256
+
+// global variables, will need to fix
+extern struct core_state state;
+extern uint16_t avg_counter;
+extern uint32_t unique_packet_id;
+extern uint8_t leading_zeros_min[NSPECTRA];
+extern uint8_t leading_zeros_max[NSPECTRA];
+extern uint8_t housekeeping_request;
+extern uint32_t section_break;
+extern uint8_t range_adc, resettle, request_waveform; 
+extern bool tick_tock;
+extern bool drop_df;
+extern bool soft_reset_flag;
+extern uint32_t heartbeat_packet_count;
+extern volatile uint32_t heartbeat_counter;
+extern volatile uint32_t resettle_counter;
+extern uint16_t flash_store_pointer;
 
 
 
@@ -181,8 +199,77 @@ struct housekeeping_data_99 {
 extern struct core_state state;
 extern bool soft_reset_flag;
 
+// main function
 void core_loop();
 
+// process a CDI command
+bool process_cdi();
+//
+
+
+
+// starts / stops / restarts the spectrometer
+void RFS_stop();
+void RFS_start();
+void restart_spectrometer();
+
+// fills derived quantities in the state
+void fill_derived();
+
+
+
+// set routing for a channel
+void set_route (uint8_t ch, uint8_t arg_low);
+
+// update spectrometer gain to match those in state.
+void update_spec_gains();
+
+// get ADC samples
+void trigger_ADC_stat();
+
+// reset errormask
+void reset_errormasks();
+
+// update times in global state
+void update_time();
+
+// see if new spectra are ready
+void process_spectrometer();
+
+// transfer data to CDI if needed
+void transfer_to_cdi ();
+// process delayed CDI dispatch
+bool process_delayed_cdi_dispatch();
+
+// automatic control for bit-slicing.
+void process_gain_range();
+bool bitslice_control();
+
+// sequencer control
+void set_spectrometer_to_sequencer();
+void default_seq (struct sequencer_state *seq);
+void advance_sequencer();
+
+// debuggin functions
+void debug_helper(uint8_t arg);
+void cdi_not_implemented(const char *msg);
+
+
+// housekeeping functions
+void send_hello_packet();
+bool process_hearbeat();
+bool process_housekeeping();
+
+inline static void new_unique_packet_id() {unique_packet_id++;}
+
+// utility functions
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+// enclude 32 bit value in 16 bits with 12 bits of data and 4 bits of mantissa
+int16_t encode_12plus4(int32_t val);
+int32_t decode_12plus4(int16_t val); 
+// CRC
 uint32_t CRC(const void* data, size_t size);
 
 #endif // CORE_LOOP_H

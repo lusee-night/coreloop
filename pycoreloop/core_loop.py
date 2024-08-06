@@ -903,27 +903,167 @@ struct_ADC_stat._fields_ = [
     ('sumv2', uint64_t),
 ]
 
-enum_gain_state = c_int# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 33
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 133
+class struct_core_state(Structure):
+    pass
 
-GAIN_LOW = 0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 33
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 32
+for _lib in _libs.values():
+    try:
+        state = (struct_core_state).in_dll(_lib, "state")
+        break
+    except:
+        pass
 
-GAIN_MED = (GAIN_LOW + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 33
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 33
+for _lib in _libs.values():
+    try:
+        avg_counter = (uint16_t).in_dll(_lib, "avg_counter")
+        break
+    except:
+        pass
 
-GAIN_HIGH = (GAIN_MED + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 33
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 34
+for _lib in _libs.values():
+    try:
+        unique_packet_id = (uint32_t).in_dll(_lib, "unique_packet_id")
+        break
+    except:
+        pass
 
-GAIN_DISABLE = (GAIN_HIGH + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 33
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 35
+for _lib in _libs.values():
+    try:
+        leading_zeros_min = (uint8_t * int(16)).in_dll(_lib, "leading_zeros_min")
+        break
+    except:
+        pass
 
-GAIN_AUTO = (GAIN_DISABLE + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 33
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 36
+for _lib in _libs.values():
+    try:
+        leading_zeros_max = (uint8_t * int(16)).in_dll(_lib, "leading_zeros_max")
+        break
+    except:
+        pass
 
-enum_output_format = c_int# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 40
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 37
+for _lib in _libs.values():
+    try:
+        housekeeping_request = (uint8_t).in_dll(_lib, "housekeeping_request")
+        break
+    except:
+        pass
 
-OUTPUT_32BIT = 0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 40
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 38
+for _lib in _libs.values():
+    try:
+        section_break = (uint32_t).in_dll(_lib, "section_break")
+        break
+    except:
+        pass
 
-OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 40
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 39
+for _lib in _libs.values():
+    try:
+        range_adc = (uint8_t).in_dll(_lib, "range_adc")
+        break
+    except:
+        pass
 
-OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 40
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 39
+for _lib in _libs.values():
+    try:
+        resettle = (uint8_t).in_dll(_lib, "resettle")
+        break
+    except:
+        pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 50
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 39
+for _lib in _libs.values():
+    try:
+        request_waveform = (uint8_t).in_dll(_lib, "request_waveform")
+        break
+    except:
+        pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 40
+for _lib in _libs.values():
+    try:
+        tick_tock = (c_bool).in_dll(_lib, "tick_tock")
+        break
+    except:
+        pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 41
+for _lib in _libs.values():
+    try:
+        drop_df = (c_bool).in_dll(_lib, "drop_df")
+        break
+    except:
+        pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 42
+for _lib in _libs.values():
+    try:
+        soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
+        break
+    except:
+        pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 43
+for _lib in _libs.values():
+    try:
+        heartbeat_packet_count = (uint32_t).in_dll(_lib, "heartbeat_packet_count")
+        break
+    except:
+        pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 44
+for _lib in _libs.values():
+    try:
+        heartbeat_counter = (uint32_t).in_dll(_lib, "heartbeat_counter")
+        break
+    except:
+        pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 45
+for _lib in _libs.values():
+    try:
+        resettle_counter = (uint32_t).in_dll(_lib, "resettle_counter")
+        break
+    except:
+        pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 46
+for _lib in _libs.values():
+    try:
+        flash_store_pointer = (uint16_t).in_dll(_lib, "flash_store_pointer")
+        break
+    except:
+        pass
+
+enum_gain_state = c_int# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 51
+
+GAIN_LOW = 0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 51
+
+GAIN_MED = (GAIN_LOW + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 51
+
+GAIN_HIGH = (GAIN_MED + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 51
+
+GAIN_DISABLE = (GAIN_HIGH + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 51
+
+GAIN_AUTO = (GAIN_DISABLE + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 51
+
+enum_output_format = c_int# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 58
+
+OUTPUT_32BIT = 0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 58
+
+OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 58
+
+OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 58
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 68
 class struct_route_state(Structure):
     pass
 
@@ -937,7 +1077,7 @@ struct_route_state._fields_ = [
     ('minus', uint8_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 56
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 74
 class struct_sequencer_state(Structure):
     pass
 
@@ -983,7 +1123,7 @@ struct_sequencer_state._fields_ = [
     ('tr_avg_shift', uint16_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 74
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 92
 class struct_sequencer_program(Structure):
     pass
 
@@ -1001,7 +1141,7 @@ struct_sequencer_program._fields_ = [
     ('sequencer_repeat', uint16_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 83
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 101
 class struct_core_state_base(Structure):
     pass
 
@@ -1045,7 +1185,7 @@ struct_core_state_base._fields_ = [
     ('weight_current', uint8_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 104
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 122
 class struct_delayed_cdi_sending(Structure):
     pass
 
@@ -1068,10 +1208,6 @@ struct_delayed_cdi_sending._fields_ = [
     ('Navgf', uint16_t),
     ('packet_id', uint32_t),
 ]
-
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 115
-class struct_core_state(Structure):
-    pass
 
 struct_core_state._pack_ = 1
 struct_core_state.__slots__ = [
@@ -1101,7 +1237,7 @@ struct_core_state._fields_ = [
     ('program', struct_sequencer_program),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 128
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 146
 class struct_saved_core_state(Structure):
     pass
 
@@ -1117,7 +1253,7 @@ struct_saved_core_state._fields_ = [
     ('CRC', uint32_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 134
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 152
 class struct_startup_hello(Structure):
     pass
 
@@ -1143,7 +1279,7 @@ struct_startup_hello._fields_ = [
     ('time_subseconds', uint16_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 146
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 164
 class struct_meta_data(Structure):
     pass
 
@@ -1161,7 +1297,7 @@ struct_meta_data._fields_ = [
     ('base', struct_core_state_base),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 153
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 171
 class struct_housekeeping_data_base(Structure):
     pass
 
@@ -1179,7 +1315,7 @@ struct_housekeeping_data_base._fields_ = [
     ('housekeeping_type', uint16_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 160
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 178
 class struct_housekeeping_data_0(Structure):
     pass
 
@@ -1193,7 +1329,7 @@ struct_housekeeping_data_0._fields_ = [
     ('core_state', struct_core_state),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 165
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 183
 class struct_housekeeping_data_1(Structure):
     pass
 
@@ -1209,7 +1345,7 @@ struct_housekeeping_data_1._fields_ = [
     ('actual_gain', uint8_t * int(4)),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 171
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 189
 class struct_housekeeping_data_99(Structure):
     pass
 
@@ -1221,7 +1357,7 @@ struct_housekeeping_data_99._fields_ = [
     ('section_break', uint32_t),
 ]
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 177
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 195
 for _lib in _libs.values():
     try:
         state = (struct_core_state).in_dll(_lib, "state")
@@ -1229,7 +1365,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 178
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 196
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1237,7 +1373,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 180
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 199
 for _lib in _libs.values():
     if not _lib.has("core_loop", "cdecl"):
         continue
@@ -1246,7 +1382,232 @@ for _lib in _libs.values():
     core_loop.restype = None
     break
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 182
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 202
+for _lib in _libs.values():
+    if not _lib.has("process_cdi", "cdecl"):
+        continue
+    process_cdi = _lib.get("process_cdi", "cdecl")
+    process_cdi.argtypes = []
+    process_cdi.restype = c_bool
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 208
+for _lib in _libs.values():
+    if not _lib.has("RFS_stop", "cdecl"):
+        continue
+    RFS_stop = _lib.get("RFS_stop", "cdecl")
+    RFS_stop.argtypes = []
+    RFS_stop.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 209
+for _lib in _libs.values():
+    if not _lib.has("RFS_start", "cdecl"):
+        continue
+    RFS_start = _lib.get("RFS_start", "cdecl")
+    RFS_start.argtypes = []
+    RFS_start.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 210
+for _lib in _libs.values():
+    if not _lib.has("restart_spectrometer", "cdecl"):
+        continue
+    restart_spectrometer = _lib.get("restart_spectrometer", "cdecl")
+    restart_spectrometer.argtypes = []
+    restart_spectrometer.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 213
+for _lib in _libs.values():
+    if not _lib.has("fill_derived", "cdecl"):
+        continue
+    fill_derived = _lib.get("fill_derived", "cdecl")
+    fill_derived.argtypes = []
+    fill_derived.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 218
+for _lib in _libs.values():
+    if not _lib.has("set_route", "cdecl"):
+        continue
+    set_route = _lib.get("set_route", "cdecl")
+    set_route.argtypes = [uint8_t, uint8_t]
+    set_route.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 221
+for _lib in _libs.values():
+    if not _lib.has("update_spec_gains", "cdecl"):
+        continue
+    update_spec_gains = _lib.get("update_spec_gains", "cdecl")
+    update_spec_gains.argtypes = []
+    update_spec_gains.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 224
+for _lib in _libs.values():
+    if not _lib.has("trigger_ADC_stat", "cdecl"):
+        continue
+    trigger_ADC_stat = _lib.get("trigger_ADC_stat", "cdecl")
+    trigger_ADC_stat.argtypes = []
+    trigger_ADC_stat.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 227
+for _lib in _libs.values():
+    if not _lib.has("reset_errormasks", "cdecl"):
+        continue
+    reset_errormasks = _lib.get("reset_errormasks", "cdecl")
+    reset_errormasks.argtypes = []
+    reset_errormasks.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 230
+for _lib in _libs.values():
+    if not _lib.has("update_time", "cdecl"):
+        continue
+    update_time = _lib.get("update_time", "cdecl")
+    update_time.argtypes = []
+    update_time.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 233
+for _lib in _libs.values():
+    if not _lib.has("process_spectrometer", "cdecl"):
+        continue
+    process_spectrometer = _lib.get("process_spectrometer", "cdecl")
+    process_spectrometer.argtypes = []
+    process_spectrometer.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 236
+for _lib in _libs.values():
+    if not _lib.has("transfer_to_cdi", "cdecl"):
+        continue
+    transfer_to_cdi = _lib.get("transfer_to_cdi", "cdecl")
+    transfer_to_cdi.argtypes = []
+    transfer_to_cdi.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 238
+for _lib in _libs.values():
+    if not _lib.has("process_delayed_cdi_dispatch", "cdecl"):
+        continue
+    process_delayed_cdi_dispatch = _lib.get("process_delayed_cdi_dispatch", "cdecl")
+    process_delayed_cdi_dispatch.argtypes = []
+    process_delayed_cdi_dispatch.restype = c_bool
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 241
+for _lib in _libs.values():
+    if not _lib.has("process_gain_range", "cdecl"):
+        continue
+    process_gain_range = _lib.get("process_gain_range", "cdecl")
+    process_gain_range.argtypes = []
+    process_gain_range.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 242
+for _lib in _libs.values():
+    if not _lib.has("bitslice_control", "cdecl"):
+        continue
+    bitslice_control = _lib.get("bitslice_control", "cdecl")
+    bitslice_control.argtypes = []
+    bitslice_control.restype = c_bool
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 245
+for _lib in _libs.values():
+    if not _lib.has("set_spectrometer_to_sequencer", "cdecl"):
+        continue
+    set_spectrometer_to_sequencer = _lib.get("set_spectrometer_to_sequencer", "cdecl")
+    set_spectrometer_to_sequencer.argtypes = []
+    set_spectrometer_to_sequencer.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 246
+for _lib in _libs.values():
+    if not _lib.has("default_seq", "cdecl"):
+        continue
+    default_seq = _lib.get("default_seq", "cdecl")
+    default_seq.argtypes = [POINTER(struct_sequencer_state)]
+    default_seq.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 247
+for _lib in _libs.values():
+    if not _lib.has("advance_sequencer", "cdecl"):
+        continue
+    advance_sequencer = _lib.get("advance_sequencer", "cdecl")
+    advance_sequencer.argtypes = []
+    advance_sequencer.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 250
+for _lib in _libs.values():
+    if not _lib.has("debug_helper", "cdecl"):
+        continue
+    debug_helper = _lib.get("debug_helper", "cdecl")
+    debug_helper.argtypes = [uint8_t]
+    debug_helper.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 251
+for _lib in _libs.values():
+    if not _lib.has("cdi_not_implemented", "cdecl"):
+        continue
+    cdi_not_implemented = _lib.get("cdi_not_implemented", "cdecl")
+    cdi_not_implemented.argtypes = [String]
+    cdi_not_implemented.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 255
+for _lib in _libs.values():
+    if not _lib.has("send_hello_packet", "cdecl"):
+        continue
+    send_hello_packet = _lib.get("send_hello_packet", "cdecl")
+    send_hello_packet.argtypes = []
+    send_hello_packet.restype = None
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 256
+for _lib in _libs.values():
+    if not _lib.has("process_hearbeat", "cdecl"):
+        continue
+    process_hearbeat = _lib.get("process_hearbeat", "cdecl")
+    process_hearbeat.argtypes = []
+    process_hearbeat.restype = c_bool
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 257
+for _lib in _libs.values():
+    if not _lib.has("process_housekeeping", "cdecl"):
+        continue
+    process_housekeeping = _lib.get("process_housekeeping", "cdecl")
+    process_housekeeping.argtypes = []
+    process_housekeeping.restype = c_bool
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 266
+for _lib in _libs.values():
+    if not _lib.has("encode_12plus4", "cdecl"):
+        continue
+    encode_12plus4 = _lib.get("encode_12plus4", "cdecl")
+    encode_12plus4.argtypes = [c_int32]
+    encode_12plus4.restype = c_int16
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 267
+for _lib in _libs.values():
+    if not _lib.has("decode_12plus4", "cdecl"):
+        continue
+    decode_12plus4 = _lib.get("decode_12plus4", "cdecl")
+    decode_12plus4.argtypes = [c_int16]
+    decode_12plus4.restype = c_int32
+    break
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 269
 for _lib in _libs.values():
     if not _lib.has("CRC", "cdecl"):
         continue
@@ -1261,73 +1622,81 @@ try:
 except:
     pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 19
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 20
 try:
     NSEQ_MAX = 32
 except:
     pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 20
-try:
-    DISPATCH_DELAY = 3
-except:
-    pass
-
 # /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 21
 try:
-    RESETTLE_DELAY = 2
+    DISPATCH_DELAY = 6
 except:
     pass
 
 # /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 22
 try:
+    RESETTLE_DELAY = 2
+except:
+    pass
+
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 23
+try:
     HEARTBEAT_DELAY = 1024
 except:
     pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 24
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 25
 try:
     ADC_STAT_SAMPLES = 8000
 except:
     pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 26
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 27
 try:
     MAX_STATE_SLOTS = 64
 except:
     pass
 
-# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 28
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 29
 try:
     PAGES_PER_SLOT = 256
 except:
     pass
 
-route_state = struct_route_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 50
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 262
+def MAX(x, y):
+    return (x > y) and x or y
 
-sequencer_state = struct_sequencer_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 56
+# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 263
+def MIN(x, y):
+    return (x < y) and x or y
 
-sequencer_program = struct_sequencer_program# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 74
+core_state = struct_core_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 133
 
-core_state_base = struct_core_state_base# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 83
+route_state = struct_route_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 68
 
-delayed_cdi_sending = struct_delayed_cdi_sending# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 104
+sequencer_state = struct_sequencer_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 74
 
-core_state = struct_core_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 115
+sequencer_program = struct_sequencer_program# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 92
 
-saved_core_state = struct_saved_core_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 128
+core_state_base = struct_core_state_base# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 101
 
-startup_hello = struct_startup_hello# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 134
+delayed_cdi_sending = struct_delayed_cdi_sending# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 122
 
-meta_data = struct_meta_data# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 146
+saved_core_state = struct_saved_core_state# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 146
 
-housekeeping_data_base = struct_housekeeping_data_base# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 153
+startup_hello = struct_startup_hello# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 152
 
-housekeeping_data_0 = struct_housekeeping_data_0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 160
+meta_data = struct_meta_data# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 164
 
-housekeeping_data_1 = struct_housekeeping_data_1# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 165
+housekeeping_data_base = struct_housekeeping_data_base# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 171
 
-housekeeping_data_99 = struct_housekeeping_data_99# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 171
+housekeeping_data_0 = struct_housekeeping_data_0# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 178
+
+housekeeping_data_1 = struct_housekeeping_data_1# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 183
+
+housekeeping_data_99 = struct_housekeeping_data_99# /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 189
 
 # No inserted files
 
