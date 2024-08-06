@@ -1269,7 +1269,7 @@ except:
 
 # /home/anze/Dropbox/work/lusee/coreloop/coreloop/core_loop.h: 20
 try:
-    DISPATCH_DELAY = 3
+    DISPATCH_DELAY = 6
 except:
     pass
 
