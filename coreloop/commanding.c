@@ -1,6 +1,5 @@
 #include "lusee_commands.h"
 #include "spectrometer_interface.h"
-#include "cdi_interface.h"
 #include "core_loop.h"
 #include <stdlib.h>
 #include <stdint.h>
