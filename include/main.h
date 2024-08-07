@@ -5,6 +5,13 @@
 #ifndef LN_CORELOOP_MAIN_H
 #define LN_CORELOOP_MAIN_H
 
+// TODO: write default values
+#define DEFAULT_PORT_IN
+#define DEFAULT_PORT_OUT
+#define DEFAULT_FILE_IN
+#define DEFAULT_FILE_OUT
+
+
 enum cmd_format {
     UNSPECIFIED,
     CMD_FILE,
