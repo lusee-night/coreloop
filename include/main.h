@@ -11,4 +11,6 @@ enum cmd_format {
     CMD_PORT,
 };
 
+void raiseError(char *str, char *argv[]);
+
 #endif //LN_CORELOOP_MAIN_H
