@@ -4,6 +4,7 @@
 #include "LuSEE_IO.h"
 #include "spectrometer_interface.h"
 #include "core_loop.h"
+#include "main.h"
 
 int main(int argc, char *argv[]) {
     int opt;
