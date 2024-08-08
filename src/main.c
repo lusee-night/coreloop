@@ -9,6 +9,8 @@
 #include "main.h"
 
 enum cmd_format cdi_format = UNSPECIFIED;
+void *cdi_in;
+void *cdi_out;
 
 int main(int argc, char *argv[]) {
     int opt;
