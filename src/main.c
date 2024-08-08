@@ -7,11 +7,10 @@
 #include "core_loop.h"
 #include "main.h"
 
+enum cmd_format format = UNSPECIFIED;
+
 int main(int argc, char *argv[]) {
     int opt;
-    enum cmd_format format = UNSPECIFIED;
-    void *in;
-    void *out;
     while ((opt = getopt(argc, argv, "fpi:o:")) != -1) {
         switch (opt) {
             case 'f':
@@ -49,7 +48,7 @@ int main(int argc, char *argv[]) {
     }
 
     spectrometer_init();
-    cdi_init();
+    cdi_init(format, in, out);
     DDR3_init();
 
     /*

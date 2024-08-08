@@ -8,8 +8,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+enum cmd_format {
+    UNSPECIFIED,
+    CMD_FILE,
+    CMD_PORT,
+};
+
 // cdi interface section
-void cdi_init();
+void cdi_init(enum cmd_format format, void *in, void *out);
 // returns true if a new command is available, and sets the command and arguments
 bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low );
 // returns true if the CDI is ready to accept new data  (i.e. write to staging area and dispatching it)
