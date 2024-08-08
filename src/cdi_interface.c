@@ -23,7 +23,7 @@ void* TLM_BUF;
 void cdi_init(){
     switch(cdi_format) {
         case CMD_FILE: {
-            FILE *file = fopen((char*) cdi_in, "r");
+            FILE *file = fopen((char*) cdi_in.file, "r");
             if (file == NULL) {
                 printf("Failed to open file.\n");
                 return;
@@ -49,6 +49,7 @@ void cdi_init(){
         case CMD_PORT: {
             fprintf(stderr, "UDP port logic reached in cdi_interface.c\n");
             exit(EXIT_FAILURE);
+            // TODO: use cdi_in.port
         }
         default:
             break;
