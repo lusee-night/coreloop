@@ -5,6 +5,8 @@
 #ifndef LN_CORELOOP_MAIN_H
 #define LN_CORELOOP_MAIN_H
 
+#include <string.h>
+
 // TODO: write default values
 #define DEFAULT_PORT_IN
 #define DEFAULT_PORT_OUT

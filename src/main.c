@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "LuSEE_IO.h"
 #include "spectrometer_interface.h"
@@ -8,25 +9,25 @@
 #include "cdi_options.h"
 #include "main.h"
 
-enum cmd_format cdi_format = UNSPECIFIED;
+enum cmd_format cdi_format = CMD_FILE;
 union cdi_dtype cdi_in;
 union cdi_dtype cdi_out;
 
 int main(int argc, char *argv[]) {
     int opt;
-    while ((opt = getopt(argc, argv, "fpi:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "hm:i:o:")) != -1) {
         switch (opt) {
-            case 'f':
-                if (cdi_format != UNSPECIFIED) {
-                    raiseError("Must specify either file mode or port mode, but not both\n", argv);
+            case 'h':
+                fprintf(stdout, "Usage: %s -m [\"file\" | \"port\"] -i [input file/port] -o [output file/port]\n", argv[0]);
+                exit(EXIT_SUCCESS);
+            case 'm':
+                if (!strcmp(optarg, "file") || !strcmp(optarg, "f")) {
+                    cdi_format = CMD_FILE;
+                } else if (!strcmp(optarg, "port") || !strcmp(optarg, "p")) {
+                    cdi_format = CMD_PORT;
+                } else {
+                    raiseError("Must specify mode -m: f or file for file mode, p or port for port mode\n", argv);
                 }
-                cdi_format = CMD_FILE;
-                break;
-            case 'p':
-                if (cdi_format != UNSPECIFIED) {
-                    raiseError("Must specify either file mode or port mode, but not both\n", argv);
-                }
-                cdi_format = CMD_PORT;
                 break;
             case 'i':
                 cdi_in.file = optarg;
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
         }
     }
     if (cdi_format == UNSPECIFIED) {
-        raiseError("Must specify either file mode or port mode, but not both\n", argv);
+        raiseError("Must specify mode -m: f or file for file mode, p or port for port mode\n", argv);
     }
     if (cdi_format == CMD_PORT) {
         int in_int = atoi(cdi_in.file);
@@ -61,6 +62,6 @@ int main(int argc, char *argv[]) {
 
 void raiseError(char *str, char *argv[]) {
     fprintf(stderr, "%s"
-                    "Usage: %s -[f|p] -i [file|port] -o [file|port]\n", str, argv[0]);
+                    "Usage: %s -m [f/file | p/port] -i [file|port input] -o [file|port output]\n", str, argv[0]);
     exit(EXIT_FAILURE);
 }
