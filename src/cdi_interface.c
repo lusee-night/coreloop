@@ -19,29 +19,38 @@ int Ncommands;
 void* TLM_BUF;
 
 
-void cdi_init()
-{
-    FILE *file = fopen(commands_filename, "r");
-    if (file == NULL) {
-        printf("Failed to open file.\n");
-        return;
-    }
+void cdi_init(enum cmd_format format, void *in, void *out){
+    switch(format) {
+        case CMD_FILE: {
+            FILE *file = fopen(commands_filename, "r");
+            if (file == NULL) {
+                printf("Failed to open file.\n");
+                return;
+            }
 
-    int i = 0;
-    
-    while (fscanf(file, "%d %hhx %hhx %hhx", &wait_list[i], (unsigned char*)&comm_list[i], &arg_high_list[i], &arg_low_list[i]) == 4) {
-        i++;
-        if (i >= MAX_COMMANDS) {
-            break;
+            int i = 0;
+
+            while (fscanf(file, "%d %hhx %hhx %hhx", &wait_list[i], (unsigned char *) &comm_list[i], &arg_high_list[i],
+                          &arg_low_list[i]) == 4) {
+                i++;
+                if (i >= MAX_COMMANDS) {
+                    break;
+                }
+            }
+            fclose(file);
+            Ncommands = i;
+            cmd_ndx = 0;
+            wait_ndx = wait_list[0];
+            TLM_BUF = malloc(STAGING_AREA_SIZE);
+            printf("Read %i CDI commands.\n", Ncommands);
         }
+        case CMD_PORT: {
+            fprintf(stderr, "UDP port logic reached in cdi_interface.c");
+            exit(EXIT_FAILURE);
+        }
+        default:
+            break;
     }
-    fclose(file);
-    Ncommands = i;
-    cmd_ndx = 0;
-    wait_ndx = wait_list[0];
-    TLM_BUF = malloc(STAGING_AREA_SIZE);
-    printf("Read %i CDI commands.\n", Ncommands);
-    
 }
 
 bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
