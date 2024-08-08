@@ -22,7 +22,7 @@ void* TLM_BUF;
 void cdi_init(enum cmd_format format, void *in, void *out){
     switch(format) {
         case CMD_FILE: {
-            FILE *file = fopen(commands_filename, "r");
+            FILE *file = fopen((char*) in, "r");
             if (file == NULL) {
                 printf("Failed to open file.\n");
                 return;
@@ -43,9 +43,10 @@ void cdi_init(enum cmd_format format, void *in, void *out){
             wait_ndx = wait_list[0];
             TLM_BUF = malloc(STAGING_AREA_SIZE);
             printf("Read %i CDI commands.\n", Ncommands);
+            break;
         }
         case CMD_PORT: {
-            fprintf(stderr, "UDP port logic reached in cdi_interface.c");
+            fprintf(stderr, "UDP port logic reached in cdi_interface.c\n");
             exit(EXIT_FAILURE);
         }
         default:
