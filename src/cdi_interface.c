@@ -77,14 +77,26 @@ bool cdi_ready() {return true;}
 void wait_for_cdi_ready() {}
 
 void cdi_dispatch (uint16_t appID, uint32_t length) {
-    char filename[512];
-    sprintf(filename, "%s/%05d_%04x.bin", cdi_output, out_packet_ndx, appID);
-    FILE *file = fopen(filename, "wb");
-    if (file == NULL) {
-        printf("Failed to open file.\n");
-        return;
+    switch(cdi_format) {
+        case CMD_FILE: {
+            char filename[512];
+            sprintf(filename, "%s/%05d_%04x.bin", (char*) cdi_out.file, out_packet_ndx, appID);
+            FILE *file = fopen(filename, "wb");
+            if (file == NULL) {
+                printf("Failed to open file.\n");
+                return;
+            }
+            fwrite(TLM_BUF, sizeof(uint8_t), length, file);
+            fclose(file);
+            out_packet_ndx++;
+            break;
+        }
+        case CMD_PORT: {
+            fprintf(stderr, "UDP port logic reached in cdi_interface.c\n");
+            exit(EXIT_FAILURE);
+            // TODO: use cdi_in.port
+        }
+        default:
+            break;
     }
-    fwrite(TLM_BUF, sizeof(uint8_t), length, file);
-    fclose(file);
-    out_packet_ndx++;
 }
