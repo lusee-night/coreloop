@@ -11,10 +11,6 @@
 #define DEFAULT_FILE_IN
 #define DEFAULT_FILE_OUT
 
-enum cmd_format format;
-void *in;
-void *out;
-
 void raiseError(char *str, char *argv[]);
 
 #endif //LN_CORELOOP_MAIN_H

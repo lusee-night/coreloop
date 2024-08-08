@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "cdi_interface.h"
+#include "cdi_options.h"
 
 
 #define MAX_COMMANDS 1000
@@ -19,10 +20,10 @@ int Ncommands;
 void* TLM_BUF;
 
 
-void cdi_init(enum cmd_format format, void *in, void *out){
-    switch(format) {
+void cdi_init(){
+    switch(cdi_format) {
         case CMD_FILE: {
-            FILE *file = fopen((char*) in, "r");
+            FILE *file = fopen((char*) cdi_in, "r");
             if (file == NULL) {
                 printf("Failed to open file.\n");
                 return;

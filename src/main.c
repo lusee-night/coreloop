@@ -5,50 +5,51 @@
 #include "spectrometer_interface.h"
 #include "cdi_interface.h"
 #include "core_loop.h"
+#include "cdi_options.h"
 #include "main.h"
 
-enum cmd_format format = UNSPECIFIED;
+enum cmd_format cdi_format = UNSPECIFIED;
 
 int main(int argc, char *argv[]) {
     int opt;
     while ((opt = getopt(argc, argv, "fpi:o:")) != -1) {
         switch (opt) {
             case 'f':
-                if (format != UNSPECIFIED) {
+                if (cdi_format != UNSPECIFIED) {
                     raiseError("Must specify either file mode or port mode, but not both\n", argv);
                 }
-                format = CMD_FILE;
+                cdi_format = CMD_FILE;
                 break;
             case 'p':
-                if (format != UNSPECIFIED) {
+                if (cdi_format != UNSPECIFIED) {
                     raiseError("Must specify either file mode or port mode, but not both\n", argv);
                 }
-                format = CMD_PORT;
+                cdi_format = CMD_PORT;
                 break;
             case 'i':
-                in = optarg;
+                cdi_in = optarg;
                 break;
             case 'o':
-                out = optarg;
+                cdi_out = optarg;
                 break;
             default:
                 raiseError("", argv);
                 break;
         }
     }
-    if (format == UNSPECIFIED) {
+    if (cdi_format == UNSPECIFIED) {
         raiseError("Must specify either file mode or port mode, but not both\n", argv);
     }
     // #TODO: port numbers should be ints or just strings?
-    if (format == CMD_PORT) {
-        int in_int = atoi(in);
-        int out_int = atoi(out);
-        in = &in_int;
-        out = &out_int;
+    if (cdi_format == CMD_PORT) {
+        int in_int = atoi(cdi_in);
+        int out_int = atoi(cdi_out);
+        cdi_in = &in_int;
+        cdi_out = &out_int;
     }
 
     spectrometer_init();
-    cdi_init(format, in, out);
+    cdi_init();
     DDR3_init();
 
     /*
