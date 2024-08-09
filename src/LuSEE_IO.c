@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+struct timespec time_start, time_now;
+
 void* DDR3_BASE_ADDR;    
 void *SPEC_TICK, *SPEC_TOCK, *SPEC_TIME_RESOLVED;
 int g_core_timer_0;

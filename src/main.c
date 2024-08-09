@@ -10,10 +10,17 @@
 #include "main.h"
 
 enum cmd_format cdi_format = CMD_FILE;
-union cdi_dtype cdi_in;
-union cdi_dtype cdi_out;
+struct cdi_dtype cdi_in;
+struct cdi_dtype cdi_out;
 
 int main(int argc, char *argv[]) {
+    
+    strcpy(cdi_in.file, DEFAULT_FILE_IN);
+    strcpy(cdi_out.file, DEFAULT_FILE_OUT);
+    cdi_in.port = DEFAULT_PORT_IN;
+    cdi_out.port = DEFAULT_PORT_OUT;
+    cdi_format = CMD_FILE;
+    
     int opt;
     while ((opt = getopt(argc, argv, "hm:i:o:")) != -1) {
         switch (opt) {
@@ -30,10 +37,13 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case 'i':
-                cdi_in.file = optarg;
+                strcpy(cdi_in.file, optarg);
+                cdi_in.port = atoi(cdi_in.file); // try to convert to in, don't worry if it fails
+
                 break;
             case 'o':
-                cdi_out.file = optarg;
+                strcpy(cdi_out.file, optarg);
+                cdi_out.port = atoi(cdi_out.file); // try to convert to in, don't worry if it fails
                 break;
             default:
                 raiseError("", argv);
@@ -43,16 +53,11 @@ int main(int argc, char *argv[]) {
     if (cdi_format == UNSPECIFIED) {
         raiseError("Must specify mode -m: f or file for file mode, p or port for port mode\n", argv);
     }
-    if (cdi_format == CMD_PORT) {
-        int in_int = atoi(cdi_in.file);
-        int out_int = atoi(cdi_out.file);
-        cdi_in.port = in_int;
-        cdi_out.port = out_int;
-    }
 
     spectrometer_init();
     cdi_init();
     DDR3_init();
+    clock_gettime(CLOCK_REALTIME, &time_start);
     core_loop();
 
 

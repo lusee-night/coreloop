@@ -11,13 +11,13 @@ enum cmd_format {
     CMD_PORT,
 };
 
-union cdi_dtype {
-    char *file;
+struct cdi_dtype {
+    char file[256];
     int port;
 };
 
 extern enum cmd_format cdi_format;
-extern union cdi_dtype cdi_in;
-extern union cdi_dtype cdi_out;
+extern struct cdi_dtype cdi_in;
+extern struct cdi_dtype cdi_out;
 
 #endif //LN_CORELOOP_CDI_OPTIONS_H

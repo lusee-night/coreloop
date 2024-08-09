@@ -8,10 +8,10 @@
 #include <string.h>
 
 // TODO: write default values
-#define DEFAULT_PORT_IN
-#define DEFAULT_PORT_OUT
-#define DEFAULT_FILE_IN
-#define DEFAULT_FILE_OUT
+#define DEFAULT_PORT_IN  32100
+#define DEFAULT_PORT_OUT 32101
+#define DEFAULT_FILE_IN  "data/commands.dat"
+#define DEFAULT_FILE_OUT "data/cdi_output"
 
 void raiseError(char *str, char *argv[]);
 

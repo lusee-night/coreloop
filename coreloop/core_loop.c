@@ -88,8 +88,10 @@ void core_loop()
     flash_wait = 0;
     send_hello_packet();
     core_init_state();
+    #ifndef NOTREAL
     // restore state from flash if unscheduled reset occured
     restore_state();
+    #endif
 
     for (;;)
     {
@@ -103,9 +105,17 @@ void core_loop()
         process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
 
 #ifdef NOTREAL
-        // if we are running inside the coreloop test harness.
-uint8_t      MSYS_EI5_IRQHandler();
-          MSYS_EI5_IRQHandler();
+        // if we are running inside the coreloop test harness we call the interrupt routine
+        // every 100ms; 
+        uint8_t  MSYS_EI5_IRQHandler();
+        clock_gettime(CLOCK_REALTIME, &time_now);
+        // Calculate the elapsed time in milliseconds
+        long elapsed_ms = (time_now.tv_sec - time_start.tv_sec) * 1000 + (time_now.tv_nsec - time_start.tv_nsec) / 1000000;
+        long elapsed_ticks = elapsed_ms/10; // 10Hz.
+        if (elapsed_ticks != g_core_timer_0) {
+            MSYS_EI5_IRQHandler();
+            g_core_timer_0 = elapsed_ticks;
+        }
 #endif
     }
 }
@@ -118,6 +128,8 @@ uint8_t MSYS_EI5_IRQHandler(void)
     if (resettle_counter > 0) resettle_counter--;   
     if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
     if (heartbeat_counter > 0) heartbeat_counter--;
+     
+    #ifndef NOTREAL
      // flash processing.
     if (flash_wait>0) {
         flash_wait --;
@@ -182,7 +194,7 @@ uint8_t MSYS_EI5_IRQHandler(void)
       flash_write --;
       flash_wait = 1;
   }
-
+    #endif
 
     TMR_clear_int(&g_core_timer_0);
     return (EXT_IRQ_KEEP_ENABLED);

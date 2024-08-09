@@ -1,6 +1,14 @@
 {
     "files.associations": {
         "cdi_interface.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "optional": "c",
+        "random": "c",
+        "stdexcept": "c",
+        "functional": "c",
+        "type_traits": "c",
+        "variant": "c",
+        "format": "c",
+        "string": "c"
     }
 }
