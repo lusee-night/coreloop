@@ -18,6 +18,8 @@ bool empty_hands_count = 32;  // how many times to return nothing before spectru
 bool spectrometer_enable = false;
 bool df_flag;
 bool adc_trigger;
+bool ADC_normal_ops = false;
+bool ADC_ramp = false;
 int32_t* SPEC_BUF;
 uint8_t channel_gain[NINPUT];
 

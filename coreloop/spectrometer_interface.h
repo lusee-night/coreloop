@@ -30,6 +30,14 @@
 #define bit_select_X34R 0x1F
 #define bit_select_X34I 0x1F
 
+extern uint32_t Navg1;
+extern bool add_noise;
+extern bool empty_hands_count;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
+extern bool spectrometer_enable;
+extern bool df_flag;
+extern bool adc_trigger;
+extern bool ADC_normal_ops;
+extern bool ADC_ramp;
 
 struct ADC_stat {
     int16_t min, max;
