@@ -8,7 +8,7 @@
 
 #include "LuSEE_IO.h"
 #include "LuSEE_SPI.h"
-
+#include "LuSEE_Flash_cntrl.h"
 
 // FLASH constrol
 volatile uint32_t flash_clear;
