@@ -229,8 +229,14 @@ void spec_disable_channel (uint8_t ch) {}
      return false;
  }
 
-void spec_set_ADC_normal_ops() {}
-void spec_set_ADC_ramp() {}
+void spec_set_ADC_normal_ops() {
+    ADC_normal_ops = true;
+}
+
+void spec_set_ADC_ramp() {
+    ADC_ramp = true;
+}
+
 void spec_set_enable_digital_func(bool enable) {}
 void spec_set_ADC_all_zeros() {}
 void spec_set_ADC_all_ones() {}
