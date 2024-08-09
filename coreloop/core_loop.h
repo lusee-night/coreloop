@@ -61,10 +61,6 @@ enum output_format {
     OUTPUT_16BIT_FLOAT1,
 };
 
-
-
-
-
 struct route_state {
     uint8_t plus, minus;  // we route "plus" - "minus". if minus is FF, it is ground;
 };

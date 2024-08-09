@@ -1,18 +1,67 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "LuSEE_IO.h"
-
 #include "spectrometer_interface.h"
+#include "cdi_interface.h"
 #include "core_loop.h"
+#include "cdi_options.h"
+#include "main.h"
 
-int main() {
+enum cmd_format cdi_format = CMD_FILE;
+union cdi_dtype cdi_in;
+union cdi_dtype cdi_out;
+
+int main(int argc, char *argv[]) {
+    int opt;
+    while ((opt = getopt(argc, argv, "hm:i:o:")) != -1) {
+        switch (opt) {
+            case 'h':
+                fprintf(stdout, "Usage: %s -m [\"file\" | \"port\"] -i [input file/port] -o [output file/port]\n", argv[0]);
+                exit(EXIT_SUCCESS);
+            case 'm':
+                if (!strcmp(optarg, "file") || !strcmp(optarg, "f")) {
+                    cdi_format = CMD_FILE;
+                } else if (!strcmp(optarg, "port") || !strcmp(optarg, "p")) {
+                    cdi_format = CMD_PORT;
+                } else {
+                    raiseError("Must specify mode -m: f or file for file mode, p or port for port mode\n", argv);
+                }
+                break;
+            case 'i':
+                cdi_in.file = optarg;
+                break;
+            case 'o':
+                cdi_out.file = optarg;
+                break;
+            default:
+                raiseError("", argv);
+                break;
+        }
+    }
+    if (cdi_format == UNSPECIFIED) {
+        raiseError("Must specify mode -m: f or file for file mode, p or port for port mode\n", argv);
+    }
+    if (cdi_format == CMD_PORT) {
+        int in_int = atoi(cdi_in.file);
+        int out_int = atoi(cdi_out.file);
+        cdi_in.port = in_int;
+        cdi_out.port = out_int;
+    }
 
     spectrometer_init();
     cdi_init();
     DDR3_init();
-    
     core_loop();
 
 
     return 0;
 
+}
+
+void raiseError(char *str, char *argv[]) {
+    fprintf(stderr, "%s"
+                    "Usage: %s -m [f/file | p/port] -i [file|port input] -o [file|port output]\n", str, argv[0]);
+    exit(EXIT_FAILURE);
 }

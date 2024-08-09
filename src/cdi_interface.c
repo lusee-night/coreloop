@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "LuSEE_IO.h"
-#include "spectrometer_interface.h"
+#include "cdi_interface.h"
+#include "cdi_options.h"
 
 
 #define MAX_COMMANDS 1000
@@ -20,29 +20,40 @@ int Ncommands;
 void* TLM_BUF;
 
 
-void cdi_init()
-{
-    FILE *file = fopen(commands_filename, "r");
-    if (file == NULL) {
-        printf("Failed to open file.\n");
-        return;
-    }
+void cdi_init(){
+    switch(cdi_format) {
+        case CMD_FILE: {
+            FILE *file = fopen((char*) cdi_in.file, "r");
+            if (file == NULL) {
+                printf("Failed to open file.\n");
+                return;
+            }
 
-    int i = 0;
-    
-    while (fscanf(file, "%d %hhx %hhx %hhx", &wait_list[i], (unsigned char*)&comm_list[i], &arg_high_list[i], &arg_low_list[i]) == 4) {
-        i++;
-        if (i >= MAX_COMMANDS) {
+            int i = 0;
+
+            while (fscanf(file, "%d %hhx %hhx %hhx", &wait_list[i], (unsigned char *) &comm_list[i], &arg_high_list[i],
+                          &arg_low_list[i]) == 4) {
+                i++;
+                if (i >= MAX_COMMANDS) {
+                    break;
+                }
+            }
+            fclose(file);
+            Ncommands = i;
+            cmd_ndx = 0;
+            wait_ndx = wait_list[0];
+            TLM_BUF = malloc(STAGING_AREA_SIZE);
+            printf("Read %i CDI commands.\n", Ncommands);
             break;
         }
+        case CMD_PORT: {
+            fprintf(stderr, "UDP port logic reached in cdi_interface.c\n");
+            exit(EXIT_FAILURE);
+            // TODO: use cdi_in.port
+        }
+        default:
+            break;
     }
-    fclose(file);
-    Ncommands = i;
-    cmd_ndx = 0;
-    wait_ndx = wait_list[0];
-    TLM_BUF = malloc(STAGING_AREA_SIZE);
-    printf("Read %i CDI commands.\n", Ncommands);
-    
 }
 
 bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
@@ -66,14 +77,26 @@ bool cdi_ready() {return true;}
 void wait_for_cdi_ready() {}
 
 void cdi_dispatch (uint16_t appID, uint32_t length) {
-    char filename[512];
-    sprintf(filename, "%s/%05d_%04x.bin", cdi_output, out_packet_ndx, appID);
-    FILE *file = fopen(filename, "wb");
-    if (file == NULL) {
-        printf("Failed to open file.\n");
-        return;
+    switch(cdi_format) {
+        case CMD_FILE: {
+            char filename[512];
+            sprintf(filename, "%s/%05d_%04x.bin", (char*) cdi_out.file, out_packet_ndx, appID);
+            FILE *file = fopen(filename, "wb");
+            if (file == NULL) {
+                printf("Failed to open file.\n");
+                return;
+            }
+            fwrite(TLM_BUF, sizeof(uint8_t), length, file);
+            fclose(file);
+            out_packet_ndx++;
+            break;
+        }
+        case CMD_PORT: {
+            fprintf(stderr, "UDP port logic reached in cdi_interface.c\n");
+            exit(EXIT_FAILURE);
+            // TODO: use cdi_in.port
+        }
+        default:
+            break;
     }
-    fwrite(TLM_BUF, sizeof(uint8_t), length, file);
-    fclose(file);
-    out_packet_ndx++;
 }
