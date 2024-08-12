@@ -10,7 +10,7 @@
 #include <time.h>
 #include "LuSEE_IO.h"
 
-const char* true_spectrum_filename = "data/true_spectrum.dat";
+const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
 struct timespec time_spec_start;
 
@@ -38,6 +38,7 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 void spectrometer_init() {
     FILE* file = fopen(true_spectrum_filename, "r");
     if (file == NULL) {
+        printf("%s", PROJECT_ROOT);
         printf("Error opening file: %s\n", true_spectrum_filename);
         return;
     }
