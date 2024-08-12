@@ -95,8 +95,8 @@ struct sequencer_program {
 
 // core state base contains additional information that will be dumped with every metadata packet
 struct core_state_base {
-    uint32_t time_seconds;
-    uint16_t time_subseconds;
+    uint32_t time_32;
+    uint16_t time_16;
     uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
     uint32_t errors;
     uint16_t corr_products_mask; // which of 16 products to be used, starting with LSB
@@ -152,8 +152,15 @@ struct startup_hello {
     uint32_t FW_Date;
     uint32_t FW_Time;
     uint32_t unique_packet_id;
-    uint32_t time_seconds;
-    uint16_t time_subseconds;
+    uint32_t time_32;
+    uint16_t time_16;
+};
+
+struct heartbeat {
+    uint32_t packet_count;
+    uint32_t time_32;
+    uint16_t time_16;
+    char magic[6];
 };
 
 // metadata payload, compatible with core_state
