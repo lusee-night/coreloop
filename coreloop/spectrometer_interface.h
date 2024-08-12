@@ -11,6 +11,7 @@
 #define NSPECTRA 16
 #define NSPECTRA_AUTO 4
 #define NINPUT 4
+#define INT14_MAX 16384
 
 // for bit slicing
 #define bit_select_A1   0x1F
@@ -36,8 +37,11 @@ extern bool empty_hands_count;  // how many times to return nothing before spect
 extern bool spectrometer_enable;
 extern bool df_flag;
 extern bool adc_trigger;
-extern bool ADC_normal_ops;
-extern bool ADC_ramp;
+
+extern enum ADC_mode {
+    ADC_NORMAL_OPS,
+    ADC_RAMP
+} ADC_mode;
 
 struct ADC_stat {
     int16_t min, max;

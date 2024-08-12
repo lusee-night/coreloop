@@ -22,8 +22,7 @@ bool empty_hands_count = 32;  // how many times to return nothing before spectru
 bool spectrometer_enable = false;
 bool df_flag;
 bool adc_trigger;
-bool ADC_normal_ops = false;
-bool ADC_ramp = false;
+enum ADC_mode ADC_mode = ADC_NORMAL_OPS;
 void* SPEC_BUF;
 uint8_t channel_gain[NINPUT];
 
@@ -224,15 +223,20 @@ void spec_request_waveform(uint8_t ch) {
     
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
-    int Nsamples = 16384;
-    if (true) {
+    int Nsamples = INT14_MAX;
+    if (ADC_mode == ADC_RAMP) {
         for (size_t i = 0; i < Nsamples; i++){
-            TLM_BUF_INT16[i] = (start_value + i)%16384;
+            TLM_BUF_INT16[i] = (start_value + i)%INT14_MAX;
         }
-        cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
     } else {
         // pass guassian noise where negative numbers go from 16384 down.
+        for (size_t i = 0; i < Nsamples; i++) {
+            double var = generate_gaussian_variate();
+            TLM_BUF_INT16[i] = (int) var % INT14_MAX;
+            TLM_BUF_INT16[i] = var < 0 ? -var : var;
+        }
     }
+    cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
 }
 
 void spec_disable_channel (uint8_t ch) {}
@@ -255,11 +259,11 @@ void spec_disable_channel (uint8_t ch) {}
  }
 
 void spec_set_ADC_normal_ops() {
-    ADC_normal_ops = true;
+    ADC_mode = ADC_NORMAL_OPS;
 }
 
 void spec_set_ADC_ramp() {
-    ADC_ramp = true;
+    ADC_mode = ADC_RAMP;
 }
 
 void spec_set_enable_digital_func(bool enable) {}
