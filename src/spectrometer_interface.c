@@ -38,7 +38,6 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 void spectrometer_init() {
     FILE* file = fopen(true_spectrum_filename, "r");
     if (file == NULL) {
-        printf("%s", PROJECT_ROOT);
         printf("Error opening file: %s\n", true_spectrum_filename);
         return;
     }
