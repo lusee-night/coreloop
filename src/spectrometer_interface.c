@@ -1,5 +1,6 @@
 #include "spectrometer_interface.h"
-
+#include "cdi_interface.h"
+#include "lusee_appIds.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -217,7 +218,20 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     return true;
 }
 
-void spec_request_waveform(uint8_t ch) {}
+void spec_request_waveform(uint8_t ch) {
+    
+    uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
+    uint16_t start_value = 500*1000*ch;
+    int Nsamples = 16384;
+    if (true) {
+        for (size_t i = 0; i < Nsamples; i++){
+            TLM_BUF_INT16[i] = (start_value + i)%16384;
+        }
+        cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
+    } else {
+        // pass guassian noise where negative numbers go from 16384 down.
+    }
+}
 
 void spec_disable_channel (uint8_t ch) {}
 
