@@ -6,10 +6,13 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
+#include <time.h>
+#include "LuSEE_IO.h"
 
 const char* true_spectrum_filename = "data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
-uint32_t time_seconds=0;
+struct timespec time_spec_start;
+
 
 /******* Internal state of the spectrometer and simulation options *********/
 uint32_t Navg1 = 512;
@@ -18,7 +21,7 @@ bool empty_hands_count = 32;  // how many times to return nothing before spectru
 bool spectrometer_enable = false;
 bool df_flag;
 bool adc_trigger;
-int32_t* SPEC_BUF;
+void* SPEC_BUF;
 uint8_t channel_gain[NINPUT];
 
 #define N_BOOT_REGISTERS 16
@@ -56,10 +59,10 @@ void spectrometer_init() {
 
 uint32_t spec_get_version(int s) {
     switch (s) {
-        case 0: return 0x12345678;
-        case 1: return 0x87654321;
+        case 0: return 0x00000001;
+        case 1: return 0x00000001;
         case 2: return 0x20240101;
-        case 3: return 0x12330000;
+        case 3: return 0x00000001;
         default: return 0;
     }
 }
@@ -71,13 +74,11 @@ void spec_get_TVS(uint16_t *TVS) {
     TVS[3] = 40;
 }
 
-
-void spec_set_Navg1(uint32_t Navg1) {
-    Navg1 = Navg1;
-}
-
 void spec_set_spectrometer_enable(bool on) {
     spectrometer_enable = on;
+    if (on) {
+        clock_gettime(CLOCK_REALTIME, &time_spec_start);
+    }
 }
 
 
@@ -91,39 +92,41 @@ double generate_gaussian_variate() {
 
 
 bool spec_new_spectrum_ready() {
-    static int count = 0;
     df_flag = false;
     if (!spectrometer_enable) {
-        count = 0;
         return false;
     }
-    if (count < empty_hands_count) {
-        count++;
-        return false;
-    }
-    count = 0;
-    df_flag = true;
-    for (int i = 0; i < NSPECTRA; i++) {
-        for (int j = 0; j < NCHANNELS; j++) {
-            int32_t spec = true_spectrum[i*NCHANNELS+j];
-            if (add_noise) {
+    clock_gettime(CLOCK_REALTIME, &time_now);
+    long ns_passed = (time_now.tv_sec - time_spec_start.tv_sec) * 1e9 + time_now.tv_nsec - time_spec_start.tv_nsec;
+    long topass = (long)(floor((4096/102.4e6)*1e9*Navg1));
+    //printf ("%li %li \n",ns_passed,topass);
+    if (ns_passed > topass) {
+        time_spec_start = time_now;
+        df_flag = true;
+        int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
+        for (int i = 0; i < NSPECTRA; i++) {
+            for (int j = 0; j < NCHANNELS; j++) {
+                int32_t spec = true_spectrum[i*NCHANNELS+j];
                 if (add_noise) {
-                    double noise = generate_gaussian_variate();
-                    if (i<4) {
-                        spec += (int32_t)(2*spec*noise/sqrt(Navg1));
-                    } else {
-                     int i1 = ch_ant1[i];
-                     int i2 = ch_ant2[i];
-                     int32_t spec1 = true_spectrum[NCHANNELS*i1+j];
-                     int32_t spec2 = true_spectrum[NCHANNELS*i2+j];
-                    spec += (int32_t)(sqrt(spec1*spec2+spec*spec)*noise/sqrt(Navg1)/2);
+                    if (add_noise) {
+                        double noise = generate_gaussian_variate();
+                        if (i<4) {
+                            spec += (int32_t)(2*spec*noise/sqrt(Navg1));
+                        } else {
+                        int i1 = ch_ant1[i];
+                        int i2 = ch_ant2[i];
+                        int32_t spec1 = true_spectrum[NCHANNELS*i1+j];
+                        int32_t spec2 = true_spectrum[NCHANNELS*i2+j];
+                        spec += (int32_t)(sqrt(spec1*spec2+spec*spec)*noise/sqrt(Navg1)/2);
+                        }
                     }
                 }
+                SPEC_BUF_INT32[i*NCHANNELS+j] = spec;
             }
-            SPEC_BUF[i*NCHANNELS+j] = spec;
         }
-    }
     return true;
+    }
+    return false;
 }
 
 void spec_not_implemented() {
@@ -132,7 +135,7 @@ void spec_not_implemented() {
 }
 
 // RFS_SET_RESET  Reset default configuration (system configuration as after boot)
-void spec_set_reset() {spec_not_implemented();};
+void spec_set_reset() {};
 
 // RFS_SET_STORE Stores current configuration
 void spec_store() {spec_not_implemented();};
@@ -171,6 +174,7 @@ void spec_set_route(uint8_t ch, uint8_t plus, uint8_t minus) {}
 
 void spec_set_avg1 (uint8_t Navg1_shift) {
     Navg1 = (1 << Navg1_shift);
+    printf ("NAVg1 set to %i\n",Navg1);
 }
 
 
@@ -191,7 +195,7 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     ms_med.valid_count = 1<<15;
 
     ms_high.sumv = 0;
-    ms_high.sumv2 = 200*200*7*(1<<15);
+    ms_high.sumv2 = 200*200*1*(1<<15);
     ms_high.max = 200*3*7;
     ms_high.min =-200*3*7;
     ms_high.invalid_count_max = ms_high.invalid_count_min = 0;
@@ -217,11 +221,18 @@ void spec_request_waveform(uint8_t ch) {}
 
 void spec_disable_channel (uint8_t ch) {}
 
- void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec){
-    *time_sec = time_seconds;
-    time_seconds++;
-    *time_subsec = 123;
- }
+ void spec_get_time(uint32_t *time_32, uint16_t *time_16){
+
+    struct timespec time_now;
+    clock_gettime(CLOCK_REALTIME, &time_now);
+    const float ticks_per_sec = 1/(244e-6/16);
+    unsigned long long elapsed_ticks = (time_now.tv_sec - time_start.tv_sec)*ticks_per_sec  
+                             + (time_now.tv_nsec - time_start.tv_nsec)*(ticks_per_sec/1e9);
+
+
+    *time_32 =  elapsed_ticks & 0xFFFFFFFF;
+    *time_16 = (elapsed_ticks >> 32) & 0x0000FFFF;
+    }
 
  bool spec_df_dropped() {
      return false;

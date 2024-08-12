@@ -58,7 +58,11 @@ int main(int argc, char *argv[]) {
     cdi_init();
     DDR3_init();
     clock_gettime(CLOCK_REALTIME, &time_start);
-    core_loop();
+    soft_reset_flag = 0;
+    do {
+        printf("HERE {soft_reset_flag: %d}\n", soft_reset_flag);
+        core_loop();
+    } while (soft_reset_flag);
 
 
     return 0;

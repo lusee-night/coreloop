@@ -22,25 +22,29 @@ void send_hello_packet() {
     payload->FW_Date = spec_get_version(2);
     payload->FW_Time = spec_get_version(3);
     payload->unique_packet_id = unique_packet_id;
-    payload->time_seconds = state.base.time_seconds;
-    payload->time_subseconds = state.base.time_subseconds;
+    payload->time_32 = state.base.time_32;
+    payload->time_16 = state.base.time_16;
     cdi_dispatch(AppID_uC_Start, sizeof(struct startup_hello));
 }
 
 bool process_hearbeat() {
     if (heartbeat_counter > 0) return false;
     debug_print("H");
+    struct heartbeat *payload = (struct heartbeat*) (TLM_BUF);
     wait_for_cdi_ready();
-    char *msg = (char *) TLM_BUF;
-    * ((uint32_t*)(TLM_BUF))  =  heartbeat_packet_count;
-    heartbeat_packet_count++;
-    msg[4] = 'B';
-    msg[5] = 'R';
-    msg[6] = 'R';
-    msg[7] = 'L';
-
-    cdi_dispatch(AppID_uC_Heartbeat, 8);
+    payload->packet_count = heartbeat_packet_count;
+    update_time();
+    payload->time_32 = state.base.time_32;
+    payload->time_16 = state.base.time_16;
+    payload->magic[0] = 'B';
+    payload->magic[1] = 'R';
+    payload->magic[2] = 'N';
+    payload->magic[3] = 'M';
+    payload->magic[4] = 'R';
+    payload->magic[5] = 'L';
+    cdi_dispatch(AppID_uC_Heartbeat, sizeof(struct heartbeat));
     heartbeat_counter = HEARTBEAT_DELAY;
+    heartbeat_packet_count++;
     return true;
 }
 

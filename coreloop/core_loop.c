@@ -60,7 +60,7 @@ void core_init_state(){
     state.base.weight_current = state.base.weight_previous = 0;
     drop_df = false;
     update_time();
-    unique_packet_id = state.base.time_seconds;
+    unique_packet_id = state.base.time_32;
     fill_derived();
 
     set_spectrometer_to_sequencer();
@@ -204,12 +204,12 @@ uint8_t MSYS_EI5_IRQHandler(void)
 void update_time() {
     // why is this not working is not clear.
     //spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
-    uint32_t sec;
-    uint16_t subsec;
-    spec_get_time(&sec, &subsec);
-    state.base.time_seconds = sec;
-    state.base.time_subseconds = subsec;
-    state.base.rand_state += sec;
+    uint32_t sec32;
+    uint16_t sec16;
+    spec_get_time(&sec32, &sec16);
+    state.base.time_32 = sec32;
+    state.base.time_16 = sec16;
+    state.base.rand_state += sec32;
 }
 
 
