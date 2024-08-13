@@ -11,7 +11,7 @@
 #define NSPECTRA 16
 #define NSPECTRA_AUTO 4
 #define NINPUT 4
-#define INT14_MAX 16384
+#define UINT14_MAX 16384
 
 // for bit slicing
 #define bit_select_A1   0x1F

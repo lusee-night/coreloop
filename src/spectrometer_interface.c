@@ -223,17 +223,17 @@ void spec_request_waveform(uint8_t ch) {
     
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
-    int Nsamples = INT14_MAX;
+    int Nsamples = UINT14_MAX;
     if (ADC_mode == ADC_RAMP) {
         for (size_t i = 0; i < Nsamples; i++){
-            TLM_BUF_INT16[i] = (start_value + i)%INT14_MAX;
+            TLM_BUF_INT16[i] = (start_value + i) % UINT14_MAX;
         }
     } else {
         // pass guassian noise where negative numbers go from 16384 down.
         for (size_t i = 0; i < Nsamples; i++) {
             double var = generate_gaussian_variate();
-            TLM_BUF_INT16[i] = (int) var % INT14_MAX;
-            TLM_BUF_INT16[i] = var < 0 ? -var : var;
+            TLM_BUF_INT16[i] = (int) var % UINT14_MAX;
+            TLM_BUF_INT16[i] = var >= 0 ? var : UINT14_MAX + var;
         }
     }
     cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
