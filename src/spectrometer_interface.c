@@ -12,6 +12,8 @@
 
 const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
+const char* ramp_spectrum_filename = CORELOOP_ROOT "/data/ramp_spectrum.dat";
+double ramp_spectrum[NCHANNELS];
 struct timespec time_spec_start;
 
 
@@ -36,15 +38,17 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 
 
 void spectrometer_init() {
-    FILE* file = fopen(true_spectrum_filename, "r");
+    const char* filename = ADC_mode == ADC_NORMAL_OPS ? true_spectrum_filename : ramp_spectrum_filename;
+    char* fmt = ADC_mode == ADC_NORMAL_OPS ? "%u" : "%lf";
+    FILE* file = fopen(filename, "r");
     if (file == NULL) {
-        printf("Error opening file: %s\n", true_spectrum_filename);
+        printf("Error opening file: %s\n", filename);
         return;
     }
-
-    for (int i = 0; i < NCHANNELS*NSPECTRA; i++) {
-        if (fscanf(file, "%u", &true_spectrum[i]) != 1) {
-            printf("Error reading from file: %s\n", true_spectrum_filename);
+    for (int i = 0; i < 2047; i++) {
+        if ((ADC_mode == ADC_NORMAL_OPS && fscanf(file, fmt, &true_spectrum[i]) != 1)
+                || (ADC_mode == ADC_RAMP && fscanf(file, fmt, &ramp_spectrum[i]) != 1)) {
+            printf("Error reading from file: %s\n", filename);
             fclose(file);
             return;
         }
@@ -105,6 +109,13 @@ bool spec_new_spectrum_ready() {
     if (ns_passed > topass) {
         time_spec_start = time_now;
         df_flag = true;
+        if (ADC_mode == ADC_RAMP) {
+            double* SPEC_BUF_DOUBLE = (double*) SPEC_BUF;
+            for (int i = 0; i < 2047; i++) {
+                SPEC_BUF_DOUBLE[i] = ramp_spectrum[i];
+            }
+            return true;
+        }
         int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
         for (int i = 0; i < NSPECTRA; i++) {
             for (int j = 0; j < NCHANNELS; j++) {
@@ -260,10 +271,14 @@ void spec_disable_channel (uint8_t ch) {}
 
 void spec_set_ADC_normal_ops() {
     ADC_mode = ADC_NORMAL_OPS;
+    free(SPEC_BUF);
+    spectrometer_init();
 }
 
 void spec_set_ADC_ramp() {
     ADC_mode = ADC_RAMP;
+    free(SPEC_BUF);
+    spectrometer_init();
 }
 
 void spec_set_enable_digital_func(bool enable) {}
