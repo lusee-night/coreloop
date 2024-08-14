@@ -38,14 +38,29 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 
 
 void spectrometer_init() {
-    const char* filename = ADC_mode == ADC_NORMAL_OPS ? true_spectrum_filename : ramp_spectrum_filename;
-    char* fmt = ADC_mode == ADC_NORMAL_OPS ? "%u" : "%lf";
+    const char* filename;
+    char* fmt;
+    switch (ADC_mode) {
+        case ADC_NORMAL_OPS:
+            filename = true_spectrum_filename;
+            fmt = "%u";
+            break;
+        case ADC_RAMP:
+            filename = ramp_spectrum_filename;
+            fmt = "%lf";
+            break;
+        default:
+            break;
+    }
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
         printf("Error opening file: %s\n", filename);
         return;
     }
-    for (int i = 0; i < 2047; i++) {
+    for (int i = 0; i < NCHANNELS * NSPECTRA; i++) {
+        if (ADC_mode == ADC_RAMP && i == NCHANNELS - 1) {
+            break;
+        }
         if ((ADC_mode == ADC_NORMAL_OPS && fscanf(file, fmt, &true_spectrum[i]) != 1)
                 || (ADC_mode == ADC_RAMP && fscanf(file, fmt, &ramp_spectrum[i]) != 1)) {
             printf("Error reading from file: %s\n", filename);
@@ -111,8 +126,12 @@ bool spec_new_spectrum_ready() {
         df_flag = true;
         if (ADC_mode == ADC_RAMP) {
             double* SPEC_BUF_DOUBLE = (double*) SPEC_BUF;
-            for (int i = 0; i < 2047; i++) {
-                SPEC_BUF_DOUBLE[i] = ramp_spectrum[i];
+            for (int i = 0; i < NCHANNELS; i++) {
+                double spec = ramp_spectrum[i];
+                SPEC_BUF_DOUBLE[i] = spec;
+                for (int j = 1; j < NSPECTRA; j++) {
+                    SPEC_BUF_DOUBLE[j*NCHANNELS + i] = spec;
+                }
             }
             return true;
         }
@@ -271,13 +290,13 @@ void spec_disable_channel (uint8_t ch) {}
 
 void spec_set_ADC_normal_ops() {
     ADC_mode = ADC_NORMAL_OPS;
-    free(SPEC_BUF);
+//    free(SPEC_BUF);
     spectrometer_init();
 }
 
 void spec_set_ADC_ramp() {
     ADC_mode = ADC_RAMP;
-    free(SPEC_BUF);
+//    free(SPEC_BUF);
     spectrometer_init();
 }
 
