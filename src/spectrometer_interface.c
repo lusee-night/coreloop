@@ -25,7 +25,7 @@ bool spectrometer_enable = false;
 bool df_flag;
 bool adc_trigger;
 enum ADC_mode ADC_mode = ADC_NORMAL_OPS;
-void* SPEC_BUF;
+void* SPEC_BUF = NULL;
 uint8_t channel_gain[NINPUT];
 
 #define N_BOOT_REGISTERS 16
@@ -124,6 +124,7 @@ bool spec_new_spectrum_ready() {
     if (ns_passed > topass) {
         time_spec_start = time_now;
         df_flag = true;
+        // TODO: Check if this is correct, the corresponding plots in uncrater are not correct
         if (ADC_mode == ADC_RAMP) {
             double* SPEC_BUF_DOUBLE = (double*) SPEC_BUF;
             for (int i = 0; i < NCHANNELS; i++) {
@@ -290,13 +291,21 @@ void spec_disable_channel (uint8_t ch) {}
 
 void spec_set_ADC_normal_ops() {
     ADC_mode = ADC_NORMAL_OPS;
-//    free(SPEC_BUF);
+    // TODO: double free or corruption error when uncommenting this code -- SPEC_BUF must be freed if spectrometer_init() is called again, look for workarounds
+//    if (SPEC_BUF != NULL) {
+//        free(SPEC_BUF);
+//        SPEC_BUF = NULL;
+//    }
     spectrometer_init();
 }
 
 void spec_set_ADC_ramp() {
     ADC_mode = ADC_RAMP;
-//    free(SPEC_BUF);
+    // TODO: double free or corruption error when uncommenting this code -- SPEC_BUF must be freed if spectrometer_init() is called again, look for workarounds
+//    if (SPEC_BUF != NULL) {
+//        free(SPEC_BUF);
+//        SPEC_BUF = NULL;
+//    }
     spectrometer_init();
 }
 
