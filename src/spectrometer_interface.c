@@ -38,32 +38,29 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 
 
 void spectrometer_init() {
-    const char* filename;
-    char* fmt;
-    switch (ADC_mode) {
-        case ADC_NORMAL_OPS:
-            filename = true_spectrum_filename;
-            fmt = "%u";
-            break;
-        case ADC_RAMP:
-            filename = ramp_spectrum_filename;
-            fmt = "%lf";
-            break;
-        default:
-            break;
-    }
-    FILE* file = fopen(filename, "r");
+    FILE* file = fopen(true_spectrum_filename, "r");
     if (file == NULL) {
-        printf("Error opening file: %s\n", filename);
+        printf("Error opening file: %s\n", true_spectrum_filename);
         return;
     }
     for (int i = 0; i < NCHANNELS * NSPECTRA; i++) {
-        if (ADC_mode == ADC_RAMP && i == NCHANNELS - 1) {
-            break;
+        if (fscanf(file, "%i", &true_spectrum[i]) != 1) {                
+            printf("Error reading from file: %s\n", true_spectrum_filename);
+            fclose(file);
+            return;
         }
-        if ((ADC_mode == ADC_NORMAL_OPS && fscanf(file, fmt, &true_spectrum[i]) != 1)
-                || (ADC_mode == ADC_RAMP && fscanf(file, fmt, &ramp_spectrum[i]) != 1)) {
-            printf("Error reading from file: %s\n", filename);
+    }
+    fclose(file);
+    
+    file = fopen(ramp_spectrum_filename, "r");
+    if (file == NULL) {
+        printf("Error opening file: %s\n", ramp_spectrum_filename);
+        return;
+    }
+
+    for (int i = 0; i < NCHANNELS; i++) {
+        if (fscanf(file, "%lf", &ramp_spectrum[i]) != 1) {
+            printf("Error reading from file: %s\n", ramp_spectrum_filename);
             fclose(file);
             return;
         }
@@ -124,19 +121,17 @@ bool spec_new_spectrum_ready() {
     if (ns_passed > topass) {
         time_spec_start = time_now;
         df_flag = true;
+        int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;    
         // TODO: Check if this is correct, the corresponding plots in uncrater are not correct
-        if (ADC_mode == ADC_RAMP) {
-            double* SPEC_BUF_DOUBLE = (double*) SPEC_BUF;
+        if (ADC_mode == ADC_RAMP) {            
             for (int i = 0; i < NCHANNELS; i++) {
-                double spec = ramp_spectrum[i];
-                SPEC_BUF_DOUBLE[i] = spec;
-                for (int j = 1; j < NSPECTRA; j++) {
-                    SPEC_BUF_DOUBLE[j*NCHANNELS + i] = spec;
+                int32_t spec = (int)ramp_spectrum[i];
+                for (int j = 0; j < NSPECTRA; j++) {
+                    SPEC_BUF_INT32[j*NCHANNELS + i] = spec;
                 }
             }
             return true;
         }
-        int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
         for (int i = 0; i < NSPECTRA; i++) {
             for (int j = 0; j < NCHANNELS; j++) {
                 int32_t spec = true_spectrum[i*NCHANNELS+j];
@@ -296,7 +291,7 @@ void spec_set_ADC_normal_ops() {
 //        free(SPEC_BUF);
 //        SPEC_BUF = NULL;
 //    }
-    spectrometer_init();
+
 }
 
 void spec_set_ADC_ramp() {
@@ -306,7 +301,6 @@ void spec_set_ADC_ramp() {
 //        free(SPEC_BUF);
 //        SPEC_BUF = NULL;
 //    }
-    spectrometer_init();
 }
 
 void spec_set_enable_digital_func(bool enable) {}
