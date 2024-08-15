@@ -18,6 +18,8 @@ add_definitions(-DNOTREAL)
 # Add compiler options
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-format-security -Wno-address-of-packed-member")
 
+add_compile_definitions(CORELOOP_ROOT="${CMAKE_SOURCE_DIR}")
+
 find_library(MATH_LIBRARY m)
 
 add_executable(coreloop ${SOURCE_FILES})

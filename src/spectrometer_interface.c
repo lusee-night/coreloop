@@ -10,8 +10,10 @@
 #include <time.h>
 #include "LuSEE_IO.h"
 
-const char* true_spectrum_filename = "data/true_spectrum.dat";
+const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
+const char* ramp_spectrum_filename = CORELOOP_ROOT "/data/ramp_spectrum.dat";
+double ramp_spectrum[NCHANNELS];
 struct timespec time_spec_start;
 
 
@@ -22,7 +24,8 @@ bool empty_hands_count = 32;  // how many times to return nothing before spectru
 bool spectrometer_enable = false;
 bool df_flag;
 bool adc_trigger;
-void* SPEC_BUF;
+enum ADC_mode ADC_mode = ADC_NORMAL_OPS;
+void* SPEC_BUF = NULL;
 uint8_t channel_gain[NINPUT];
 
 #define N_BOOT_REGISTERS 16
@@ -40,10 +43,24 @@ void spectrometer_init() {
         printf("Error opening file: %s\n", true_spectrum_filename);
         return;
     }
-
-    for (int i = 0; i < NCHANNELS*NSPECTRA; i++) {
-        if (fscanf(file, "%u", &true_spectrum[i]) != 1) {
+    for (int i = 0; i < NCHANNELS * NSPECTRA; i++) {
+        if (fscanf(file, "%i", &true_spectrum[i]) != 1) {                
             printf("Error reading from file: %s\n", true_spectrum_filename);
+            fclose(file);
+            return;
+        }
+    }
+    fclose(file);
+    
+    file = fopen(ramp_spectrum_filename, "r");
+    if (file == NULL) {
+        printf("Error opening file: %s\n", ramp_spectrum_filename);
+        return;
+    }
+
+    for (int i = 0; i < NCHANNELS; i++) {
+        if (fscanf(file, "%lf", &ramp_spectrum[i]) != 1) {
+            printf("Error reading from file: %s\n", ramp_spectrum_filename);
             fclose(file);
             return;
         }
@@ -104,7 +121,17 @@ bool spec_new_spectrum_ready() {
     if (ns_passed > topass) {
         time_spec_start = time_now;
         df_flag = true;
-        int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
+        int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;    
+        // TODO: Check if this is correct, the corresponding plots in uncrater are not correct
+        if (ADC_mode == ADC_RAMP) {            
+            for (int i = 0; i < NCHANNELS; i++) {
+                int32_t spec = (int)ramp_spectrum[i];
+                for (int j = 0; j < NSPECTRA; j++) {
+                    SPEC_BUF_INT32[j*NCHANNELS + i] = spec;
+                }
+            }
+            return true;
+        }
         for (int i = 0; i < NSPECTRA; i++) {
             for (int j = 0; j < NCHANNELS; j++) {
                 int32_t spec = true_spectrum[i*NCHANNELS+j];
@@ -222,15 +249,20 @@ void spec_request_waveform(uint8_t ch) {
     
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
-    int Nsamples = 16384;
-    if (true) {
+    int Nsamples = UINT14_MAX;
+    if (ADC_mode == ADC_RAMP) {
         for (size_t i = 0; i < Nsamples; i++){
-            TLM_BUF_INT16[i] = (start_value + i)%16384;
+            TLM_BUF_INT16[i] = (start_value + i) % UINT14_MAX;
         }
-        cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
     } else {
         // pass guassian noise where negative numbers go from 16384 down.
+        for (size_t i = 0; i < Nsamples; i++) {
+            double var = generate_gaussian_variate();
+            TLM_BUF_INT16[i] = (int) var % UINT14_MAX;
+            TLM_BUF_INT16[i] = var >= 0 ? var : UINT14_MAX + var;
+        }
     }
+    cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
 }
 
 void spec_disable_channel (uint8_t ch) {}
@@ -252,8 +284,25 @@ void spec_disable_channel (uint8_t ch) {}
      return false;
  }
 
-void spec_set_ADC_normal_ops() {}
-void spec_set_ADC_ramp() {}
+void spec_set_ADC_normal_ops() {
+    ADC_mode = ADC_NORMAL_OPS;
+    // TODO: double free or corruption error when uncommenting this code -- SPEC_BUF must be freed if spectrometer_init() is called again, look for workarounds
+//    if (SPEC_BUF != NULL) {
+//        free(SPEC_BUF);
+//        SPEC_BUF = NULL;
+//    }
+
+}
+
+void spec_set_ADC_ramp() {
+    ADC_mode = ADC_RAMP;
+    // TODO: double free or corruption error when uncommenting this code -- SPEC_BUF must be freed if spectrometer_init() is called again, look for workarounds
+//    if (SPEC_BUF != NULL) {
+//        free(SPEC_BUF);
+//        SPEC_BUF = NULL;
+//    }
+}
+
 void spec_set_enable_digital_func(bool enable) {}
 void spec_set_ADC_all_zeros() {}
 void spec_set_ADC_all_ones() {}
