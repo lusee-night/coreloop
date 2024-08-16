@@ -23,9 +23,11 @@ bool process_cdi()
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
-    debug_print ("\r\nGot new CDI command: ");
+    debug_print ("\r\nGot new CDI command: cmd = ");
+    debug_print_hex(cmd);
+    debug_print(", arg_hi = ");
     debug_print_hex(arg_high);
-    debug_print(" ");
+    debug_print(", arg_lo = ");
     debug_print_hex(arg_low);
     debug_print("\r\n");
 
@@ -85,6 +87,7 @@ bool process_cdi()
 
             case RFS_SET_LOAD_FL:
                 // load the sequencer program # arg_low (0-255) into state.program
+                debug_print("Recevied RFS_SET_LOAD_FL.\n\r")
                 cdi_not_implemented("RFS_SET_LOAD_FL");
                 break;
             case RFS_SET_STORE_FL:
@@ -204,9 +207,11 @@ bool process_cdi()
                 state.seq.notch = arg_low;
                 break;
             case RFS_SET_AVG_SET_HI:
+                fprintf(stdout, "RFS_SET_AVG_SET_HI: hi = %d, med = %d\n", state.seq.hi_frac, state.seq.med_frac);
                 state.seq.hi_frac = arg_low;
                 break;
-            case RFS_SET_AVGI_SET_MID:
+            case RFS_SET_AVG_SET_MID:
+                fprintf(stdout, "RFS_SET_AVG_SET_MID: hi = %d, med = %d\n", state.seq.hi_frac, state.seq.med_frac);
                 state.seq.med_frac = arg_low;
                 break;
             case RFS_SET_OUTPUT_FORMAT:

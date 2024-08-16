@@ -107,7 +107,7 @@
 #define RFS_SET_AVG_SET_HI  0x53 
 
 // set medium priority fraction, low priority is 1-high-medium
-#define RFS_SET_AVGI_SET_MID  0x54 
+#define RFS_SET_AVG_SET_MID  0x54 
 
 // set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
 #define RFS_SET_OUTPUT_FORMAT  0x55 
