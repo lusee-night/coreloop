@@ -42,17 +42,17 @@ void dispatch_32bit_data() {
             break;
         case 2:
             for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = ddr_ptr[i*2]<<1 + ddr_ptr[i*2+1]<<1;
+                cdi_ptr[i] = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
             }
             break;
         case 3:
             for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = ddr_ptr[i*4]<<2 + ddr_ptr[i*4+1]<<2 + ddr_ptr[i*4+2]<<2; 
+                cdi_ptr[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
             }
             break;
         case 4:
             for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = ddr_ptr[i*4]<<2 + ddr_ptr[i*4+1]<<2 + ddr_ptr[i*4+2]<<2 + ddr_ptr[i*4+3]<<2;
+                cdi_ptr[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
             }
             break;
     }
@@ -65,11 +65,11 @@ void dispatch_32bit_data() {
 }
 
 void dispatch_16bit_updates_data() {
-    cdi_not_implemented("16bit w updates data format");    
+    cdi_not_implemented("16bit w updates data format");
 }
 
 void dispatch_16bit_float1_data() {
-    cdi_not_implemented("16bit w float1 data format");    
+    cdi_not_implemented("16bit w float1 data format");
 }
 
 uint32_t get_next_baseAppID() {
@@ -97,7 +97,7 @@ void transfer_to_cdi () {
     spec_get_TVS(state.base.TVS_sensors);
     send_metadata_packet();
     state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
-    state.cdi_dispatch.prod_count = 0; // 
+    state.cdi_dispatch.prod_count = 0; //
     state.cdi_dispatch.Nfreq = state.Nfreq;
     state.cdi_dispatch.Navgf = state.seq.Navgf;
     state.cdi_dispatch.appId = get_next_baseAppID();
