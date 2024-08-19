@@ -29,7 +29,7 @@ bool process_cdi()
     debug_print_hex(arg_low);
     debug_print("\r\n");
 
-    if (cmd==RFS_Settings)  {
+    if (cmd==RFS_SETTINGS)  {
         switch (arg_high) {
             case RFS_SET_START:
                 if (!state.base.spectrometer_enable) {

@@ -2,10 +2,26 @@
 #ifndef LUSEE_SETTINGS_H
 #define LUSEE_SETTINGS_H
 
-// Master mode command for which everything below applies.
-#define RFS_Settings 0x10
-// Wait command for control, not recognized by the actual_coreloop
-#define CTRL_WAIT 0XE0
+         
+// Top-level CDI commands         
+// Master command for uC control
+#define RFS_SETTINGS  0x10 
+
+// Generate outliers in this number
+#define CTRL_OUTLIER_NUM  0xA0 
+
+// Generate outliers of this amplitude in units of 1/256
+#define CTRL_OUTLIER_AMP  0xA1 
+
+// Generate outliers of this many (sequential) bins
+#define CTRL_OUTLIER_BINS  0xA2 
+
+// Wait for 0.1s x argument (intercepted by commander)
+#define CTRL_WAIT  0xE0 
+
+
+
+// RFS Settings commands
 // wait mode - disable data taking
 #define RFS_SET_STOP  0x00 
 

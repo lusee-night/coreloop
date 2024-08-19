@@ -8,10 +8,8 @@ of.write("""
 #ifndef LUSEE_SETTINGS_H
 #define LUSEE_SETTINGS_H
 
-// Master mode command for which everything below applies.
-#define RFS_Settings 0x10
-// Wait command for control, not recognized by the actual_coreloop
-#define CTRL_WAIT 0XE0
+         
+// Top-level CDI commands         
 """
 )
 
@@ -21,31 +19,33 @@ ofp.write("""
 # It includes all the commands that are available in the RFS_Settings mode
 # generated from the documentation/commands.md file.
 
-# Master CMD
-RFS_SETTINGS = 0x10
-CTRL_WAIT = 0XE0
-
-# Commands
+# Top-level CDI commands
           """)
 
-for line in open("documentation/lusee_commands.md"):
-    line = line.split('|')
-    if len(line)<4:
-        continue
-    offset, name, desc = line[1:4]
-    name = name.strip()
-    desc = desc.strip()
-    if desc[-1]=='\n':
-        desc = desc[:-1]
-    print (offset, name, desc)
-    if offset[:3] != " 0x":
-        continue
-    if "RFS_SET" not in name:
-        continue
-    of.write (f"// {desc}\n")
-    of.write(f"#define {name} {offset}\n\n")
-    ofp.write(f"# {desc}\n")
-    ofp.write(f"{name} = {offset}\n\n")
-    print (f'            case {name}:\n                cdi_not_implemented("{name}");\n                return;')
+def process_md(fname):
+    for line in open(fname).readlines():
+        line = line.split('|')
+        if len(line)<4:
+            continue
+        offset, name, desc = line[1:4]
+        name = name.strip()
+        desc = desc.strip()
+        if desc[-1]=='\n':
+            desc = desc[:-1]
+        print (offset, name, desc)
+        if offset[:3] != " 0x":
+            continue
+        if not (("RFS_SET" in name) or ("CTRL_"in name)):
+            continue
+        of.write (f"// {desc}\n")
+        of.write(f"#define {name} {offset}\n\n")
+        ofp.write(f"# {desc}\n")
+        ofp.write(f"{name} = {offset}\n\n")
+        print (f'            case {name}:\n                cdi_not_implemented("{name}");\n                return;')
+
+process_md('documentation/toplevel_commands.md')
+of.write ("\n\n// RFS Settings commands\n")
+ofp.write ("\n\n# RFS Settings commands\n")
+process_md('documentation/lusee_commands.md')
 
 of.write("\n\n#endif")

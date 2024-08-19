@@ -23,8 +23,8 @@
 
 | 0x1M | Name               |  Description                                       |
 |------|--------------------|----------------------------------------------------|                             
-| 0x10 | RFS_SET_LOAD_FL    | Load sequencer mode from flash
-| 0x11 | RFS_SET_STORE_FL   | Store sequencer mode into flash
+| 0x10 | RFS_SET_LOAD_FL    | Load sequencer mode from flash                     |
+| 0x11 | RFS_SET_STORE_FL   | Store sequencer mode into flash                    |
 
 
 ### 0x3X Gain Settings and Bit slicing
@@ -65,14 +65,14 @@
 
 ### 0x6X Rejection and time averaging
 
-| 0x6M | Name                |  Description                                       |
-|------|---------------------|----------------------------------------------------|                             
-| 0x60 | RFS_SET_REJ_SET     | Set fraction to reject, 0 to disable rejections    |
-| 0x61 | RFS_SET_REJ_NBAD    | Number of bad samples to reject a spectrum         |
-| 0x62 | RFS_SET_TR_START_LSB | Time-resolved spectra starting bin, LSB           |
-| 0x63 | RFS_SET_TR_STOP_LSB | Time-resolved spectra stopping bin, LSB            |
-| 0x64 | RFS_SET_TR_ST_MSB   |  Time-resolved spectra stopping MSB (b4-7), starting MSB (b0-3)       |
-| 0x65 | RFS_SET_TR_AVG_SHIFT   |  frequency averaging       |
+| 0x6M | Name                 |  Description                                       |
+|------|----------------------|----------------------------------------------------|                             
+| 0x60 | RFS_SET_REJ_SET      | Set fraction to reject, 0 to disable rejections    |
+| 0x61 | RFS_SET_REJ_NBAD     | Number of bad samples to reject a spectrum         |
+| 0x62 | RFS_SET_TR_START_LSB | Time-resolved spectra starting bin, LSB            |
+| 0x63 | RFS_SET_TR_STOP_LSB  | Time-resolved spectra stopping bin, LSB            |
+| 0x64 | RFS_SET_TR_ST_MSB    |  Time-resolved spectra stopping MSB (b4-7), starting MSB (b0-3)       |
+| 0x65 | RFS_SET_TR_AVG_SHIFT |  frequency averaging       |
 
 
 

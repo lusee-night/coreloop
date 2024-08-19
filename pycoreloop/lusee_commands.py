@@ -4,12 +4,26 @@
 # It includes all the commands that are available in the RFS_Settings mode
 # generated from the documentation/commands.md file.
 
-# Master CMD
-RFS_SETTINGS = 0x10
-CTRL_WAIT = 0XE0
+# Top-level CDI commands
+          # Master command for uC control
+RFS_SETTINGS =  0x10 
 
-# Commands
-          # wait mode - disable data taking
+# Generate outliers in this number
+CTRL_OUTLIER_NUM =  0xA0 
+
+# Generate outliers of this amplitude in units of 1/256
+CTRL_OUTLIER_AMP =  0xA1 
+
+# Generate outliers of this many (sequential) bins
+CTRL_OUTLIER_BINS =  0xA2 
+
+# Wait for 0.1s x argument (intercepted by commander)
+CTRL_WAIT =  0xE0 
+
+
+
+# RFS Settings commands
+# wait mode - disable data taking
 RFS_SET_STOP =  0x00 
 
 # Start data acquisition. To start anything setup by 0x1x or 0x2x
