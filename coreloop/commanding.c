@@ -45,11 +45,11 @@ bool process_cdi()
                     flash_state_clear(flash_store_pointer);
                     RFS_stop();
                 }
-                break;                
+                break;
             case RFS_SET_RESET:
                 RFS_stop();
                 spec_set_reset();
-                // arglow controls what to do with the stored states after reset. 
+                // arglow controls what to do with the stored states after reset.
                 spec_write_uC_register(0,arg_low);
                 soft_reset_flag = true;
                 return true;
@@ -59,9 +59,9 @@ bool process_cdi()
             case RFS_SET_RECALL:
                 spec_recall();
                 break;
-            case RFS_SET_HK_REQ:            
+            case RFS_SET_HK_REQ:
                 if ((arg_low < 2) || (arg_low == 99)) {
-                    housekeeping_request = 1+arg_low; 
+                    housekeeping_request = 1+arg_low;
                 } else {
                     state.base.errors |= CDI_COMMAND_BAD_ARGS;
                 }
@@ -69,7 +69,7 @@ bool process_cdi()
 
             case RFS_SET_RANGE_ADC:
                 range_adc = 1;
-                trigger_ADC_stat();           
+                trigger_ADC_stat();
                 break;
 
             case RFS_SET_WAVEFORM:
@@ -95,7 +95,7 @@ bool process_cdi()
                 cdi_not_implemented("RFS_SET_STORE_FL");
                 break;
 
-            case RFS_SET_GAIN_ANA_SET:                
+            case RFS_SET_GAIN_ANA_SET:
                 for (int i=0; i<NINPUT; i++){
                     uint8_t val = (arg_low >> (2*i)) & 0x03;
                     if (val==3) {
@@ -207,11 +207,9 @@ bool process_cdi()
                 state.seq.notch = arg_low;
                 break;
             case RFS_SET_AVG_SET_HI:
-                fprintf(stdout, "RFS_SET_AVG_SET_HI: hi = %d, med = %d\n", state.seq.hi_frac, state.seq.med_frac);
                 state.seq.hi_frac = arg_low;
                 break;
             case RFS_SET_AVG_SET_MID:
-                fprintf(stdout, "RFS_SET_AVG_SET_MID: hi = %d, med = %d\n", state.seq.hi_frac, state.seq.med_frac);
                 state.seq.med_frac = arg_low;
                 break;
             case RFS_SET_OUTPUT_FORMAT:
@@ -237,7 +235,7 @@ bool process_cdi()
                 break;
             case RFS_SET_TR_START_LSB:
                 state.seq.tr_start = ((state.seq.tr_start & 0xFF00) +arg_low);
-                break;  
+                break;
             case RFS_SET_TR_STOP_LSB:
                 state.seq.tr_stop = ((state.seq.tr_stop & 0xFF00) +arg_low);
                 break;
@@ -250,7 +248,7 @@ bool process_cdi()
                 state.tr_avg = 1 << state.seq.tr_avg_shift;
                 break;
 
-            
+
             case RFS_SET_CAL_FRAC_SET:
                 cdi_not_implemented("RFS_SET_CAL_FRAC_SET");
                 break;
@@ -324,12 +322,12 @@ bool process_cdi()
                     state.base.sequencer_step++;
                 }
                 break;
-                
+
             default:
                 debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
                 state.base.errors |= CDI_COMMAND_UNKNOWN;
                 break;
-        } 
+        }
     } else {
         debug_print ("   Commmand not implemented, ignoring.\n\r");
         state.base.errors |= CDI_COMMAND_UNKNOWN;
