@@ -20,9 +20,11 @@ void cdi_not_implemented(const char *msg)
 bool process_cdi()
 {
     uint8_t cmd, arg_high, arg_low;
+    uint16_t arg;
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
+    arg = (arg_high << 8) | arg_low;
     debug_print ("\r\nGot new CDI command: cmd = ");
     debug_print_hex(cmd);
     debug_print(", arg_hi = ");
