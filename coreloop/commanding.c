@@ -333,12 +333,15 @@ bool process_cdi()
             }
         }
         case CTRL_OUTLIER_NUM: {
+            state.outliers.num = arg;
             break;
         }
         case CTRL_OUTLIER_AMP: {
+            state.outliers.amp = arg;
             break;
         }
         case CTRL_OUTLIER_BINS: {
+            state.outliers.bins = arg;
             break;
         }
         default: {
