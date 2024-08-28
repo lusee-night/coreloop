@@ -24,14 +24,14 @@ void set_route (uint8_t ch, uint8_t arg_low) {
 bool analog_gain_control() {
 
     bool gains_changed = false;
-    
+
     for (int i = 0; i < NINPUT; i++) {
         if (state.seq.gain[i] != GAIN_AUTO) continue; // Don't do anything unless AGC is enabled
         int32_t cmax = MAX(state.base.ADC_stat[i].max-0x1FFF, state.base.ADC_stat[i].min-0x1FFF);
         if ((state.base.
                 ADC_stat[i].invalid_count_max>0) || (state.base.ADC_stat[i].invalid_count_min>0)) cmax = 10000; // blow through.
         //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
-        if (cmax > state.gain_auto_max[i]) {
+        if (cmax > get_gain_auto_max(state, i)) {
             if (state.base.actual_gain[i] > GAIN_LOW) {
                 state.base.actual_gain[i] --;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
@@ -57,7 +57,7 @@ bool analog_gain_control() {
 void process_gain_range() {
     if (spec_get_ADC_stat(state.base.ADC_stat)) {
         if (analog_gain_control()) {
-            // gains have changed. wait for settle and trigger. 
+            // gains have changed. wait for settle and trigger.
             debug_print("\n\rGains changed, resettle\n\r");
             resettle = true;
             resettle_counter = RESETTLE_DELAY;
@@ -79,14 +79,14 @@ void process_gain_range() {
         }
     }
 }
-  
+
 bool bitslice_control() {
     bool bitslice_changed = false;
 
     for (int i = 0; i < 4; i++) {
         if (state.seq.bitslice[i] != 0xFF) continue; // Don't do anything unless bitslice is auto
         uint8_t keep = 32-leading_zeros_max[i];
-        if (keep>(state.seq.bitslice_keep_bits+1)) { 
+        if (keep>(state.seq.bitslice_keep_bits+1)) {
             // we're keeping more bits than we should (with buffer of 1)
             // slicer should be increased
             state.base.actual_bitslice[i] += (keep-state.seq.bitslice_keep_bits);

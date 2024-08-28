@@ -197,11 +197,9 @@ bool process_cdi()
                 state.seq.Navg1_shift = arg_low & 0x0F;
                 state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
 
-                fill_derived();
                 break;
             case RFS_SET_AVG_FREQ:
                 state.seq.Navgf = arg_low;
-                fill_derived();
                 break;
             case RFS_SET_AVG_NOTCH:
                 state.seq.notch = arg_low;
@@ -245,7 +243,6 @@ bool process_cdi()
                 break;
             case RFS_SET_TR_AVG_SHIFT:
                 state.seq.tr_avg_shift = arg_low;
-                state.tr_avg = 1 << state.seq.tr_avg_shift;
                 break;
 
 

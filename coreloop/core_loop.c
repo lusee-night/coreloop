@@ -21,7 +21,7 @@ uint8_t leading_zeros_min[NSPECTRA];
 uint8_t leading_zeros_max[NSPECTRA];
 uint8_t housekeeping_request;
 uint32_t section_break;
-uint8_t range_adc, resettle, request_waveform; 
+uint8_t range_adc, resettle, request_waveform;
 bool tick_tock;
 bool drop_df;
 bool soft_reset_flag;
@@ -40,7 +40,7 @@ void debug_helper(uint8_t arg) {
 }
 
 
-void core_init_state(){   
+void core_init_state(){
     default_seq (&state.seq);
     state.base.errors = 0;
     state.base.corr_products_mask=0b1111111111111111; //65535
@@ -61,7 +61,6 @@ void core_init_state(){
     drop_df = false;
     update_time();
     unique_packet_id = state.base.time_32;
-    fill_derived();
 
     set_spectrometer_to_sequencer();
     heartbeat_counter = HEARTBEAT_DELAY;
@@ -106,7 +105,7 @@ void core_loop()
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness we call the interrupt routine
-        // every 100ms; 
+        // every 100ms;
         uint8_t  MSYS_EI5_IRQHandler();
         clock_gettime(CLOCK_REALTIME, &time_now);
         // Calculate the elapsed time in milliseconds
@@ -125,10 +124,10 @@ uint8_t MSYS_EI5_IRQHandler(void)
 
     uint32_t tocpy;
     /* Clear the interrupt within the timer */
-    if (resettle_counter > 0) resettle_counter--;   
+    if (resettle_counter > 0) resettle_counter--;
     if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
     if (heartbeat_counter > 0) heartbeat_counter--;
-     
+
     #ifndef NOTREAL
      // flash processing.
     if (flash_wait>0) {
@@ -213,20 +212,6 @@ void update_time() {
 }
 
 
-void fill_derived() {
-    state.Navg1 = 1 << state.seq.Navg1_shift;
-    state.Navg2 = 1 << state.seq.Navg2_shift;
-    state.tr_avg = 1 << state.seq.tr_avg_shift; 
-    // total shift takes into account frequency averaging;
-    state.Navg2_total_shift = state.seq.Navg2_shift;
-    state.Nfreq = NCHANNELS; 
-    if (state.seq.Navgf == 2 ) { state.Navg2_total_shift += 1; state.Nfreq = NCHANNELS/2; }
-    if ((state.seq.Navgf == 3 ) || (state.seq.Navgf == 4)) { state.Navg2_total_shift += 2; state.Nfreq = NCHANNELS/4;} 
-    for (int i=0; i<NINPUT; i++) {
-        state.gain_auto_max[i] = (state.seq.gain_auto_min[i] * state.seq.gain_auto_mult[i]);
-    }   
-}
-
 void reset_errormasks() {
     state.base.errors = 0;
     state.base.spec_overflow = 0;
@@ -253,7 +238,6 @@ void RFS_start() {
         state.base.sequencer_substep = state.program.seq_times[0];
         state.seq = state.program.seq[0];
     }
-    fill_derived();
     set_spectrometer_to_sequencer();
     spec_set_spectrometer_enable(true);
     //drop_df = true;
@@ -270,7 +254,34 @@ void trigger_ADC_stat() {
     spec_trigger_ADC_stat(ADC_STAT_SAMPLES);
 }
 
+uint16_t get_Navg1(struct core_state s)
+{
+    return 1 << s.seq.Navg1_shift;
+}
 
+uint16_t get_Navg2(struct core_state s)
+{
+    return 1 << s.seq.Navg2_shift;
+}
 
+uint16_t get_Nfreq(struct core_state s)
+{
+    switch(s.seq.Navgf) {
+        case 1: return NCHANNELS;
+        case 2: return NCHANNELS/2;
+        case 3: return NCHANNELS/4;
+        case 4: return NCHANNELS/4;
+        default: return NCHANNELS;
+    }
+}
 
+uint16_t get_tr_avg(struct core_state s)
+{
+    return 1 << s.seq.tr_avg_shift;
+}
+
+uint16_t get_gain_auto_max(struct core_state s, int i)
+{
+        return s.seq.gain_auto_min[i] * s.seq.gain_auto_mult[i];
+}
 

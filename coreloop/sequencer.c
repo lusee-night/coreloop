@@ -1,9 +1,9 @@
 #include "core_loop.h"
 
 
-bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {    
+bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {
     if (seq1->notch != seq2->notch) return true;
-    for (int i=0; i<NINPUT; i++) { 
+    for (int i=0; i<NINPUT; i++) {
         if (seq1->gain[i] != seq2->gain[i]) return true;
         if (seq1->route[i].plus != seq2->route[i].plus) return true;
         if (seq1->route[i].minus != seq2->route[i].minus) return true;
@@ -67,15 +67,14 @@ if (state.base.sequencer_substep == 0) {
             //debug_print("Starting sequencer cycle # %i/%i\n", state.base.sequencer_counter+1, state.base.sequencer_repeat);
         }
     }
-    
+
     state.base.sequencer_substep = state.program.seq_times[state.base.sequencer_step];
-    bool restart = restart_needed(&state.seq, &state.program.seq[state.base.sequencer_step]); 
+    bool restart = restart_needed(&state.seq, &state.program.seq[state.base.sequencer_step]);
     if (restart) RFS_stop();
     state.seq = state.program.seq[state.base.sequencer_step];
-    fill_derived();
     set_spectrometer_to_sequencer();
     if (restart) RFS_start();
-    }      
+    }
 }
 
 
