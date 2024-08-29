@@ -82,12 +82,12 @@ bool process_cdi()
                 break;
 
             case RFS_SET_TIME_TO_DIE:
-                debug_print("Recevied time-to-die.\n\r")
+	        debug_print("Recevied time-to-die.\n\r");
                 return true;
 
             case RFS_SET_LOAD_FL:
                 // load the sequencer program # arg_low (0-255) into state.program
-                debug_print("Recevied RFS_SET_LOAD_FL.\n\r")
+	      debug_print("Recevied RFS_SET_LOAD_FL.\n\r");
                 cdi_not_implemented("RFS_SET_LOAD_FL");
                 break;
             case RFS_SET_STORE_FL:
