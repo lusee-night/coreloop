@@ -31,8 +31,17 @@ uint32_t heartbeat_packet_count;
 // thing that are touched in the interrupt need to be proclaimed volatile
 volatile uint32_t heartbeat_counter;
 volatile uint32_t resettle_counter;
+volatile uint32_t cdi_wait_counter; 
+volatile uint32_t mini_wait_counter;
+
 uint16_t flash_store_pointer;
 
+
+
+void mini_wait (uint32_t ticks) {
+    mini_wait_counter = ticks;
+    while (mini_wait_counter > 0) {}
+}
 
 
 void debug_helper(uint8_t arg) {
@@ -65,6 +74,9 @@ void core_init_state(){
 
     set_spectrometer_to_sequencer();
     heartbeat_counter = HEARTBEAT_DELAY;
+    resettle_counter = 0;
+    cdi_wait_counter = 0;
+    mini_wait_counter = 0;
 }
 
 bool process_waveform() {
@@ -128,7 +140,10 @@ uint8_t MSYS_EI5_IRQHandler(void)
     if (resettle_counter > 0) resettle_counter--;   
     if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
     if (heartbeat_counter > 0) heartbeat_counter--;
-     
+    if (cdi_wait_counter > 0) cdi_wait_counter--;
+    if (mini_wait_counter > 0) mini_wait_counter--;
+
+
     #ifndef NOTREAL
      // flash processing.
     if (flash_wait>0) {
