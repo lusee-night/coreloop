@@ -12,16 +12,23 @@
 
 
 #define MAX_COMMANDS 1000
+// FIFO size as per jack
+#define CDI_BUF_SIZE 64 
+
 #define STAGING_AREA_SIZE 32768
 
 const char* commands_filename = "data/commands.dat";
 const char* cdi_output = "data/cdi_output";
+// These are used to store the commands read from the file
 uint8_t comm_list[MAX_COMMANDS], arg_high_list[MAX_COMMANDS], arg_low_list[MAX_COMMANDS];
 int wait_list[MAX_COMMANDS];
-int cmd_ndx = 0;
+
+
+int cmd_ndx = 0; // current command
+int Ncommands = 0; // number of commands
 int wait_ndx = 0;
 int out_packet_ndx = 0;
-int Ncommands;
+
 void* TLM_BUF;
 // sockets
 int sockfd_in;
@@ -78,34 +85,16 @@ void cdi_init(){
                 exit(1);
             }
             printf ("Bound to port %d\n", cdi_in.port);
-
+            Ncommands = 0;
         }
         default:
             break;
     }
 }
 
-bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
-
-    switch(cdi_format) {
-        case CMD_FILE: {
-            if (cmd_ndx >= Ncommands) {
-                return false;
-            }
-            if (wait_ndx == 0) {
-                *cmd = comm_list[cmd_ndx];
-                *arg_high = arg_high_list[cmd_ndx];
-                *arg_low = arg_low_list[cmd_ndx];
-                cmd_ndx++;
-                wait_ndx = wait_list[cmd_ndx];
-                return true;
-            } else {
-                wait_ndx--;
-                return false;
-            }
-            break;
-        }
-        case CMD_PORT: {
+void cdi_fill_command_buffer() {
+    if (cdi_format == CMD_FILE) return;
+    if (cdi_format == CMD_PORT) {
             struct sockaddr_in clientAddr;
             socklen_t addrLen = sizeof(clientAddr);
             uint8_t buffer[4];
@@ -121,17 +110,38 @@ bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
                     printf ("Unexpected command received from socket.\n");
                     exit(1);
                 }
-                *cmd = buffer[1];
-                *arg_high = buffer[2];
-                *arg_low = buffer[3];
-                return true;
-            } else {
-                return false;
-            }
-            break;
+                comm_list[Ncommands] = buffer[1];
+                arg_high_list[Ncommands] = buffer[2];
+                arg_low_list[Ncommands] = buffer[3];
+                wait_list[Ncommands] = 0;
+                Ncommands++;
+                if (Ncommands >= MAX_COMMANDS) {
+                    printf("Too many commands received from socket.\n");
+                    exit(1);
+                }
+                if ((Ncommands - cmd_ndx) > CDI_BUF_SIZE) {
+                    printf ("WARNING: IN REALITY YOU WOULD BE HITTING THE 64 COMMAND BUFFER SIZE!\n");
+                }
         }
+    }   
+}
+
+
+bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
+    // this should now work in either case.
+
+    if (cmd_ndx >= Ncommands) return false;
+    if (wait_ndx>0) {
+        wait_ndx--;
+        return false;
     }
-    return false;
+
+    *cmd = comm_list[cmd_ndx];
+    *arg_high = arg_high_list[cmd_ndx];
+    *arg_low = arg_low_list[cmd_ndx];
+    cmd_ndx++;
+    if (cmd_ndx < Ncommands) wait_ndx = wait_list[cmd_ndx]; else wait_ndx = 0;
+    return true;
 }
 
 bool cdi_ready() {return true;}

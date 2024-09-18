@@ -50,6 +50,12 @@ RFS_SET_RANGE_ADC =  0x07
 # Request ADC waform arg contains channel number
 RFS_SET_WAVEFORM =  0x08 
 
+# Wait arg number of ticks (10ms) before processing next CMD (careful with 64 buffer!)
+RFS_SET_WAIT_TICKS =  0x09 
+
+# Wait arg number of seconds before processing next CMD (careful with 64 buffer!)
+RFS_SET_WAIT_SECS =  0x0A 
+
 # Debug command (used only in debugging)
 RFS_SET_DEBUG =  0x0D 
 

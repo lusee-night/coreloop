@@ -43,6 +43,8 @@ extern bool soft_reset_flag;
 extern uint32_t heartbeat_packet_count;
 extern volatile uint32_t heartbeat_counter;
 extern volatile uint32_t resettle_counter;
+extern volatile uint32_t cdi_wait_counter; 
+extern volatile uint32_t mini_wait_counter;
 extern uint16_t flash_store_pointer;
 
 
@@ -259,11 +261,14 @@ void send_hello_packet();
 bool process_hearbeat();
 bool process_housekeeping();
 
+
 inline static void new_unique_packet_id() {unique_packet_id++;}
 
 // utility functions
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+void mini_wait (uint32_t ticks);
+
 
 // enclude 32 bit value in 16 bits with 12 bits of data and 4 bits of mantissa
 int16_t encode_12plus4(int32_t val);

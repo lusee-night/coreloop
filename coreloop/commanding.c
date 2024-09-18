@@ -22,6 +22,12 @@ bool process_cdi()
     uint8_t cmd, arg_high, arg_low;
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
+
+    #ifdef NOTREAL
+    cdi_fill_command_buffer();
+    #endif
+
+    if (cdi_wait_counter) return false; //not taking any commands while in the CDI wait state
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
     debug_print ("\r\nGot new CDI command: cmd = ");
     debug_print_hex(cmd);
@@ -75,6 +81,14 @@ bool process_cdi()
             case RFS_SET_WAVEFORM:
                 if (arg_low<8) request_waveform = arg_low | 8;
                 else state.base.errors |= CDI_COMMAND_BAD_ARGS;
+                break;
+
+            case RFS_SET_WAIT_TICKS:
+                cdi_wait_counter = arg_low;
+                break;
+
+            case RFS_SET_WAIT_SECS:
+                cdi_wait_counter = arg_low * 100;
                 break;
 
             case RFS_SET_DEBUG:
