@@ -259,6 +259,7 @@ void RFS_stop() {
 void RFS_start() {
     debug_print ("\n\rStarting spectrometer\n\r");
     state.base.spectrometer_enable = true;
+    state.base.weight_previous = state.base.weight_current = 0;
     avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
