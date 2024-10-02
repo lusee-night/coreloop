@@ -32,15 +32,17 @@ uint32_t heartbeat_packet_count;
 volatile uint32_t heartbeat_counter;
 volatile uint32_t resettle_counter;
 volatile uint32_t cdi_wait_counter; 
-volatile uint32_t mini_wait_counter;
 
 uint16_t flash_store_pointer;
 
 
 
 void mini_wait (uint32_t ticks) {
-    mini_wait_counter = ticks;
-    while (mini_wait_counter > 0) {}
+    while (ticks > 0) {
+        uint32_t val = heartbeat_counter;
+        while (val == heartbeat_counter) {}
+        ticks --;
+    }
 }
 
 
@@ -76,7 +78,6 @@ void core_init_state(){
     heartbeat_counter = HEARTBEAT_DELAY;
     resettle_counter = 0;
     cdi_wait_counter = 0;
-    mini_wait_counter = 0;
 }
 
 bool process_waveform() {
@@ -141,7 +142,7 @@ uint8_t MSYS_EI5_IRQHandler(void)
     if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
     if (heartbeat_counter > 0) heartbeat_counter--;
     if (cdi_wait_counter > 0) cdi_wait_counter--;
-    if (mini_wait_counter > 0) mini_wait_counter--;
+
 
 
     #ifndef NOTREAL
