@@ -42,14 +42,20 @@ bool process_cdi()
             case RFS_SET_START:
                 if (!state.base.spectrometer_enable) {
                     RFS_start();
-                    flash_store_pointer = heartbeat_counter%MAX_STATE_SLOTS;
-                    flash_state_store(flash_store_pointer);
+                    if (!(arg_low & 1)) {
+                        flash_store_pointer = heartbeat_counter%MAX_STATE_SLOTS;
+                        flash_state_store(flash_store_pointer);
+                    } else {
+                        debug_print ("Not storing flash state.\r\n");
+                    }
                 }
                 break;
             case RFS_SET_STOP:
                 if (state.base.spectrometer_enable) {
-                    flash_state_clear(flash_store_pointer);
                     RFS_stop();
+                    if (!(arg_low & 1)) {
+                        flash_state_clear(flash_store_pointer);
+                    }
                 }
                 break;
             case RFS_SET_RESET:
