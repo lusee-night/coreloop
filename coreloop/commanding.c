@@ -84,19 +84,19 @@ bool process_cdi()
                     debug_helper(arg_low);
                     break;
 
-                case RFS_SET_TIME_TO_DIE:
-                    debug_print("Recevied time-to-die.\n\r")
-                    return true;
+            case RFS_SET_TIME_TO_DIE:
+	        debug_print("Recevied time-to-die.\n\r");
+                return true;
 
-                case RFS_SET_LOAD_FL:
-                    // load the sequencer program # arg_low (0-255) into state.program
-                    debug_print("Recevied RFS_SET_LOAD_FL.\n\r")
-                    cdi_not_implemented("RFS_SET_LOAD_FL");
-                    break;
-                case RFS_SET_STORE_FL:
-                    // store the sequencer program # arg_low (0-255) from state.program into flash
-                    cdi_not_implemented("RFS_SET_STORE_FL");
-                    break;
+            case RFS_SET_LOAD_FL:
+                // load the sequencer program # arg_low (0-255) into state.program
+	      debug_print("Recevied RFS_SET_LOAD_FL.\n\r");
+                cdi_not_implemented("RFS_SET_LOAD_FL");
+                break;
+            case RFS_SET_STORE_FL:
+                // store the sequencer program # arg_low (0-255) from state.program into flash
+                cdi_not_implemented("RFS_SET_STORE_FL");
+                break;
 
                 case RFS_SET_GAIN_ANA_SET:
                     for (int i = 0; i < NINPUT; i++) {
