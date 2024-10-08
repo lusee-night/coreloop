@@ -32,17 +32,22 @@ uint32_t heartbeat_packet_count;
 volatile uint32_t heartbeat_counter;
 volatile uint32_t resettle_counter;
 volatile uint32_t cdi_wait_counter; 
+volatile uint32_t general_upcounter;
 
 uint16_t flash_store_pointer;
 
 
 
 void mini_wait (uint32_t ticks) {
-    while (ticks > 0) {
-        uint32_t val = heartbeat_counter;
-        while (val == heartbeat_counter) {}
-        ticks --;
-    }
+    debug_print("{");
+    uint32_t val = general_upcounter+ticks;
+    // since we are in a tight loop and the other thing is running on 100Hz, we should be fine
+    // do not want <= sign here since there could be overflow
+    #ifdef NOTREAL
+    exit(1); // implement this!!
+    #endif  
+    while (general_upcounter!=val) {}
+    debug_print("}");
 }
 
 
@@ -99,6 +104,13 @@ void core_loop()
     flash_size = 0;
     flash_write = 0;
     flash_wait = 0;
+    spec_set_spectrometer_enable(false);
+    // now empty the CDI command buffer in case we are doing the reset.
+    #ifndef NOTREAL
+    uint8_t tmp;
+    while (cdi_new_command(&tmp, &tmp, &tmp)) {};
+    #endif
+
     send_hello_packet();
     core_init_state();
     #ifndef NOTREAL
@@ -142,7 +154,7 @@ uint8_t MSYS_EI5_IRQHandler(void)
     if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
     if (heartbeat_counter > 0) heartbeat_counter--;
     if (cdi_wait_counter > 0) cdi_wait_counter--;
-
+    general_upcounter++;
 
 
     #ifndef NOTREAL
