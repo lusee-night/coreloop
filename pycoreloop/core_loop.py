@@ -1661,7 +1661,7 @@ for _lib in _libs.values():
 
 # /fast/lusee/coreloop/coreloop/core_loop.h: 9
 try:
-    VERSION_ID = 0x00000101
+    VERSION_ID = 0x00000102
 except:
     pass
 
