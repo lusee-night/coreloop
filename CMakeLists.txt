@@ -16,7 +16,7 @@ include_directories(include)
 include_directories(coreloop)
 add_definitions(-DNOTREAL)
 # Add compiler options
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-format-security -Wno-address-of-packed-member")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wno-format-security -Wno-address-of-packed-member")
 
 add_compile_definitions(CORELOOP_ROOT="${CMAKE_SOURCE_DIR}")
 
@@ -25,3 +25,7 @@ find_library(MATH_LIBRARY m)
 add_executable(coreloop ${SOURCE_FILES})
 target_link_libraries(coreloop PUBLIC ${MATH_LIBRARY})
 set_property(TARGET coreloop PROPERTY C_STANDARD 99)
+
+add_executable(coding_test src/coding_test.c coreloop/utils.c)
+target_link_libraries(coding_test PUBLIC ${MATH_LIBRARY})
+set_property(TARGET coding_test PROPERTY C_STANDARD 99)

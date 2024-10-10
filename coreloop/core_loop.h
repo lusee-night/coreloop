@@ -270,9 +270,15 @@ inline static void new_unique_packet_id() {unique_packet_id++;}
 void mini_wait (uint32_t ticks);
 
 
-// enclude 32 bit value in 16 bits with 12 bits of data and 4 bits of mantissa
-int16_t encode_12plus4(int32_t val);
-int32_t decode_12plus4(int16_t val); 
+// encode 32 bit value in 16 bits with 12 bits of data and 4 bits of mantissa
+uint16_t encode_12plus4(int32_t val);
+ int32_t decode_12plus4(uint16_t val);
+
+// encode 32 bit value in 16 bits with 10 bits of data and 5 bits of mantissa
+uint16_t encode_10plus6(int32_t val);
+ int32_t decode_10plus6(uint16_t val);
+
+
 // CRC
 uint32_t CRC(const void* data, size_t size);
 

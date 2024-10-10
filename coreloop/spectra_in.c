@@ -88,7 +88,7 @@ void transfer_from_df ()
     //debug_print("done.\n\r");
     if (state.seq.tr_stop>state.seq.tr_start) {
         debug_print("doing time resolved\n\r");
-        int16_t* tr = (int16_t *)(SPEC_TIME_RESOLVED + NCHANNELS*avg_counter*sizeof(int16_t));
+        uint16_t* tr = (uint16_t *)(SPEC_TIME_RESOLVED + NCHANNELS*avg_counter*sizeof(int16_t));
         df_ptr = (int32_t *)SPEC_BUF;
         mask = 1;
         for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
@@ -100,7 +100,7 @@ void transfer_from_df ()
                         val += (*df_ptr << state.seq.tr_avg_shift);
                         df_ptr++;
                     }
-                    *tr = encode_12plus4(val);
+                    *tr = encode_10plus6(val);
                 }
             } else {df_ptr+=NCHANNELS;}
             mask <<= 1;
