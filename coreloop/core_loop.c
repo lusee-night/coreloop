@@ -77,7 +77,6 @@ void core_init_state(){
     drop_df = false;
     update_time();
     unique_packet_id = state.base.time_32;
-    fill_derived();
 
     set_spectrometer_to_sequencer();
     heartbeat_counter = HEARTBEAT_DELAY;
@@ -240,20 +239,44 @@ void update_time() {
     state.base.rand_state += sec32;
 }
 
-
-void fill_derived() {
-    state.Navg1 = 1 << state.seq.Navg1_shift;
-    state.Navg2 = 1 << state.seq.Navg2_shift;
-    state.tr_avg = 1 << state.seq.tr_avg_shift; 
-    // total shift takes into account frequency averaging;
-    state.Navg2_total_shift = state.seq.Navg2_shift;
-    state.Nfreq = NCHANNELS; 
-    if (state.seq.Navgf == 2 ) { state.Navg2_total_shift += 1; state.Nfreq = NCHANNELS/2; }
-    if ((state.seq.Navgf == 3 ) || (state.seq.Navgf == 4)) { state.Navg2_total_shift += 2; state.Nfreq = NCHANNELS/4;} 
-    for (int i=0; i<NINPUT; i++) {
-        state.gain_auto_max[i] = (state.seq.gain_auto_min[i] * state.seq.gain_auto_mult[i]);
-    }   
+uint16_t get_Navg1(struct core_state s)
+{
+    return 1 << s.seq.Navg1_shift;
 }
+
+uint16_t get_Navg2(struct core_state s)
+{
+    return 1 << s.seq.Navg2_shift;
+}
+
+uint16_t get_Nfreq(struct core_state s)
+{
+    switch(s.seq.Navgf) {
+        case 1: return NCHANNELS;
+        case 2: return NCHANNELS/2;
+        case 3: return NCHANNELS/4;
+        case 4: return NCHANNELS/4;
+        default: return NCHANNELS;
+    }
+}
+
+uint16_t get_tr_avg(struct core_state s)
+{
+    return 1 << s.seq.tr_avg_shift;
+}
+
+uint16_t get_gain_auto_max(struct core_state s, int i)
+{
+        return s.seq.gain_auto_min[i] * s.seq.gain_auto_mult[i];
+}
+
+// return length (i.e., number of int_16_t, not bytes)
+// of single
+uint32_t get_tr_length(struct core_state s)
+{
+    return (s.seq.tr_stop - s.seq.tr_start) >> s.seq.tr_avg_shift;
+}
+
 
 void reset_errormasks() {
     state.base.errors = 0;
@@ -282,7 +305,7 @@ void RFS_start() {
         state.base.sequencer_substep = state.program.seq_times[0];
         state.seq = state.program.seq[0];
     }
-    fill_derived();
+//    fill_derived();
     set_spectrometer_to_sequencer();
     spec_set_spectrometer_enable(true);
     //drop_df = true;

@@ -26,7 +26,7 @@ void transfer_from_df ()
     uint16_t mask = 1;
     bool accept = true;
     //debug_print("Processing spectra...\n\r");
-    if ((state.seq.reject_ratio>0) & (state.base.weight_previous>(state.Navg2/2))) {
+    if ((state.seq.reject_ratio>0) & (state.base.weight_previous>(get_Navg2(state)/2))) {
         //debug_print("Check for outlier....")
         uint32_t bad = 0;
         for (uint16_t sp = 0; sp< NSPECTRA_AUTO; sp++) {
@@ -60,7 +60,7 @@ void transfer_from_df ()
             if (state.base.corr_products_mask & (mask)) {
                 if (sp < NSPECTRA_AUTO) {
                         for (uint16_t i = 0; i < NCHANNELS; i++) {
-                            int32_t data =  (get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.Navg2_total_shift);
+                            int32_t data =  (get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.seq.Navg2_shift);
                             if (avg_counter) {
                                 *ddr_ptr += data;
                             } else {
@@ -71,7 +71,7 @@ void transfer_from_df ()
                         } 
                     } else {
                     for (uint16_t i = 0; i < NCHANNELS; i++) {                        
-                        int32_t data = (*df_ptr >> state.Navg2_total_shift);
+                        int32_t data = (*df_ptr) >> state.seq.Navg2_shift;
                         if (avg_counter) {
                             *ddr_ptr += data;
                         } else {
@@ -94,9 +94,9 @@ void transfer_from_df ()
         for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
             if (state.base.corr_products_mask & (mask)) {
                 int32_t *ddr_ptr = (int32_t *)(SPEC_TOCK) + sp*NCHANNELS + state.seq.tr_start;
-                for (uint16_t i = state.seq.tr_start; i <state.seq.tr_stop; i+=state.tr_avg) {
-                    uint32_t val = 0;
-                    for (uint16_t j =0; j<state.tr_avg; j++) {
+                for (uint16_t i = state.seq.tr_start; i < state.seq.tr_stop; i += get_tr_avg(state)) {
+                    int32_t val = 0;
+                    for (uint16_t j =0; j < get_tr_avg(state); j++) {
                         val += (*df_ptr << state.seq.tr_avg_shift);
                         df_ptr++;
                     }
@@ -139,7 +139,7 @@ if (spec_new_spectrum_ready())
 
             // Check if we have reached filled up Stage 2 averaging
             // and if so, push things out to CDI
-            if (avg_counter == state.Navg2)
+            if (avg_counter == get_Navg2(state))
             {
                 avg_counter = 0;
                 tick_tock = !tick_tock;
@@ -150,7 +150,6 @@ if (spec_new_spectrum_ready())
                 // Then check to see if this software or the client will control the CDI writes
                 transfer_to_cdi();
                 if (state.sequencer_enabled) advance_sequencer();
-
             }
         }
     }

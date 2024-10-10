@@ -125,6 +125,7 @@ struct delayed_cdi_sending {
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
+
 };
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
@@ -133,10 +134,6 @@ struct core_state {
     struct core_state_base base;
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
-    uint16_t Navg1, Navg2, tr_avg;
-    uint8_t Navg2_total_shift;
-    uint16_t Nfreq; // number of frequency bins after taking into account averaging
-    uint16_t gain_auto_max[NINPUT];
     bool sequencer_enabled;
     struct sequencer_program program;
 };
@@ -214,9 +211,13 @@ void RFS_stop();
 void RFS_start();
 void restart_spectrometer();
 
-// fills derived quantities in the state
-void fill_derived();
-
+// derived quantities in the state
+uint16_t get_Navg1(struct core_state s);
+uint16_t get_Navg2(struct core_state s);
+uint16_t get_Nfreq(struct core_state s);
+uint16_t get_tr_avg(struct core_state s);
+uint16_t get_gain_auto_max(struct core_state s, int i);
+uint32_t get_tr_length(struct core_state s);
 
 
 // set routing for a channel

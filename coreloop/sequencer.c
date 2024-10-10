@@ -72,7 +72,6 @@ if (state.base.sequencer_substep == 0) {
     bool restart = restart_needed(&state.seq, &state.program.seq[state.base.sequencer_step]); 
     if (restart) RFS_stop();
     state.seq = state.program.seq[state.base.sequencer_step];
-    fill_derived();
     set_spectrometer_to_sequencer();
     if (restart) RFS_start();
     }      

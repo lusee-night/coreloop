@@ -98,7 +98,7 @@ void transfer_to_cdi () {
     send_metadata_packet();
     state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
     state.cdi_dispatch.prod_count = 0; //
-    state.cdi_dispatch.Nfreq = state.Nfreq;
+    state.cdi_dispatch.Nfreq = get_Nfreq(state);
     state.cdi_dispatch.Navgf = state.seq.Navgf;
     state.cdi_dispatch.appId = get_next_baseAppID();
     state.cdi_dispatch.format = state.seq.format;
