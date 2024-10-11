@@ -1,6 +1,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 #include <stdio.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <time.h>
 
@@ -31,10 +32,19 @@ void TMR_clear_int(int* time);
 extern void* DDR3_BASE_ADDR;
 extern void* SPEC_TICK;
 extern void* SPEC_TOCK;
-extern void* SPEC_TIME_RESOLVED;
+extern void* TR_SPEC_TICK;
+extern void* TR_SPEC_TOCK;
 extern void* TLM_BUF;
 extern void* SPEC_BUF;
 
+extern const size_t SPEC_DATA_SIZE;
+extern const size_t TR_SPEC_DATA_SIZE;
+
 void DDR3_init();
+
+static inline void* spectra_write_buffer(bool tick_tock)    { return tick_tock ? SPEC_TICK    : SPEC_TOCK; }
+static inline void* spectra_read_buffer(bool tick_tock)     { return tick_tock ? SPEC_TOCK    : SPEC_TICK; };
+static inline void* tr_spectra_write_buffer(bool tick_tock) { return tick_tock ? TR_SPEC_TICK : TR_SPEC_TOCK; }
+static inline void* tr_spectra_read_buffer(bool tick_tock)  { return tick_tock ? TR_SPEC_TOCK : TR_SPEC_TICK; };
 
 #endif

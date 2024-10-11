@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "flash_interface.h"
 #include "LuSEE_IO.h"
-#include <string.h>
 
 
 static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
@@ -16,13 +15,16 @@ static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
     return val;
 }
 
+bool transfer_time_resolved_from_df();
 
-void transfer_from_df ()
+// return true, if spectra were accepted and copied to TICK/TOCK
+// return false, if not accepted
+bool transfer_from_df()
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)SPEC_BUF;
-    int32_t *ddr_ptr = tick_tock ? (int32_t *)(SPEC_TICK) : (int32_t *)(SPEC_TOCK);
-    int32_t *ddr_ptr_previous = tick_tock ? (int32_t *)(SPEC_TOCK) : (int32_t *)(SPEC_TICK);
+    int32_t *ddr_ptr = spectra_write_buffer(tick_tock);
+    const int32_t *ddr_ptr_previous = spectra_read_buffer(tick_tock);
     uint16_t mask = 1;
     bool accept = true;
     //debug_print("Processing spectra...\n\r");
@@ -51,72 +53,95 @@ void transfer_from_df ()
     //debug_print_dec(accept);
     //debug_print("done.\n\r");
 
-    if (accept) {
-        state.base.weight_current ++;
-        for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
-            //debug_print_dec(sp); debug_print("\n\r");
-            leading_zeros_min[sp] = 32;
-            leading_zeros_max[sp] = 0;
-            if (state.base.corr_products_mask & (mask)) {
-                if (sp < NSPECTRA_AUTO) {
-                        for (uint16_t i = 0; i < NCHANNELS; i++) {
-                            int32_t data =  (get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.seq.Navg2_shift);
-                            if (avg_counter) {
-                                *ddr_ptr += data;
-                            } else {
-                                *ddr_ptr = data;
-                            }
-                            df_ptr++;
-                            ddr_ptr++;
-                        } 
+    // do not copy data, if not accepted
+    if (!accept)
+        return accept;
+
+    state.base.weight_current ++;
+    for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
+        //debug_print_dec(sp); debug_print("\n\r");
+        leading_zeros_min[sp] = 32;
+        leading_zeros_max[sp] = 0;
+        if (state.base.corr_products_mask & (mask)) {
+            if (sp < NSPECTRA_AUTO) {
+                for (uint16_t i = 0; i < NCHANNELS; i++) {
+                    int32_t data =  (get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]) >> state.seq.Navg2_shift);
+                    if (avg_counter) {
+                        *ddr_ptr += data;
                     } else {
-                    for (uint16_t i = 0; i < NCHANNELS; i++) {                        
-                        int32_t data = (*df_ptr) >> state.seq.Navg2_shift;
-                        if (avg_counter) {
-                            *ddr_ptr += data;
-                        } else {
-                            *ddr_ptr = data;
-                        }
-                        df_ptr++;
-                        ddr_ptr++;
+                        *ddr_ptr = data;
                     }
+                    df_ptr++;
+                    ddr_ptr++;
                 }
-            } else {df_ptr+=NCHANNELS; ddr_ptr+=NCHANNELS;}        
-            mask <<= 1;        
-        }   
-    }
-    //debug_print("done.\n\r");
-    if (state.seq.tr_stop>state.seq.tr_start) {
-        debug_print("doing time resolved\n\r");
-        uint16_t* tr = (uint16_t *)(SPEC_TIME_RESOLVED + NCHANNELS*avg_counter*sizeof(int16_t));
-        df_ptr = (int32_t *)SPEC_BUF;
-        mask = 1;
-        for (uint16_t sp = 0; sp< NSPECTRA; sp++) {
-            if (state.base.corr_products_mask & (mask)) {
-                int32_t *ddr_ptr = (int32_t *)(SPEC_TOCK) + sp*NCHANNELS + state.seq.tr_start;
-                for (uint16_t i = state.seq.tr_start; i < state.seq.tr_stop; i += get_tr_avg(state)) {
-                    int32_t val = 0;
-                    for (uint16_t j =0; j < get_tr_avg(state); j++) {
-                        val += (*df_ptr << state.seq.tr_avg_shift);
-                        df_ptr++;
+            } else {
+                for (uint16_t i = 0; i < NCHANNELS; i++) {
+                    int32_t data = (*df_ptr) >> state.seq.Navg2_shift;
+                    if (avg_counter) {
+                        *ddr_ptr += data;
+                    } else {
+                        *ddr_ptr = data;
                     }
-                    *tr = encode_10plus6(val);
+                    df_ptr++;
+                    ddr_ptr++;
                 }
-            } else {df_ptr+=NCHANNELS;}
-            mask <<= 1;
+            }
+        } else {
+            df_ptr+=NCHANNELS; ddr_ptr+=NCHANNELS;
         }
+        mask <<= 1;
     }
-    //debug_print("totally done.\n\r")
-    //if (avg_counter%100 == 0) debug_print ("Processed 100 spectra...\n");
+
+    transfer_time_resolved_from_df();
+
     avg_counter++;
+
+    return accept;
 }
 
+bool transfer_time_resolved_from_df()
+{
+    debug_print("doing time resolved\n\r");
 
+    if (state.seq.tr_stop <= state.seq.tr_start) {
+        return false;
+    }
+
+    const int32_t* const df_ptr = (int32_t *)SPEC_BUF;
+
+    uint16_t* const tr_ptr_start = tr_spectra_write_buffer(tick_tock);
+    uint16_t* tr_ptr = tr_ptr_start + avg_counter * NSPECTRA * get_tr_length(state);
+    if (tr_ptr > tr_ptr_start + TR_SPEC_DATA_SIZE) {
+        return false;
+    }
+
+    // loop over spectra, skipping those we should ignore according to the mask
+    uint16_t mask = 1;
+    for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
+        if (state.base.corr_products_mask & (mask)) {
+            const int32_t* const spectrum_ptr = df_ptr + sp * NCHANNELS;
+            for (uint16_t i = state.seq.tr_start; i < state.seq.tr_stop; i += get_tr_avg(state)) {
+                int32_t val = 0;
+                for (uint16_t j = 0; j < get_tr_avg(state); j++) {
+                    val += (spectrum_ptr[i+j] >> state.seq.tr_avg_shift);
+                }
+                *tr_ptr = encode_10plus6(val);
+                tr_ptr++;
+            }
+        } else {
+            // we don't use this product
+            // do not write anything to the TR buffer, just advance the pointer
+            // buffer contains zeros (memset in the function dispatching TR date)
+            tr_ptr += get_tr_length(state);
+        }
+        mask <<= 1;
+    }
+    return true;
+}
 
 void process_spectrometer() {
-// Check if we have a new spectrum packet from the FPGA
-if (spec_new_spectrum_ready())
-    {
+    // Check if we have a new spectrum packet from the FPGA
+    if (spec_new_spectrum_ready()) {
         debug_print ("*");
         if (drop_df) {  // we were asked to drop a frame
             drop_df = false;
@@ -139,8 +164,7 @@ if (spec_new_spectrum_ready())
 
             // Check if we have reached filled up Stage 2 averaging
             // and if so, push things out to CDI
-            if (avg_counter == get_Navg2(state))
-            {
+            if (avg_counter == get_Navg2(state)) {
                 avg_counter = 0;
                 tick_tock = !tick_tock;
                 state.base.weight_previous = state.base.weight_current;
@@ -151,8 +175,8 @@ if (spec_new_spectrum_ready())
                 transfer_to_cdi();
                 if (state.sequencer_enabled) advance_sequencer();
             }
+
+            if (avg_counter > get_Navg2(state)) debug_print("ERROR: avg_counter exceeded get_Navg2\n");
         }
     }
 }
-
-

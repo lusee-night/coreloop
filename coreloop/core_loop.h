@@ -118,10 +118,12 @@ struct core_state_base {
 
 
 struct delayed_cdi_sending {
-    uint32_t appId; 
+    uint32_t appId;
+    uint32_t tr_appId;
     uint16_t int_counter; // counter that will be decremented every timer interrupt
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
+    uint8_t tr_count; // time-resolved packet number that needs to be sent
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
