@@ -29,10 +29,11 @@ bool soft_reset_flag;
 uint32_t heartbeat_packet_count;
 
 // thing that are touched in the interrupt need to be proclaimed volatile
-volatile uint32_t heartbeat_counter;
-volatile uint32_t resettle_counter;
-volatile uint32_t cdi_wait_counter; 
-volatile uint32_t general_upcounter;
+volatile uint64_t heartbeat_counter;
+volatile uint64_t resettle_counter;
+volatile uint64_t cdi_wait_counter; 
+volatile uint64_t cdi_dispatch_counter;
+volatile uint64_t tap_counter;
 
 uint16_t flash_store_pointer;
 
@@ -40,13 +41,13 @@ uint16_t flash_store_pointer;
 
 void mini_wait (uint32_t ticks) {
     debug_print("{");
-    uint32_t val = general_upcounter+ticks;
+    uint64_t val = tap_counter+ticks;
     // since we are in a tight loop and the other thing is running on 100Hz, we should be fine
     // do not want <= sign here since there could be overflow
     #ifdef NOTREAL
     exit(1); // implement this!!
     #endif  
-    while (general_upcounter!=val) {}
+    while (tap_counter!=val) {}
     debug_print("}");
 }
 
@@ -80,6 +81,7 @@ void core_init_state(){
     fill_derived();
 
     set_spectrometer_to_sequencer();
+    tap_counter = 0;
     heartbeat_counter = HEARTBEAT_DELAY;
     resettle_counter = 0;
     cdi_wait_counter = 0;
@@ -150,11 +152,7 @@ uint8_t MSYS_EI5_IRQHandler(void)
 
     uint32_t tocpy;
     /* Clear the interrupt within the timer */
-    if (resettle_counter > 0) resettle_counter--;   
-    if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
-    if (heartbeat_counter > 0) heartbeat_counter--;
-    if (cdi_wait_counter > 0) cdi_wait_counter--;
-    general_upcounter++;
+    tap_counter++;
 
 
     #ifndef NOTREAL

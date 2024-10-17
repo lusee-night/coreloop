@@ -27,7 +27,7 @@ bool process_cdi()
     cdi_fill_command_buffer();
     #endif
 
-    if (cdi_wait_counter) return false; //not taking any commands while in the CDI wait state
+    if ((cdi_wait_counter>0) & (cdi_wait_counter<=tap_counter)) return false; //not taking any commands while in the CDI wait state
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
     debug_print ("\r\nGot new CDI command: cmd = ");
     debug_print_hex(cmd);
@@ -43,7 +43,7 @@ bool process_cdi()
                 if (!state.base.spectrometer_enable) {
                     RFS_start();
                     if (!(arg_low & 1)) {
-                        flash_store_pointer = heartbeat_counter%MAX_STATE_SLOTS;
+                        flash_store_pointer = tap_counter%MAX_STATE_SLOTS;
                         flash_state_store(flash_store_pointer);
                     } else {
                         debug_print ("Not storing flash state.\r\n");
@@ -90,11 +90,11 @@ bool process_cdi()
                 break;
 
             case RFS_SET_WAIT_TICKS:
-                cdi_wait_counter = arg_low;
+                cdi_wait_counter = tap_counter + arg_low;
                 break;
 
             case RFS_SET_WAIT_SECS:
-                cdi_wait_counter = arg_low * 100;
+                cdi_wait_counter = tap_counter + arg_low * 100;
                 break;
 
             case RFS_SET_DEBUG:

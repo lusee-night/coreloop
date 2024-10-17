@@ -28,7 +28,7 @@ void send_hello_packet() {
 }
 
 bool process_hearbeat() {
-    if (heartbeat_counter > 0) return false;
+    if (heartbeat_counter >= tap_counter) return false;
     debug_print("H");
     struct heartbeat *payload = (struct heartbeat*) (TLM_BUF);
     wait_for_cdi_ready();
@@ -43,7 +43,7 @@ bool process_hearbeat() {
     payload->magic[4] = 'R';
     payload->magic[5] = 'L';
     cdi_dispatch(AppID_uC_Heartbeat, sizeof(struct heartbeat));
-    heartbeat_counter = HEARTBEAT_DELAY;
+    heartbeat_counter = tap_counter + HEARTBEAT_DELAY;
     heartbeat_packet_count++;
     return true;
 }

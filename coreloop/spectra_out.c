@@ -96,7 +96,7 @@ void transfer_to_cdi () {
     update_time();
     spec_get_TVS(state.base.TVS_sensors);
     send_metadata_packet();
-    state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
+    cdi_dispatch_counter = tap_counter + DISPATCH_DELAY; // 10*0.01s ~10 Hz
     state.cdi_dispatch.prod_count = 0; //
     state.cdi_dispatch.Nfreq = state.Nfreq;
     state.cdi_dispatch.Navgf = state.seq.Navgf;
@@ -107,7 +107,7 @@ void transfer_to_cdi () {
 }
 
 bool process_delayed_cdi_dispatch() {
-    if (state.cdi_dispatch.int_counter > 0) return false;
+    if (cdi_dispatch_counter < tap_counter) return false;
     if (state.cdi_dispatch.prod_count > 0x0F)  return false;
     if (state.base.corr_products_mask & (1<<state.cdi_dispatch.prod_count)) {
         debug_print(".");
@@ -128,7 +128,7 @@ bool process_delayed_cdi_dispatch() {
     }
     state.cdi_dispatch.prod_count++;
     state.cdi_dispatch.appId++;
-    state.cdi_dispatch.int_counter = DISPATCH_DELAY;
+    cdi_dispatch_counter = tap_counter + DISPATCH_DELAY;
     return true;
 }
 

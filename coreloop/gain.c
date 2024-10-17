@@ -60,7 +60,7 @@ void process_gain_range() {
             // gains have changed. wait for settle and trigger. 
             debug_print("\n\rGains changed, resettle\n\r");
             resettle = true;
-            resettle_counter = RESETTLE_DELAY;
+            resettle_counter = tap_counter+RESETTLE_DELAY;
         } else {
             if (range_adc) {
                 range_adc = 0;
@@ -71,7 +71,7 @@ void process_gain_range() {
         //if (range_adc) debug_print("not yet \n");
     }
 
-    if ((resettle) & (resettle_counter == 0)) {
+    if ((resettle) & (resettle_counter >= tap_counter)) {
         trigger_ADC_stat();
         resettle = false;
         if (state.base.spectrometer_enable) {

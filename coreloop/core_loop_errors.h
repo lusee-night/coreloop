@@ -4,7 +4,7 @@
 
 // unknown CDI command received
 #define CDI_COMMAND_UNKNOWN 1
-// CDI command called at wrong time ((i.e. program sequencer while it is running)
+// CDI command called at wrong time (i.e. program sequencer while it is running)
 #define CDI_COMMAND_BAD 2
 // CDI command called with wrong arguments
 #define CDI_COMMAND_BAD_ARGS 4

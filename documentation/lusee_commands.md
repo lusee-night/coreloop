@@ -17,6 +17,7 @@
 | 0x08 | RFS_SET_WAVEFORM    | Request ADC waform arg contains channel number                                         |
 | 0x09 | RFS_SET_WAIT_TICKS  | Wait arg number of ticks (10ms) before processing next CMD (careful with 64 buffer!)   |
 | 0x0A | RFS_SET_WAIT_SECS   | Wait arg number of seconds before processing next CMD (careful with 64 buffer!)        |
+| 0x0B | RFS_ENABLE_HEARTBEAT| Enable (arg>1) and disable (arg=0) heartbeat.                                          |
 | 0x0D | RFS_SET_DEBUG       | Debug command (used only in debugging)
 | 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue               |
 

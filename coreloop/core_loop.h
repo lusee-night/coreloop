@@ -41,10 +41,11 @@ extern bool tick_tock;
 extern bool drop_df;
 extern bool soft_reset_flag;
 extern uint32_t heartbeat_packet_count;
-extern volatile uint32_t heartbeat_counter;
-extern volatile uint32_t resettle_counter;
-extern volatile uint32_t cdi_wait_counter; 
-extern volatile uint32_t mini_wait_counter;
+extern volatile uint64_t heartbeat_counter;
+extern volatile uint64_t resettle_counter;
+extern volatile uint64_t cdi_wait_counter; 
+extern volatile uint64_t cdi_dispatch_counter;
+extern volatile uint64_t tap_counter;
 extern uint16_t flash_store_pointer;
 
 
@@ -119,7 +120,6 @@ struct core_state_base {
 
 struct delayed_cdi_sending {
     uint32_t appId; 
-    uint16_t int_counter; // counter that will be decremented every timer interrupt
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
     uint16_t Nfreq; // number of frequencies that actually need to be sent
