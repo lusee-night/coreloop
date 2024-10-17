@@ -86,10 +86,10 @@ uint32_t spec_get_version(int s) {
 }
 
 void spec_get_TVS(uint16_t *TVS) {
-    TVS[0] = 10;
-    TVS[1] = 20;
-    TVS[2] = 30;
-    TVS[3] = 40;
+    TVS[0] = (int)(1000*8);
+    TVS[1] = (int)(1800*8);
+    TVS[2] = (int)(2500*8);
+    TVS[3] = (int)(300*16);
 }
 
 void spec_set_spectrometer_enable(bool on) {
@@ -250,19 +250,23 @@ void spec_request_waveform(uint8_t ch) {
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
     int Nsamples = UINT14_MAX;
-    if (ADC_mode == ADC_RAMP) {
-        for (size_t i = 0; i < Nsamples; i++){
-            TLM_BUF_INT16[i] = (start_value + i) % UINT14_MAX;
-        }
+    if (ch == 4) {
+        for (int i=0; i<4; i++) spec_request_waveform(i);
     } else {
-        // pass guassian noise where negative numbers go from 16384 down.
-        for (size_t i = 0; i < Nsamples; i++) {
-            double var = generate_gaussian_variate();
-            TLM_BUF_INT16[i] = (int) var % UINT14_MAX;
-            TLM_BUF_INT16[i] = var >= 0 ? var : UINT14_MAX + var;
+        if (ADC_mode == ADC_RAMP) {
+            for (size_t i = 0; i < Nsamples; i++){
+                TLM_BUF_INT16[i] = (start_value + i) % UINT14_MAX;
+            }
+        } else {
+            // pass guassian noise where negative numbers go from 16384 down.
+            for (size_t i = 0; i < Nsamples; i++) {
+                double var = generate_gaussian_variate();
+                TLM_BUF_INT16[i] = (int) var % UINT14_MAX;
+                TLM_BUF_INT16[i] = var >= 0 ? var : UINT14_MAX + var;
+            }
         }
+        cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
     }
-    cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
 }
 
 void spec_disable_channel (uint8_t ch) {}
