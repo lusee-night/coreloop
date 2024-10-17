@@ -114,7 +114,6 @@ bool spec_get_ADC_stat(struct ADC_stat *stat);
 // get spacecraft time as per commands RFS_SCM_F1-F3
 void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec);
 
-
 //returns true if a new spectrum is ready (DF flag is set)
 bool spec_new_spectrum_ready();
 

@@ -16,6 +16,10 @@ void cdi_fill_command_buffer();
 
 // returns true if a new command is available, and sets the command and arguments
 bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low );
+
+// returns the number of commands received
+uint32_t cdi_command_count();
+
 // returns true if the CDI is ready to accept new data  (i.e. write to staging area and dispatching it)
 bool cdi_ready();
 // waits until CDI buffers is ready to be written.

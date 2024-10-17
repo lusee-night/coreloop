@@ -82,6 +82,7 @@ void core_init_state(){
 
     set_spectrometer_to_sequencer();
     tap_counter = 0;
+    cdi_dispatch_counter = 0;
     heartbeat_counter = HEARTBEAT_DELAY;
     resettle_counter = 0;
     cdi_wait_counter = 0;
@@ -236,6 +237,7 @@ void update_time() {
     state.base.time_32 = sec32;
     state.base.time_16 = sec16;
     state.base.rand_state += sec32;
+    state.base.uC_time = tap_counter;
 }
 
 

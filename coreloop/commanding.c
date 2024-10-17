@@ -15,7 +15,14 @@ void cdi_not_implemented(const char *msg)
     return;
 }
 
-
+void cmd_soft_reset(uint8_t arg_low)
+{
+    RFS_stop();
+    spec_set_reset();
+    // arglow controls what to do with the stored states after reset.
+    spec_write_uC_register(0,arg_low);
+    soft_reset_flag = true;
+}
 
 bool process_cdi()
 {
@@ -27,8 +34,17 @@ bool process_cdi()
     cdi_fill_command_buffer();
     #endif
 
-    if ((cdi_wait_counter>0) & (cdi_wait_counter<=tap_counter)) return false; //not taking any commands while in the CDI wait state
-    if (!cdi_new_command(&cmd, &arg_high, &arg_low)) return false;
+    
+    if (!cdi_new_command(&cmd, &arg_high, &arg_low)) {
+        // if there are no new commands, then the buffer is empty and we should agree
+        // on the total number of commands received.
+        if (state.cmd_counter != cdi_command_count()) {
+            state.base.errors |= CDI_COMMAND_LOST;
+            state.cmd_counter = cdi_command_count();
+        }
+        return false;
+    }
+    state.cmd_counter++;
     debug_print ("\r\nGot new CDI command: cmd = ");
     debug_print_hex(cmd);
     debug_print(", arg_hi = ");
@@ -37,7 +53,42 @@ bool process_cdi()
     debug_print_hex(arg_low);
     debug_print("\r\n");
 
+    if (cmd == RFS_SPECIAL) {
+        if (arg_high == RFS_SET_RESET) {
+            cmd_soft_reset(arg_low);
+            return true;
+        } else {
+            cdi_not_implemented("RFS_SPECIAL");
+            state.base.errors |= CDI_COMMAND_UNKNOWN;
+        }
+        return false;
+    }
+    
     if (cmd==RFS_SETTINGS)  {
+        uint16_t cmd_end = (state.cmd_end + 1) % CMD_BUFFER_SIZE;
+        if (cmd_end == state.cmd_start) {
+            state.base.errors != CDI_COMMAND_BUFFER_OVERFLOW;
+            cmd_end = state.cmd_end;
+            return false;
+        } else {
+            state.cmd_arg_low[cmd_end] = arg_low;
+            state.cmd_arg_high[cmd_end] = arg_high;
+            state.cmd_end = cmd_end;
+        }
+
+        if ((cdi_wait_counter>0) & (cdi_wait_counter<=tap_counter)) return false; //not taking any commands while in the CDI wait state
+        if (state.cmd_start == cmd_end) return false; // no new commands
+        state.cmd_start = (state.cmd_start + 1) % CMD_BUFFER_SIZE;
+        arg_low = state.cmd_arg_low[state.cmd_start];
+        arg_high = state.cmd_arg_high[state.cmd_start];
+        debug_print ("\r\nProcessing CDI command: cmd = ");
+        debug_print_hex(cmd);
+        debug_print(", arg_hi = ");
+        debug_print_hex(arg_high);
+        debug_print(", arg_lo = ");
+        debug_print_hex(arg_low);
+        debug_print("\r\n");
+
         switch (arg_high) {
             case RFS_SET_START:
                 if (!state.base.spectrometer_enable) {
@@ -59,11 +110,7 @@ bool process_cdi()
                 }
                 break;
             case RFS_SET_RESET:
-                RFS_stop();
-                spec_set_reset();
-                // arglow controls what to do with the stored states after reset.
-                spec_write_uC_register(0,arg_low);
-                soft_reset_flag = true;
+                cmd_soft_reset(arg_low);
                 return true;
             case RFS_SET_STORE:
                 spec_store();
@@ -97,8 +144,24 @@ bool process_cdi()
                 cdi_wait_counter = tap_counter + arg_low * 100;
                 break;
 
+            case RFS_SET_WAIT_MINS:
+                cdi_wait_counter = tap_counter + arg_low * 100*60;
+                break;
+
+            case RFS_SET_WAIT_HRS:
+                cdi_wait_counter = tap_counter + arg_low * 100*60*60;
+                break;
+
             case RFS_SET_DEBUG:
                 debug_helper(arg_low);
+                break;
+
+            case RFS_SET_HEARTBEAT:
+                if (arg_low == 0) {
+                    heartbeat_counter = 0xFFFFFFFFFFFFFFFF;
+                } else {
+                    heartbeat_counter = tap_counter + HEARTBEAT_DELAY;
+                }
                 break;
 
             case RFS_SET_TIME_TO_DIE:

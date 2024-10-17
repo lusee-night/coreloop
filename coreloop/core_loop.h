@@ -3,10 +3,10 @@
 #pragma pack(1)
 
 
-#define VERSIO1N 0.1-DEV
+#define VERSION 0.105-DEV
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000102
+#define VERSION_ID 0x00000105
 
 
 #include <inttypes.h>
@@ -19,8 +19,10 @@
 // Constants
 #define NSEQ_MAX 32
 #define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
-#define RESETTLE_DELAY 2 // number of timer interrupts to wait before settling after a change
+#define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
+#define CMD_BUFFER_SIZE 128 // size of command buffer for 0x10 commands
+
 
 #define ADC_STAT_SAMPLES 16000
 
@@ -98,8 +100,9 @@ struct sequencer_program {
 
 // core state base contains additional information that will be dumped with every metadata packet
 struct core_state_base {
+    uint64_t uC_time;
     uint32_t time_32;
-    uint16_t time_16;
+    uint16_t time_16;    
     uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
     uint32_t errors;
     uint16_t corr_products_mask; // which of 16 products to be used, starting with LSB
@@ -139,6 +142,9 @@ struct core_state {
     uint16_t gain_auto_max[NINPUT];
     bool sequencer_enabled;
     struct sequencer_program program;
+    uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
+    uint16_t cmd_start, cmd_end;
+    uint32_t cmd_counter;
 };
 
 struct saved_core_state {
