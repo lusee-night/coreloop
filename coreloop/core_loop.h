@@ -270,6 +270,7 @@ inline static void new_unique_packet_id() {unique_packet_id++;}
 // utility functions
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define IS_NEG(x) (((x) < 0) ? 1 : 0)
 void mini_wait (uint32_t ticks);
 
 
@@ -281,6 +282,19 @@ uint16_t encode_12plus4(int32_t val);
 uint16_t encode_10plus6(int32_t val);
  int32_t decode_10plus6(uint16_t val);
 
+// for first 4 auto spectra which are guaranteed to be positive: encode into uint16 with shared number of leading zeros
+// format of encoded data: sequence of segments of the form: lz (1 byte) n (1 byte) a_1 ... a_n (all uint16_t)
+// return number of bytes written
+// TODO: remove size and always assume NCHANNELS?
+int  encode_shared_lz_positive(const uint32_t* spectra, unsigned char* cdi_ptr, int size);
+void decode_shared_lz_positive(const unsigned char* data_buf, uint32_t* x, int size);
+
+// remaining spectra can be negative: encode into uint16 with shared number of leading zeros
+// format of encoded data: sequence of segments of the form: neg_flag_lz (1 byte) n (1 byte) a_1 ... a_n (all uint16_t)
+// MSB of neg_flag_lz is set, if values are negative; the last 5 bits of neg_flag_lz store number of leading zeros
+// return number of bytes written
+int  encode_shared_lz_signed(const int32_t* spectra, unsigned char* cdi_ptr, int size);
+void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);

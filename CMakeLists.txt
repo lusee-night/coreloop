@@ -30,5 +30,9 @@ add_executable(coding_test src/coding_test.c coreloop/utils.c)
 target_link_libraries(coding_test PUBLIC ${MATH_LIBRARY})
 set_property(TARGET coding_test PROPERTY C_STANDARD 99)
 
+add_executable(coding_test_arr src/coding_test_arr.c coreloop/utils.c)
+target_link_libraries(coding_test_arr PUBLIC ${MATH_LIBRARY})
+set_property(TARGET coding_test_arr PROPERTY C_STANDARD 99)
+
 add_library(cl_utils SHARED coreloop/utils.c)
 set_property(TARGET cl_utils PROPERTY C_STANDARD 99)
