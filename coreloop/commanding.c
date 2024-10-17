@@ -144,11 +144,13 @@ bool process_cdi()
                 ch = arg_low & 0x03;
                 val = (arg_low & 0xFC) >> 2;
                 state.seq.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
+                fill_derived();
                 break;
             case RFS_SET_GAIN_ANA_CFG_MULT:
                 ch = arg_low & 0x03;
                 val = (arg_low & 0xFC) >> 2;
                 state.seq.gain_auto_mult[ch] = val;
+                fill_derived();
                 break;
             case RFS_SET_BITSLICE_LOW:
                 xcor = arg_low & 0x07;

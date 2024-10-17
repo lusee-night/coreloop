@@ -27,7 +27,7 @@ bool analog_gain_control() {
     
     for (int i = 0; i < NINPUT; i++) {
         if (state.seq.gain[i] != GAIN_AUTO) continue; // Don't do anything unless AGC is enabled
-        int32_t cmax = MAX(state.base.ADC_stat[i].max-0x1FFF, state.base.ADC_stat[i].min-0x1FFF);
+        int32_t cmax = MAX(state.base.ADC_stat[i].max-0x1FFF, -(state.base.ADC_stat[i].min-0x1FFF));
         if ((state.base.
                 ADC_stat[i].invalid_count_max>0) || (state.base.ADC_stat[i].invalid_count_min>0)) cmax = 10000; // blow through.
         //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
