@@ -134,9 +134,16 @@ int encode_shared_lz_signed(const int32_t* spectra, unsigned char* cdi_ptr, int 
             }
             j++;
         }
+
+        if (shift_by == 17)
+            shift_by = 16;
+        assert(shift_by <= 16);
+
         uint8_t segment_len = (uint8_t)(j - i);
         // pack is_neg info and leading zeros together: MSB for is_neg
+        assert(0 == ((is_neg << 7) & shift_by));
         uint8_t sign_and_shift = (is_neg << 7) | shift_by;
+
 
         memcpy(cdi_ptr, &sign_and_shift, sizeof(sign_and_shift));
         cdi_ptr += sizeof(sign_and_shift);
@@ -165,7 +172,7 @@ void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size
         memcpy(&sign_and_shift, data_buf, sizeof(sign_and_shift));
         data_buf += sizeof(sign_and_shift);
         int is_neg = (sign_and_shift >> 7) & 1;
-        int8_t shift_by = sign_and_shift& 0x7F;
+        uint8_t shift_by = sign_and_shift & 31;
 
         uint8_t segment_len;
         memcpy(&segment_len, data_buf, sizeof(segment_len));
@@ -176,7 +183,7 @@ void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size
             memcpy(&compressed_val, data_buf, sizeof(compressed_val));
             data_buf += sizeof(compressed_val);
 
-            uint32_t abs_val = compressed_val >> shift_by;
+            uint32_t abs_val = compressed_val << shift_by;
             x[i] = (is_neg == 1) ? -abs_val : abs_val;
             i++;
         }
