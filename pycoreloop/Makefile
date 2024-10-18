@@ -1,4 +1,4 @@
-OBJ = lusee_commands.py lusee_appIds.py core_loop.py
+OBJ = lusee_commands.py lusee_appIds.py core_loop.py core_loop_errors.py
 
 
 all: $(OBJ)
@@ -11,6 +11,9 @@ lusee_appIds.py : ../documentation/lusee_appIds.md ../scripts/create_appid_inclu
 
 core_loop.py : ../coreloop/core_loop.h
 	ctypesgen ../coreloop/core_loop.h >core_loop.py
+
+core_loop_errors.py : ../coreloop/core_loop_errors.h
+	ctypesgen ../coreloop/core_loop_errors.h >core_loop_errors.py
 
 clean:
 	rm -f $(OBJ)
