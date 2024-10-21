@@ -270,6 +270,11 @@ uint16_t get_gain_auto_max(struct core_state s, int i)
         return s.seq.gain_auto_min[i] * s.seq.gain_auto_mult[i];
 }
 
+uint16_t get_gain_auto_min(struct core_state s, int i)
+{
+        return s.seq.gain_auto_min[i];
+}
+
 // return length (i.e., number of int_16_t, not bytes)
 // of single
 uint32_t get_tr_length(struct core_state s)
