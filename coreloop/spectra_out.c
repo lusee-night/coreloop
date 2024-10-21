@@ -117,7 +117,7 @@ void dispatch_tr_data() {
 
 uint32_t get_next_baseAppID() {
     // constants from the C standard library implementation of LCG
-    state.base.rand_state = 1103515245 * state.base.rand_state + 12345;
+    update_random_state();
     uint8_t rand = state.base.rand_state & 0xFF;
     if (rand <= state.seq.hi_frac) {
         return AppID_SpectraHigh;
@@ -132,7 +132,7 @@ uint32_t get_next_baseAppID() {
 
 
 uint32_t get_next_tr_baseAppID() {
-    state.base.rand_state = 1103515245 * state.base.rand_state + 12345;
+    update_random_state();
     uint8_t rand = state.base.rand_state & 0xFF;
     if (rand <= state.seq.hi_frac) {
         return AppID_SpectraTRHigh;

@@ -6,7 +6,7 @@
 #define VERSIO1N 0.1-DEV
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000102
+#define VERSION_ID 0x00000105
 
 
 #include <inttypes.h>
@@ -264,6 +264,8 @@ void send_hello_packet();
 bool process_hearbeat();
 bool process_housekeeping();
 
+// Update random stae in state.base.rand_state
+inline static void update_random_state() {state.base.rand_state = 1103515245 * state.base.rand_state + 12345;}
 
 inline static void new_unique_packet_id() {unique_packet_id++;}
 
