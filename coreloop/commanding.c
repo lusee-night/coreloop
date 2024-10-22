@@ -176,7 +176,7 @@ bool process_cdi()
 
         case RFS_SET_LOAD_FL:
             // load the sequencer program # arg_low (0-255) into state.program
-        debug_print("Recevied RFS_SET_LOAD_FL.\n\r");
+            debug_print("Recevied RFS_SET_LOAD_FL.\n\r");
             cdi_not_implemented("RFS_SET_LOAD_FL");
             break;
         case RFS_SET_STORE_FL:
@@ -213,13 +213,11 @@ bool process_cdi()
             ch = arg_low & 0x03;
             val = (arg_low & 0xFC) >> 2;
             state.seq.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
-            fill_derived();
             break;
         case RFS_SET_GAIN_ANA_CFG_MULT:
             ch = arg_low & 0x03;
             val = (arg_low & 0xFC) >> 2;
             state.seq.gain_auto_mult[ch] = val;
-            fill_derived();
             break;
         case RFS_SET_BITSLICE_LOW:
             xcor = arg_low & 0x07;
@@ -288,11 +286,9 @@ bool process_cdi()
             state.seq.Navg1_shift = arg_low & 0x0F;
             state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
 
-            fill_derived();
             break;
         case RFS_SET_AVG_FREQ:
             state.seq.Navgf = arg_low;
-            fill_derived();
             break;
         case RFS_SET_AVG_NOTCH:
             state.seq.notch = arg_low;
@@ -336,7 +332,6 @@ bool process_cdi()
             break;
         case RFS_SET_TR_AVG_SHIFT:
             state.seq.tr_avg_shift = arg_low;
-            state.tr_avg = 1 << state.seq.tr_avg_shift;
             break;
 
 

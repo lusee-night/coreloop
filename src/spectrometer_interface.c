@@ -246,7 +246,6 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
 }
 
 void spec_request_waveform(uint8_t ch) {
-    
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
     int Nsamples = UINT14_MAX;

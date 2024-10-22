@@ -6,7 +6,7 @@
 #define VERSION 0.105-DEV
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000105
+#define VERSION_ID 0x00000106
 
 
 #include <inttypes.h>
@@ -122,12 +122,16 @@ struct core_state_base {
 
 
 struct delayed_cdi_sending {
-    uint32_t appId; 
+    uint32_t appId;
+    uint32_t tr_appId;
+    uint16_t int_counter; // counter that will be decremented every timer interrupt
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
+    uint8_t tr_count; // time-resolved packet number that needs to be sent
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
+
 };
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
@@ -136,10 +140,6 @@ struct core_state {
     struct core_state_base base;
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
-    uint16_t Navg1, Navg2, tr_avg;
-    uint8_t Navg2_total_shift;
-    uint16_t Nfreq; // number of frequency bins after taking into account averaging
-    uint16_t gain_auto_max[NINPUT];
     bool sequencer_enabled;
     struct sequencer_program program;
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
@@ -220,9 +220,13 @@ void RFS_stop();
 void RFS_start();
 void restart_spectrometer();
 
-// fills derived quantities in the state
-void fill_derived();
-
+// derived quantities in the state
+uint16_t get_Navg1(struct core_state s);
+uint16_t get_Navg2(struct core_state s);
+uint16_t get_Nfreq(struct core_state s);
+uint16_t get_tr_avg(struct core_state s);
+uint16_t get_gain_auto_max(struct core_state s, int i);
+uint32_t get_tr_length(struct core_state s);
 
 
 // set routing for a channel
@@ -267,18 +271,40 @@ void send_hello_packet();
 bool process_hearbeat();
 bool process_housekeeping();
 
+// Update random stae in state.base.rand_state
+inline static void update_random_state() {state.base.rand_state = 1103515245 * state.base.rand_state + 12345;}
 
 inline static void new_unique_packet_id() {unique_packet_id++;}
 
 // utility functions
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define IS_NEG(x) (((x) < 0) ? 1 : 0)
 void mini_wait (uint32_t ticks);
 
 
-// enclude 32 bit value in 16 bits with 12 bits of data and 4 bits of mantissa
-int16_t encode_12plus4(int32_t val);
-int32_t decode_12plus4(int16_t val); 
+// encode 32 bit value in 16 bits with 12 bits of data and 4 bits of mantissa
+uint16_t encode_12plus4(int32_t val);
+ int32_t decode_12plus4(uint16_t val);
+
+// encode 32 bit value in 16 bits with 10 bits of data and 5 bits of mantissa
+uint16_t encode_10plus6(int32_t val);
+ int32_t decode_10plus6(uint16_t val);
+
+// for first 4 auto spectra which are guaranteed to be positive: encode into uint16 with shared number of leading zeros
+// format of encoded data: sequence of segments of the form: lz (1 byte) n (1 byte) a_1 ... a_n (all uint16_t)
+// return number of bytes written
+// TODO: remove size and always assume NCHANNELS?
+int  encode_shared_lz_positive(const uint32_t* spectra, unsigned char* cdi_ptr, int size);
+void decode_shared_lz_positive(const unsigned char* data_buf, uint32_t* x, int size);
+
+// remaining spectra can be negative: encode into uint16 with shared number of leading zeros
+// format of encoded data: sequence of segments of the form: neg_flag_lz (1 byte) n (1 byte) a_1 ... a_n (all uint16_t)
+// MSB of neg_flag_lz is set, if values are negative; the last 5 bits of neg_flag_lz store number of leading zeros
+// return number of bytes written
+int  encode_shared_lz_signed(const int32_t* spectra, unsigned char* cdi_ptr, int size);
+void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size);
+
 // CRC
 uint32_t CRC(const void* data, size_t size);
 
