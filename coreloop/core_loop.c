@@ -239,16 +239,19 @@ void update_time() {
     state.base.rand_state += sec32;
 }
 
+// return batch size for stage 1 averaging
 uint16_t get_Navg1(struct core_state s)
 {
     return 1 << s.seq.Navg1_shift;
 }
 
+// return batch size for stage 2 averaging (to TICK/TOCK buffer)
 uint16_t get_Navg2(struct core_state s)
 {
     return 1 << s.seq.Navg2_shift;
 }
 
+// return number of frequencies in the outgoing spectra
 uint16_t get_Nfreq(struct core_state s)
 {
     switch(s.seq.Navgf) {
@@ -260,16 +263,19 @@ uint16_t get_Nfreq(struct core_state s)
     }
 }
 
+// return number of frequencies to average in time-resolved spectra
 uint16_t get_tr_avg(struct core_state s)
 {
     return 1 << s.seq.tr_avg_shift;
 }
 
+// return max gain (computed as min gain times multiplication factor)
 uint16_t get_gain_auto_max(struct core_state s, int i)
 {
         return s.seq.gain_auto_min[i] * s.seq.gain_auto_mult[i];
 }
 
+// for symmetry: return min gain stored in seq struct
 uint16_t get_gain_auto_min(struct core_state s, int i)
 {
         return s.seq.gain_auto_min[i];
