@@ -1469,7 +1469,7 @@ for _lib in _libs.values():
     if not _lib.has("get_Navg1", "cdecl"):
         continue
     get_Navg1 = _lib.get("get_Navg1", "cdecl")
-    get_Navg1.argtypes = [struct_core_state]
+    get_Navg1.argtypes = [POINTER(struct_core_state)]
     get_Navg1.restype = uint16_t
     break
 
@@ -1478,7 +1478,7 @@ for _lib in _libs.values():
     if not _lib.has("get_Navg2", "cdecl"):
         continue
     get_Navg2 = _lib.get("get_Navg2", "cdecl")
-    get_Navg2.argtypes = [struct_core_state]
+    get_Navg2.argtypes = [POINTER(struct_core_state)]
     get_Navg2.restype = uint16_t
     break
 
@@ -1487,7 +1487,7 @@ for _lib in _libs.values():
     if not _lib.has("get_Nfreq", "cdecl"):
         continue
     get_Nfreq = _lib.get("get_Nfreq", "cdecl")
-    get_Nfreq.argtypes = [struct_core_state]
+    get_Nfreq.argtypes = [POINTER(struct_core_state)]
     get_Nfreq.restype = uint16_t
     break
 
@@ -1496,7 +1496,7 @@ for _lib in _libs.values():
     if not _lib.has("get_tr_avg", "cdecl"):
         continue
     get_tr_avg = _lib.get("get_tr_avg", "cdecl")
-    get_tr_avg.argtypes = [struct_core_state]
+    get_tr_avg.argtypes = [POINTER(struct_core_state)]
     get_tr_avg.restype = uint16_t
     break
 
@@ -1505,7 +1505,7 @@ for _lib in _libs.values():
     if not _lib.has("get_gain_auto_max", "cdecl"):
         continue
     get_gain_auto_max = _lib.get("get_gain_auto_max", "cdecl")
-    get_gain_auto_max.argtypes = [struct_core_state, c_int]
+    get_gain_auto_max.argtypes = [POINTER(struct_core_state), c_int]
     get_gain_auto_max.restype = uint16_t
     break
 
@@ -1514,7 +1514,7 @@ for _lib in _libs.values():
     if not _lib.has("get_tr_length", "cdecl"):
         continue
     get_tr_length = _lib.get("get_tr_length", "cdecl")
-    get_tr_length.argtypes = [struct_core_state]
+    get_tr_length.argtypes = [POINTER(struct_core_state)]
     get_tr_length.restype = uint32_t
     break
 

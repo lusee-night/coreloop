@@ -73,11 +73,14 @@
 // prepare for power cut -- mode announcing power cut 5 seconds after issue
 #define RFS_SET_TIME_TO_DIE  0x0F 
 
+// Control the underlying FW interpacket delay (1.28ms)
+#define RFS_SET_CDI_FW_DLY  0x11 
+
 // Load sequencer mode from flash
-#define RFS_SET_LOAD_FL  0x10 
+#define RFS_SET_LOAD_FL  0x20 
 
 // Store sequencer mode into flash
-#define RFS_SET_STORE_FL  0x11 
+#define RFS_SET_STORE_FL  0x21 
 
 // set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 #define RFS_SET_GAIN_ANA_SET  0x30 

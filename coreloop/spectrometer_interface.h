@@ -75,6 +75,8 @@ void spec_recall();
 // make the CDI interface generate raw waveform;
 void spec_request_waveform(uint8_t ch);
 
+// set the counter between packets sent by the CDI interface when it needs to chop
+void spec_set_fw_cdi_delay(uint32_t delay);
 
 // disable certain channels (by connecting it to ground)
 void spec_disable_channel (uint8_t ch);

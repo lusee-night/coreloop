@@ -40,13 +40,13 @@ uint16_t flash_store_pointer;
 
 
 void mini_wait (uint32_t ticks) {
-    uint32_t val = general_upcounter+ticks;
+    uint64_t val = tap_counter+ticks;
     // since we are in a tight loop and the other thing is running on 100Hz, we should be fine
     // do not want <= sign here since there could be overflow
     #ifdef NOTREAL
     exit(1); // implement this!!
     #endif  
-    while (general_upcounter!=val) {}
+    while (tap_counter!=val) {}
 }
 
 

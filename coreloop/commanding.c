@@ -171,8 +171,14 @@ bool process_cdi()
             break;
 
         case RFS_SET_TIME_TO_DIE:
-        debug_print("Recevied time-to-die.\n\r");
+            debug_print("Recevied time-to-die.\n\r");
             return true;
+
+
+        case RFS_SET_CDI_FW_DLY:
+            // 2^17 /102.4e6 = 1.28ms
+            spec_set_fw_cdi_delay (arg_low<<17);
+            return false;
 
         case RFS_SET_LOAD_FL:
             // load the sequencer program # arg_low (0-255) into state.program
