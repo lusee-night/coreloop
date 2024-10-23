@@ -31,7 +31,7 @@ bool analog_gain_control() {
         if ((state.base.
                 ADC_stat[i].invalid_count_max>0) || (state.base.ADC_stat[i].invalid_count_min>0)) cmax = 10000; // blow through.
         //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
-        if (cmax > get_gain_auto_max(state, i)) {
+        if (cmax > get_gain_auto_max(&state, i)) {
             if (state.base.actual_gain[i] > GAIN_LOW) {
                 state.base.actual_gain[i] --;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);

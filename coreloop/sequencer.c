@@ -49,8 +49,8 @@ void default_seq (struct sequencer_state *seq)
     seq->format =  OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
     seq->reject_ratio = 0; // no rejection by default
     seq->reject_maxbad = 0;
-
-
+    seq->tr_start = 1;
+    seq->tr_stop = 0;
 }
 
 void advance_sequencer() {
