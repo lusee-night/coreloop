@@ -214,12 +214,12 @@ void RFS_start();
 void restart_spectrometer();
 
 // derived quantities in the state
-uint16_t get_Navg1(struct core_state s);
-uint16_t get_Navg2(struct core_state s);
-uint16_t get_Nfreq(struct core_state s);
-uint16_t get_tr_avg(struct core_state s);
-uint16_t get_gain_auto_max(struct core_state s, int i);
-uint32_t get_tr_length(struct core_state s);
+uint16_t get_Navg1(struct core_state *s);
+uint16_t get_Navg2(struct core_state *s);
+uint16_t get_Nfreq(struct core_state *s);
+uint16_t get_tr_avg(struct core_state *s);
+uint16_t get_gain_auto_max(struct core_state *s, int i);
+uint32_t get_tr_length(struct core_state *s);
 
 
 // set routing for a channel

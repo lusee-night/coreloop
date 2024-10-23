@@ -81,9 +81,9 @@ void dispatch_tr_data() {
 
     const uint8_t spec_idx = state.cdi_dispatch.tr_count;
     // length of individual chunk we need to copy (corresponds to fixed avg_counter value)
-    const uint32_t single_len = get_tr_length(state);
+    const uint32_t single_len = get_tr_length(&state);
     const size_t single_size = single_len * sizeof(uint16_t);
-    uint16_t Navg2 = get_Navg2(state);
+    uint16_t Navg2 = get_Navg2(&state);
 
     const size_t data_size = Navg2 * single_size;
 
@@ -146,15 +146,18 @@ uint32_t get_next_tr_baseAppID() {
 
 void transfer_to_cdi () {
     debug_print ("$");
-
     new_unique_packet_id();
     update_time();
     spec_get_TVS(state.base.TVS_sensors);
     send_metadata_packet();
     state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
     state.cdi_dispatch.prod_count = 0; //
-    state.cdi_dispatch.tr_count = 0; //
-    state.cdi_dispatch.Nfreq = get_Nfreq(state);
+    if (state.seq.tr_start<state.seq.tr_stop) {
+        state.cdi_dispatch.tr_count = 0; // dispatch the TR spectra
+    } else {
+        state.cdi_dispatch.tr_count = 0xFF; // disable
+    }
+    state.cdi_dispatch.Nfreq = get_Nfreq(&state);
     state.cdi_dispatch.Navgf = state.seq.Navgf;
     state.cdi_dispatch.appId = get_next_baseAppID();
     state.cdi_dispatch.tr_appId = get_next_tr_baseAppID();
