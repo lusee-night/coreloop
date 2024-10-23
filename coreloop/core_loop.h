@@ -3,7 +3,7 @@
 #pragma pack(1)
 
 
-#define VERSION 0.105-DEV
+#define VERSION 0.106-DEV
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
 #define VERSION_ID 0x00000106
