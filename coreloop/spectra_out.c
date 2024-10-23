@@ -82,6 +82,11 @@ void dispatch_tr_data() {
     const uint8_t spec_idx = state.cdi_dispatch.tr_count;
     // length of individual chunk we need to copy (corresponds to fixed avg_counter value)
     const uint32_t single_len = get_tr_length(&state);
+
+    // nothing to do: return early, do not send header and no data
+    if (single_len == 0)
+        return;
+
     const size_t single_size = single_len * sizeof(uint16_t);
     uint16_t Navg2 = get_Navg2(&state);
 
