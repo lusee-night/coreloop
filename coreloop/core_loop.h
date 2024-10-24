@@ -3,7 +3,7 @@
 #pragma pack(1)
 
 
-#define VERSION 0.106-DEV
+#define VERSION "0.106-DEV"
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
 #define VERSION_ID 0x00000106
@@ -145,6 +145,7 @@ struct core_state {
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
     uint16_t cmd_start, cmd_end;
     uint32_t cmd_counter;
+    uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
 };
 
 struct saved_core_state {

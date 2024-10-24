@@ -29,6 +29,7 @@ bool process_cdi()
     uint8_t cmd, arg_high, arg_low;
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
+    uint32_t dly;
 
     #ifdef NOTREAL
     cdi_fill_command_buffer();
@@ -51,7 +52,7 @@ bool process_cdi()
         debug_print_hex(arg_high);
         debug_print(", arg_lo = ");
         debug_print_hex(arg_low);
-        debug_print("\r\n");
+        debug_print("  ");
 
         if (cmd == RFS_SPECIAL) {
             if (arg_high == RFS_SET_RESET) {
@@ -177,8 +178,16 @@ bool process_cdi()
 
         case RFS_SET_CDI_FW_DLY:
             // 2^17 /102.4e6 = 1.28ms
-            spec_set_fw_cdi_delay (arg_low<<17);
+            if (arg_low == 0) dly=0x17; else dly = (arg_low*arg_low)<<2;
+            debug_print("Setting CDI delay to ");
+            debug_print_dec(dly);
+            spec_set_fw_cdi_delay (dly);
             return false;
+            break;
+
+        case RFS_SET_CDI_SW_DLY:
+            state.dispatch_delay = arg_low;
+            break;
 
         case RFS_SET_LOAD_FL:
             // load the sequencer program # arg_low (0-255) into state.program

@@ -76,6 +76,9 @@
 // Control the underlying FW interpacket delay (1.28ms)
 #define RFS_SET_CDI_FW_DLY  0x11 
 
+// Control the delay between spectral packets
+#define RFS_SET_CDI_SW_DLY  0x12 
+
 // Load sequencer mode from flash
 #define RFS_SET_LOAD_FL  0x20 
 

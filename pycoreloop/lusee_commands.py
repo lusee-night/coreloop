@@ -77,6 +77,9 @@ RFS_SET_TIME_TO_DIE =  0x0F
 # Control the underlying FW interpacket delay (1.28ms)
 RFS_SET_CDI_FW_DLY =  0x11 
 
+# Control the delay between spectral packets
+RFS_SET_CDI_SW_DLY =  0x12 
+
 # Load sequencer mode from flash
 RFS_SET_LOAD_FL =  0x20 
 

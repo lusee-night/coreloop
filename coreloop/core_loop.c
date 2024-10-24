@@ -58,7 +58,7 @@ void debug_helper(uint8_t arg) {
 void core_init_state(){   
     default_seq (&state.seq);
     state.base.errors = 0;
-    state.base.corr_products_mask=0b1111111111111111; //65535
+    state.base.corr_products_mask=0xFFFF; //65535, everything on
     state.base.spectrometer_enable = false;
     state.base.rand_state = 0xFEEDD0D0;
     spec_set_spectrometer_enable(false);
@@ -68,6 +68,7 @@ void core_init_state(){
     for (int i=0; i<NSPECTRA; i++) state.base.actual_bitslice[i] = MIN(state.seq.bitslice[i],0x1F); // to convert FF to 16
     spec_set_spectrometer_enable(false);
     state.base.sequencer_step = 0xFF;
+    state.dispatch_delay = DISPATCH_DELAY;
     state.sequencer_enabled = false;
     state.program.Nseq = 0;
     state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.

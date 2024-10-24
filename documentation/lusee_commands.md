@@ -29,6 +29,7 @@
 | 0x1M | Name               |  Description                                          |
 |------|--------------------|------------------------------------------------------|                             
 | 0x11 | RFS_SET_CDI_FW_DLY | Control the underlying FW interpacket delay (1.28ms) |
+| 0x12 | RFS_SET_CDI_SW_DLY | Control the delay between spectral packets           |
 
 
 ### 0x2X Stored sequencer modes
