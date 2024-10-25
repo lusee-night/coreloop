@@ -178,7 +178,7 @@ bool process_cdi()
 
         case RFS_SET_CDI_FW_DLY:
             // 2^17 /102.4e6 = 1.28ms
-            if (arg_low == 0) dly=0x17; else dly = (arg_low*arg_low)<<2;
+            if (arg_low == 0) dly=0x17; else dly = (arg_low<<16);
             debug_print("Setting CDI delay to ");
             debug_print_dec(dly);
             spec_set_fw_cdi_delay (dly);

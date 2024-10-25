@@ -58,6 +58,7 @@ void debug_helper(uint8_t arg) {
 void core_init_state(){   
     default_seq (&state.seq);
     state.base.errors = 0;
+    state.cmd_start = state.cmd_end = 0;
     state.base.corr_products_mask=0xFFFF; //65535, everything on
     state.base.spectrometer_enable = false;
     state.base.rand_state = 0xFEEDD0D0;
@@ -130,7 +131,9 @@ void core_loop()
         process_spectrometer();
         process_gain_range();
         // we always process just one CDI interfacing things
-        process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+        if (cdi_ready()) {
+            process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+        }
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness we call the interrupt routine
