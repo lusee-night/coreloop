@@ -92,29 +92,37 @@ void dispatch_tr_data() {
 
     const size_t data_size = Navg2 * single_size;
 
-    int32_t *cdi_ptr = (int32_t *)TLM_BUF;
+    char *cdi_ptr = (char*)TLM_BUF;
 
     wait_for_cdi_ready();
 
     // two int32: packet id and crc
     const size_t packet_size = data_size + 2 * sizeof(int32_t);
 
-    *cdi_ptr = (int32_t)(state.cdi_dispatch.packet_id);
-    cdi_ptr++;
+    memcpy(cdi_ptr, &(state.cdi_dispatch.packet_id), sizeof(state.cdi_dispatch.packet_id));
+    cdi_ptr += sizeof(int32_t);
 
-    uint32_t *crc_ptr = (uint32_t*)cdi_ptr;
-    cdi_ptr++;
+    char *crc_ptr = cdi_ptr;
+    cdi_ptr += sizeof(uint32_t);
+    // now cdi_ptr points to the beginning of the buffer with actual data
+    // save this pointer to compute CRC later
+    char* crc_input = cdi_ptr;
 
+    // copy chunks of time resolved spectra
     uint16_t* tr_ptr = tr_spectra_read_buffer(tick_tock) + spec_idx * single_len;
     for(int i = 0; i < Navg2; ++i) {
         // NB: types of pointers are different, but that is fine, memcpy takes void*
         // and operates byte-wise
         memcpy(cdi_ptr, tr_ptr, single_size);
+        cdi_ptr += single_size;
         // zero copied chunk in tick/tock buffer
         memset(tr_ptr, 0, single_size);
         tr_ptr += NSPECTRA * single_len;
     }
-    *crc_ptr = CRC(cdi_ptr, data_size);
+
+    // done copying data, can compute CRC now
+    uint32_t crc_value = CRC(crc_input, data_size);
+    memcpy(crc_ptr, &crc_value, sizeof crc_value);
 
     cdi_dispatch(state.cdi_dispatch.tr_appId, packet_size);
 }
