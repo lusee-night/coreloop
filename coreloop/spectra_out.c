@@ -150,7 +150,7 @@ void transfer_to_cdi () {
     update_time();
     spec_get_TVS(state.base.TVS_sensors);
     send_metadata_packet();
-    state.cdi_dispatch.int_counter = DISPATCH_DELAY; // 10*0.01s ~10 Hz
+    cdi_dispatch_counter = tap_counter + state.dispatch_delay; // 10*0.01s ~10 Hz
     state.cdi_dispatch.prod_count = 0; //
     if (state.seq.tr_start<state.seq.tr_stop) {
         state.cdi_dispatch.tr_count = 0; // dispatch the TR spectra
@@ -166,7 +166,8 @@ void transfer_to_cdi () {
 }
 
 bool process_delayed_cdi_dispatch() {
-    if (state.cdi_dispatch.int_counter > 0) return false;
+
+    if (cdi_dispatch_counter > tap_counter) return false;
     // we always send 16 products + some time resolved
     // we sent all we had, return to the core loop and let spectra accumulate
     if (state.cdi_dispatch.prod_count >= NSPECTRA && state.cdi_dispatch.tr_count >= NSPECTRA) {
@@ -202,7 +203,6 @@ bool process_delayed_cdi_dispatch() {
         state.cdi_dispatch.tr_appId++;
     }
 
-    state.cdi_dispatch.int_counter = DISPATCH_DELAY;
-
+    cdi_dispatch_counter = tap_counter + state.dispatch_delay;
     return true;
 }

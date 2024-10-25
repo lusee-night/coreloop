@@ -8,6 +8,9 @@
           # Master command for uC control
 RFS_SETTINGS =  0x10 
 
+# Special commands for uC control that skip the queue
+RFS_SPECIAL =  0x11 
+
 # Generate outliers in this number
 CTRL_OUTLIER_NUM =  0xA0 
 
@@ -56,17 +59,32 @@ RFS_SET_WAIT_TICKS =  0x09
 # Wait arg number of seconds before processing next CMD (careful with 64 buffer!)
 RFS_SET_WAIT_SECS =  0x0A 
 
+# Wait arg number of mins before processing next CMD (careful with 64 buffer!)
+RFS_SET_WAIT_MINS =  0x0B 
+
+# Wait arg number of mins before processing next CMD (careful with 64 buffer!)
+RFS_SET_WAIT_HRS =  0x0C 
+
 # Debug command (used only in debugging)
 RFS_SET_DEBUG =  0x0D 
+
+# Enable (arg>1) and disable (arg=0) heartbeat.
+RFS_SET_HEARTBEAT =  0x0E 
 
 # prepare for power cut -- mode announcing power cut 5 seconds after issue
 RFS_SET_TIME_TO_DIE =  0x0F 
 
+# Control the underlying FW interpacket delay (1.28ms)
+RFS_SET_CDI_FW_DLY =  0x11 
+
+# Control the delay between spectral packets
+RFS_SET_CDI_SW_DLY =  0x12 
+
 # Load sequencer mode from flash
-RFS_SET_LOAD_FL =  0x10 
+RFS_SET_LOAD_FL =  0x20 
 
 # Store sequencer mode into flash
-RFS_SET_STORE_FL =  0x11 
+RFS_SET_STORE_FL =  0x21 
 
 # set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 RFS_SET_GAIN_ANA_SET =  0x30 

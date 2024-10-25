@@ -1,6 +1,16 @@
 
 # CHANGELOG
 
+# Version 1r06
+ * Revamped how timers are treated
+ * Added a real queue for CDI commands. Commands starting with RFS_SPECIAL (0x11) skip the queue (to e.g. reboot)
+ * Added more CDI_wait commands (can wait real real long!!)
+ * Checking for dropped CDI packets
+ * Changed errors and added errors to pycoreloop
+ * Command to enable / disable heartbeat
+ * Command to control CDI waiting
+
+
 ## Version 1r05
  * Implemented time-resolved spectra 
  * Remove all derived fields to avoid situation when we forget to update them, all derived quantities are now computed by functions.
