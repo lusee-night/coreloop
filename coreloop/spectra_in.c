@@ -89,7 +89,6 @@ bool transfer_from_df()
             }
             mask <<= 1;
         }
-        
     }
     transfer_time_resolved_from_df();
     avg_counter++;
@@ -98,7 +97,6 @@ bool transfer_from_df()
 
 bool transfer_time_resolved_from_df()
 {
- 
     if (state.seq.tr_stop <= state.seq.tr_start) {
         return false;
     }
