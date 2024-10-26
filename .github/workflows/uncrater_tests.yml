@@ -42,9 +42,25 @@ jobs:
     - name: Set CORELOOP_DIR environment variable
       run: echo "CORELOOP_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
-    - name: Run Python tests with pytest
+    - name: test alive
       run: |
         cd $GITHUB_WORKSPACE/uncrater
         python test/cli_driver.py -r alive -b coreloop
       env:
         CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
+
+    - name: test time_resolved
+      run: |
+        cd $GITHUB_WORKSPACE/uncrater
+        python test/cli_driver.py -r time_resolved -b coreloop
+      env:
+        CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
+
+    - name: pytest encoding tests
+      run: |
+        cd $GITHUB_WORKSPACE/uncrater
+        pytest test/standalone/test_encode_one_at_a_time.py
+        pytest test/standalone/test_encode_shared_lz.py
+      env:
+        CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
+
