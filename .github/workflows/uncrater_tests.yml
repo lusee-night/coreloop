@@ -1,0 +1,50 @@
+name: Run uncrater tests
+
+on:
+  push:
+    branches:
+      - main
+      - automate_uncrater
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Clone uncrater repo
+      uses: GuillaumeFalourd/clone-github-repo-action@v2.3
+      with:
+        owner: 'anigmetov'
+        repository: 'uncrater'
+        access-token: ${{ secrets.UNCRATER_PAT }}
+
+    - name: Compile coreloop library
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make cl_utils coreloop
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install packets
+      run: |
+        cd $GITHUB_WORKSPACE/uncrater
+        pip install -r requirements.txt
+        pip install scipy
+
+    - name: Set CORELOOP_DIR environment variable
+      run: echo "CORELOOP_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+    - name: Run Python tests with pytest
+      run: |
+        cd $GITHUB_WORKSPACE/uncrater
+        python test/cli_driver.py -r alive -b coreloop
+      env:
+        CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
