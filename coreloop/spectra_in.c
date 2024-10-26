@@ -91,9 +91,10 @@ bool transfer_from_df()
             }
             mask <<= 1;
         }
-        transfer_time_resolved_from_df();
-        avg_counter++;
-    }
+    } // if (accept)
+
+    transfer_time_resolved_from_df();
+    avg_counter++;
 
     return accept;
 }

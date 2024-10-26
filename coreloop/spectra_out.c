@@ -109,15 +109,20 @@ void dispatch_tr_data() {
     char* crc_input = cdi_ptr;
 
     // copy chunks of time resolved spectra
-    uint16_t* tr_ptr = tr_spectra_read_buffer(tick_tock) + spec_idx * single_len;
+    uint16_t* tr_ptr = (uint16_t*)tr_spectra_read_buffer(tick_tock) + spec_idx * single_len;
+
     for(int i = 0; i < Navg2; ++i) {
         // NB: types of pointers are different, but that is fine, memcpy takes void*
         // and operates byte-wise
         memcpy(cdi_ptr, tr_ptr, single_size);
         cdi_ptr += single_size;
         // zero copied chunk in tick/tock buffer
-        memset(tr_ptr, 0, single_size);
         tr_ptr += NSPECTRA * single_len;
+    }
+
+    // we copied last product, zero TR buffer
+    if (spec_idx == NSPECTRA - 1) {
+        memset(tr_spectra_read_buffer(tick_tock), 0, NSPECTRA * Navg2 *single_size);
     }
 
     // done copying data, can compute CRC now
