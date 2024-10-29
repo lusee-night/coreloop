@@ -1,3 +1,7 @@
+# test status
+
+![Automated tests](https://github.com/anigmetov/coreloop/actions/workflows/uncrater_tests.yml/badge.svg?branch=automate_uncrater)
+
 # coreloop
 Core loop of the LuSEE-Night uC flight software.
 
