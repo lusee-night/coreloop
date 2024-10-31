@@ -306,6 +306,10 @@ void decode_shared_lz_positive(const unsigned char* data_buf, uint32_t* x, int s
 int  encode_shared_lz_signed(const int32_t* spectra, unsigned char* cdi_ptr, int size);
 void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size);
 
+// encode/decode 4 int32_t values into 5 int16_t values: first one for shift info
+void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out);
+void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out);
+
 // CRC
 uint32_t CRC(const void* data, size_t size);
 
