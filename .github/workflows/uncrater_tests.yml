@@ -17,10 +17,9 @@ jobs:
     - name: Clone uncrater repo
       uses: GuillaumeFalourd/clone-github-repo-action@v2.3
       with:
-        owner: 'anigmetov'
+        owner: 'lusee-night'
         repository: 'uncrater'
         branch: 'main'
-        access-token: ${{ secrets.UNCRATER_PAT }}
 
     - name: Compile coreloop library
       run: |
@@ -66,8 +65,7 @@ jobs:
     - name: Run standalon (pytest) encoding tests
       run: |
         cd $GITHUB_WORKSPACE/uncrater
-        pytest test/standalone/test_encode_one_at_a_time.py
-        pytest test/standalone/test_encode_shared_lz.py
+        pytest test/standalone/
       env:
         CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
 
