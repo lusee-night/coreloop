@@ -7,13 +7,20 @@
 #include "core_loop.h"
 #include "LuSEE_IO.h"
 
+static inline int32_t safe_abs_val(int32_t val)
+{
+    if (val >= 0) return val;
+    if (val == INT32_MIN) return INT32_MAX;
+    return -val;
+}
+
 uint16_t encode_10plus6(int32_t val) {
     if (val == 0) {
         return 0;
     }
     const uint16_t is_neg = (val < 0) ? 32 : 0;
 
-    if (val < 0) val = -val;
+    val = safe_abs_val(val);
 
     // leading zeros takes 5 bits max
     const uint16_t lz = __builtin_clz(val);
@@ -127,7 +134,7 @@ int encode_shared_lz_signed(const int32_t* spectra, unsigned char* cdi_ptr, int 
             int next_is_neg = IS_NEG(next_val);
             if (next_is_neg != is_neg)
                 break;
-            uint32_t next_abs_val = next_is_neg ? -next_val : next_val;
+            uint32_t next_abs_val = safe_abs_val(next_val);
             int8_t next_shift_by = get_shift_by(next_abs_val);
             if (abs(next_shift_by - shift_by) > 1) {
                 break;
@@ -153,7 +160,7 @@ int encode_shared_lz_signed(const int32_t* spectra, unsigned char* cdi_ptr, int 
 
         for (int k = i; k < j; k++) {
             assert(is_neg == IS_NEG(spectra[k]));
-            uint32_t abs_val = is_neg ? -spectra[k] : spectra[k];
+            uint32_t abs_val = safe_abs_val(spectra[k]);
             uint16_t compressed_val = abs_val >> shift_by;
             memcpy(cdi_ptr, &compressed_val, sizeof(compressed_val));
             cdi_ptr += sizeof(compressed_val);
@@ -206,6 +213,48 @@ int32_t decode_12plus4(uint16_t val) {
     int32_t out = val_wo_lz_1 << (16 - lz -1);
     return out;
 }
+
+// encode vals_in[0],.., vals_in[3] into vals_out[0], ..., vals_out[4]
+// 4 bits for lz: store difference from 16
+// 32 bits -> lower 14 bits
+// bit 16: sign
+// bit 15: sign of lz
+void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out)
+{
+    uint16_t* const shifts = vals_out;
+    *shifts = 0;
+    uint16_t* compressed = vals_out + 1;
+    for(int i = 0; i < 4; ++i) {
+        uint16_t negative_bit = (vals_in[i] < 0) ? 1 << 15 : 0;
+        int32_t abs_value = safe_abs_val(vals_in[i]);
+        uint8_t lz = __builtin_clz(abs_value);
+        uint16_t shift = (lz >= 18) ? 0 : 18 - lz;
+        uint16_t in_place_shift_bit = (shift >= 16) ? 1 << 14 : 0;
+        uint16_t stored_shift = (shift >= 16) ? shift - 16 : shift;
+        assert(((stored_shift << (4 * i)) & (*shifts)) == 0);
+        *shifts |= (stored_shift << (4 * i));
+        compressed[i] = abs_value >> shift;
+        assert((negative_bit & in_place_shift_bit) == 0);
+        assert((negative_bit & compressed[i]) == 0);
+        assert((in_place_shift_bit & compressed[i]) == 0);
+        compressed[i] |= negative_bit;
+        compressed[i] |= in_place_shift_bit;
+    }
+}
+
+void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out)
+{
+    const uint16_t shifts = *vals_in;
+    const uint16_t* compressed = vals_in + 1;
+    for(int i = 0; i < 4; ++i) {
+        bool is_neg = compressed[i] & (1 << 15);
+        uint16_t shift_adjustment = (compressed[i] & (1 << 14)) ? 16 : 0;
+        uint16_t shift = ((shifts >> 4 * i) & 0xF) + shift_adjustment;
+        int32_t abs_val = (compressed[i] & 0x3FFF) << shift;
+        vals_out[i] = is_neg ? -abs_val : abs_val;
+    }
+}
+
 
 uint32_t CRC(const void* data, size_t size) {
     const uint8_t* bytes = (const uint8_t*)data;
