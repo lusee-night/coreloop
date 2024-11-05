@@ -1,7 +1,10 @@
 
 # CHANGELOG
 
-# Version 1r06
+## Version 1r07
+ * Arnur to fill in
+	
+## Version 1r06
  * Revamped how timers are treated
  * Added a real queue for CDI commands. Commands starting with RFS_SPECIAL (0x11) skip the queue (to e.g. reboot)
  * Added more CDI_wait commands (can wait real real long!!)

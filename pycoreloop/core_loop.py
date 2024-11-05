@@ -1,7 +1,7 @@
 r"""Wrapper for core_loop.h
 
 Generated with:
-/u/home/anze/anaconda3/bin/ctypesgen ../coreloop/core_loop.h
+/fast/anaconda3/bin/ctypesgen ../coreloop/core_loop.h
 
 Do not modify this file.
 """
@@ -879,7 +879,7 @@ uint32_t = __uint32_t# /usr/include/bits/stdint-uintn.h: 26
 
 uint64_t = __uint64_t# /usr/include/bits/stdint-uintn.h: 27
 
-# /fast/lusee/coreloop/coreloop/spectrometer_interface.h: 46
+# /home/lusee-night/coreloop/coreloop/spectrometer_interface.h: 46
 class struct_ADC_stat(Structure):
     pass
 
@@ -903,11 +903,11 @@ struct_ADC_stat._fields_ = [
     ('sumv2', uint64_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 138
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 138
 class struct_core_state(Structure):
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 34
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 34
 for _lib in _libs.values():
     try:
         state = (struct_core_state).in_dll(_lib, "state")
@@ -915,7 +915,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 35
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 35
 for _lib in _libs.values():
     try:
         avg_counter = (uint16_t).in_dll(_lib, "avg_counter")
@@ -923,7 +923,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 36
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 36
 for _lib in _libs.values():
     try:
         unique_packet_id = (uint32_t).in_dll(_lib, "unique_packet_id")
@@ -931,7 +931,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 37
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 37
 for _lib in _libs.values():
     try:
         leading_zeros_min = (uint8_t * int(16)).in_dll(_lib, "leading_zeros_min")
@@ -939,7 +939,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 38
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 38
 for _lib in _libs.values():
     try:
         leading_zeros_max = (uint8_t * int(16)).in_dll(_lib, "leading_zeros_max")
@@ -947,7 +947,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 39
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 39
 for _lib in _libs.values():
     try:
         housekeeping_request = (uint8_t).in_dll(_lib, "housekeeping_request")
@@ -955,7 +955,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 40
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 40
 for _lib in _libs.values():
     try:
         section_break = (uint32_t).in_dll(_lib, "section_break")
@@ -963,7 +963,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 41
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 41
 for _lib in _libs.values():
     try:
         range_adc = (uint8_t).in_dll(_lib, "range_adc")
@@ -971,7 +971,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 41
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 41
 for _lib in _libs.values():
     try:
         resettle = (uint8_t).in_dll(_lib, "resettle")
@@ -979,7 +979,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 41
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 41
 for _lib in _libs.values():
     try:
         request_waveform = (uint8_t).in_dll(_lib, "request_waveform")
@@ -987,7 +987,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 42
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 42
 for _lib in _libs.values():
     try:
         tick_tock = (c_bool).in_dll(_lib, "tick_tock")
@@ -995,7 +995,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 43
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 43
 for _lib in _libs.values():
     try:
         drop_df = (c_bool).in_dll(_lib, "drop_df")
@@ -1003,7 +1003,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 44
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 44
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1011,7 +1011,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 45
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 45
 for _lib in _libs.values():
     try:
         heartbeat_packet_count = (uint32_t).in_dll(_lib, "heartbeat_packet_count")
@@ -1019,7 +1019,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 46
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 46
 for _lib in _libs.values():
     try:
         heartbeat_counter = (uint64_t).in_dll(_lib, "heartbeat_counter")
@@ -1027,7 +1027,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 47
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 47
 for _lib in _libs.values():
     try:
         resettle_counter = (uint64_t).in_dll(_lib, "resettle_counter")
@@ -1035,7 +1035,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 48
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 48
 for _lib in _libs.values():
     try:
         cdi_wait_counter = (uint64_t).in_dll(_lib, "cdi_wait_counter")
@@ -1043,7 +1043,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 49
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 49
 for _lib in _libs.values():
     try:
         cdi_dispatch_counter = (uint64_t).in_dll(_lib, "cdi_dispatch_counter")
@@ -1051,7 +1051,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 50
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 50
 for _lib in _libs.values():
     try:
         tap_counter = (uint64_t).in_dll(_lib, "tap_counter")
@@ -1059,7 +1059,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 51
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 51
 for _lib in _libs.values():
     try:
         flash_store_pointer = (uint16_t).in_dll(_lib, "flash_store_pointer")
@@ -1067,27 +1067,27 @@ for _lib in _libs.values():
     except:
         pass
 
-enum_gain_state = c_int# /fast/lusee/coreloop/coreloop/core_loop.h: 56
+enum_gain_state = c_int# /home/lusee-night/coreloop/coreloop/core_loop.h: 56
 
-GAIN_LOW = 0# /fast/lusee/coreloop/coreloop/core_loop.h: 56
+GAIN_LOW = 0# /home/lusee-night/coreloop/coreloop/core_loop.h: 56
 
-GAIN_MED = (GAIN_LOW + 1)# /fast/lusee/coreloop/coreloop/core_loop.h: 56
+GAIN_MED = (GAIN_LOW + 1)# /home/lusee-night/coreloop/coreloop/core_loop.h: 56
 
-GAIN_HIGH = (GAIN_MED + 1)# /fast/lusee/coreloop/coreloop/core_loop.h: 56
+GAIN_HIGH = (GAIN_MED + 1)# /home/lusee-night/coreloop/coreloop/core_loop.h: 56
 
-GAIN_DISABLE = (GAIN_HIGH + 1)# /fast/lusee/coreloop/coreloop/core_loop.h: 56
+GAIN_DISABLE = (GAIN_HIGH + 1)# /home/lusee-night/coreloop/coreloop/core_loop.h: 56
 
-GAIN_AUTO = (GAIN_DISABLE + 1)# /fast/lusee/coreloop/coreloop/core_loop.h: 56
+GAIN_AUTO = (GAIN_DISABLE + 1)# /home/lusee-night/coreloop/coreloop/core_loop.h: 56
 
-enum_output_format = c_int# /fast/lusee/coreloop/coreloop/core_loop.h: 63
+enum_output_format = c_int# /home/lusee-night/coreloop/coreloop/core_loop.h: 63
 
-OUTPUT_32BIT = 0# /fast/lusee/coreloop/coreloop/core_loop.h: 63
+OUTPUT_32BIT = 0# /home/lusee-night/coreloop/coreloop/core_loop.h: 63
 
-OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /fast/lusee/coreloop/coreloop/core_loop.h: 63
+OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /home/lusee-night/coreloop/coreloop/core_loop.h: 63
 
-OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /fast/lusee/coreloop/coreloop/core_loop.h: 63
+OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /home/lusee-night/coreloop/coreloop/core_loop.h: 63
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 69
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 69
 class struct_route_state(Structure):
     pass
 
@@ -1101,7 +1101,7 @@ struct_route_state._fields_ = [
     ('minus', uint8_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 75
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 75
 class struct_sequencer_state(Structure):
     pass
 
@@ -1147,7 +1147,7 @@ struct_sequencer_state._fields_ = [
     ('tr_avg_shift', uint16_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 93
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 93
 class struct_sequencer_program(Structure):
     pass
 
@@ -1165,7 +1165,7 @@ struct_sequencer_program._fields_ = [
     ('sequencer_repeat', uint16_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 102
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 102
 class struct_core_state_base(Structure):
     pass
 
@@ -1211,7 +1211,7 @@ struct_core_state_base._fields_ = [
     ('weight_current', uint8_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 124
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 124
 class struct_delayed_cdi_sending(Structure):
     pass
 
@@ -1267,7 +1267,7 @@ struct_core_state._fields_ = [
     ('dispatch_delay', uint16_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 151
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 151
 class struct_saved_core_state(Structure):
     pass
 
@@ -1283,7 +1283,7 @@ struct_saved_core_state._fields_ = [
     ('CRC', uint32_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 157
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 157
 class struct_startup_hello(Structure):
     pass
 
@@ -1309,7 +1309,7 @@ struct_startup_hello._fields_ = [
     ('time_16', uint16_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 168
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 168
 class struct_heartbeat(Structure):
     pass
 
@@ -1327,7 +1327,7 @@ struct_heartbeat._fields_ = [
     ('magic', c_char * int(6)),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 176
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 176
 class struct_meta_data(Structure):
     pass
 
@@ -1345,7 +1345,7 @@ struct_meta_data._fields_ = [
     ('base', struct_core_state_base),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 183
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 183
 class struct_housekeeping_data_base(Structure):
     pass
 
@@ -1363,7 +1363,7 @@ struct_housekeeping_data_base._fields_ = [
     ('housekeeping_type', uint16_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 190
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 190
 class struct_housekeeping_data_0(Structure):
     pass
 
@@ -1377,7 +1377,7 @@ struct_housekeeping_data_0._fields_ = [
     ('core_state', struct_core_state),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 195
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 195
 class struct_housekeeping_data_1(Structure):
     pass
 
@@ -1393,7 +1393,7 @@ struct_housekeeping_data_1._fields_ = [
     ('actual_gain', uint8_t * int(4)),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 201
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 201
 class struct_housekeeping_data_99(Structure):
     pass
 
@@ -1405,7 +1405,7 @@ struct_housekeeping_data_99._fields_ = [
     ('section_break', uint32_t),
 ]
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 207
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 207
 for _lib in _libs.values():
     try:
         state = (struct_core_state).in_dll(_lib, "state")
@@ -1413,7 +1413,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 208
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 208
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1421,7 +1421,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 211
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 211
 for _lib in _libs.values():
     if not _lib.has("core_loop", "cdecl"):
         continue
@@ -1430,7 +1430,7 @@ for _lib in _libs.values():
     core_loop.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 214
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 214
 for _lib in _libs.values():
     if not _lib.has("process_cdi", "cdecl"):
         continue
@@ -1439,7 +1439,7 @@ for _lib in _libs.values():
     process_cdi.restype = c_bool
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 220
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 220
 for _lib in _libs.values():
     if not _lib.has("RFS_stop", "cdecl"):
         continue
@@ -1448,7 +1448,7 @@ for _lib in _libs.values():
     RFS_stop.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 221
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 221
 for _lib in _libs.values():
     if not _lib.has("RFS_start", "cdecl"):
         continue
@@ -1457,7 +1457,7 @@ for _lib in _libs.values():
     RFS_start.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 222
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 222
 for _lib in _libs.values():
     if not _lib.has("restart_spectrometer", "cdecl"):
         continue
@@ -1466,7 +1466,7 @@ for _lib in _libs.values():
     restart_spectrometer.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 225
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 225
 for _lib in _libs.values():
     if not _lib.has("get_Navg1", "cdecl"):
         continue
@@ -1475,7 +1475,7 @@ for _lib in _libs.values():
     get_Navg1.restype = uint16_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 226
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 226
 for _lib in _libs.values():
     if not _lib.has("get_Navg2", "cdecl"):
         continue
@@ -1484,7 +1484,7 @@ for _lib in _libs.values():
     get_Navg2.restype = uint16_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 227
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 227
 for _lib in _libs.values():
     if not _lib.has("get_Nfreq", "cdecl"):
         continue
@@ -1493,7 +1493,7 @@ for _lib in _libs.values():
     get_Nfreq.restype = uint16_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 228
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 228
 for _lib in _libs.values():
     if not _lib.has("get_tr_avg", "cdecl"):
         continue
@@ -1502,7 +1502,7 @@ for _lib in _libs.values():
     get_tr_avg.restype = uint16_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 229
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 229
 for _lib in _libs.values():
     if not _lib.has("get_gain_auto_max", "cdecl"):
         continue
@@ -1511,7 +1511,7 @@ for _lib in _libs.values():
     get_gain_auto_max.restype = uint16_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 230
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 230
 for _lib in _libs.values():
     if not _lib.has("get_tr_length", "cdecl"):
         continue
@@ -1520,7 +1520,7 @@ for _lib in _libs.values():
     get_tr_length.restype = uint32_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 234
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 234
 for _lib in _libs.values():
     if not _lib.has("set_route", "cdecl"):
         continue
@@ -1529,7 +1529,7 @@ for _lib in _libs.values():
     set_route.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 237
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 237
 for _lib in _libs.values():
     if not _lib.has("update_spec_gains", "cdecl"):
         continue
@@ -1538,7 +1538,7 @@ for _lib in _libs.values():
     update_spec_gains.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 240
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 240
 for _lib in _libs.values():
     if not _lib.has("trigger_ADC_stat", "cdecl"):
         continue
@@ -1547,7 +1547,7 @@ for _lib in _libs.values():
     trigger_ADC_stat.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 243
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 243
 for _lib in _libs.values():
     if not _lib.has("reset_errormasks", "cdecl"):
         continue
@@ -1556,7 +1556,7 @@ for _lib in _libs.values():
     reset_errormasks.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 246
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 246
 for _lib in _libs.values():
     if not _lib.has("update_time", "cdecl"):
         continue
@@ -1565,7 +1565,7 @@ for _lib in _libs.values():
     update_time.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 249
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 249
 for _lib in _libs.values():
     if not _lib.has("process_spectrometer", "cdecl"):
         continue
@@ -1574,7 +1574,7 @@ for _lib in _libs.values():
     process_spectrometer.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 252
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 252
 for _lib in _libs.values():
     if not _lib.has("transfer_to_cdi", "cdecl"):
         continue
@@ -1583,7 +1583,7 @@ for _lib in _libs.values():
     transfer_to_cdi.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 254
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 254
 for _lib in _libs.values():
     if not _lib.has("process_delayed_cdi_dispatch", "cdecl"):
         continue
@@ -1592,7 +1592,7 @@ for _lib in _libs.values():
     process_delayed_cdi_dispatch.restype = c_bool
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 257
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 257
 for _lib in _libs.values():
     if not _lib.has("process_gain_range", "cdecl"):
         continue
@@ -1601,7 +1601,7 @@ for _lib in _libs.values():
     process_gain_range.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 258
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 258
 for _lib in _libs.values():
     if not _lib.has("bitslice_control", "cdecl"):
         continue
@@ -1610,7 +1610,7 @@ for _lib in _libs.values():
     bitslice_control.restype = c_bool
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 261
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 261
 for _lib in _libs.values():
     if not _lib.has("set_spectrometer_to_sequencer", "cdecl"):
         continue
@@ -1619,7 +1619,7 @@ for _lib in _libs.values():
     set_spectrometer_to_sequencer.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 262
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 262
 for _lib in _libs.values():
     if not _lib.has("default_seq", "cdecl"):
         continue
@@ -1628,7 +1628,7 @@ for _lib in _libs.values():
     default_seq.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 263
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 263
 for _lib in _libs.values():
     if not _lib.has("advance_sequencer", "cdecl"):
         continue
@@ -1637,7 +1637,7 @@ for _lib in _libs.values():
     advance_sequencer.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 266
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 266
 for _lib in _libs.values():
     if not _lib.has("debug_helper", "cdecl"):
         continue
@@ -1646,7 +1646,7 @@ for _lib in _libs.values():
     debug_helper.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 267
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 267
 for _lib in _libs.values():
     if not _lib.has("cdi_not_implemented", "cdecl"):
         continue
@@ -1655,7 +1655,7 @@ for _lib in _libs.values():
     cdi_not_implemented.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 271
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 271
 for _lib in _libs.values():
     if not _lib.has("send_hello_packet", "cdecl"):
         continue
@@ -1664,7 +1664,7 @@ for _lib in _libs.values():
     send_hello_packet.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 272
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 272
 for _lib in _libs.values():
     if not _lib.has("process_hearbeat", "cdecl"):
         continue
@@ -1673,7 +1673,7 @@ for _lib in _libs.values():
     process_hearbeat.restype = c_bool
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 273
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 273
 for _lib in _libs.values():
     if not _lib.has("process_housekeeping", "cdecl"):
         continue
@@ -1682,7 +1682,7 @@ for _lib in _libs.values():
     process_housekeeping.restype = c_bool
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 284
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 284
 for _lib in _libs.values():
     if not _lib.has("mini_wait", "cdecl"):
         continue
@@ -1691,7 +1691,7 @@ for _lib in _libs.values():
     mini_wait.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 288
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 288
 for _lib in _libs.values():
     if not _lib.has("encode_12plus4", "cdecl"):
         continue
@@ -1700,7 +1700,7 @@ for _lib in _libs.values():
     encode_12plus4.restype = uint16_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 289
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 289
 for _lib in _libs.values():
     if not _lib.has("decode_12plus4", "cdecl"):
         continue
@@ -1709,7 +1709,7 @@ for _lib in _libs.values():
     decode_12plus4.restype = c_int32
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 292
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 292
 for _lib in _libs.values():
     if not _lib.has("encode_10plus6", "cdecl"):
         continue
@@ -1718,7 +1718,7 @@ for _lib in _libs.values():
     encode_10plus6.restype = uint16_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 293
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 293
 for _lib in _libs.values():
     if not _lib.has("decode_10plus6", "cdecl"):
         continue
@@ -1727,7 +1727,7 @@ for _lib in _libs.values():
     decode_10plus6.restype = c_int32
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 299
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 299
 for _lib in _libs.values():
     if not _lib.has("encode_shared_lz_positive", "cdecl"):
         continue
@@ -1736,7 +1736,7 @@ for _lib in _libs.values():
     encode_shared_lz_positive.restype = c_int
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 300
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 300
 for _lib in _libs.values():
     if not _lib.has("decode_shared_lz_positive", "cdecl"):
         continue
@@ -1745,7 +1745,7 @@ for _lib in _libs.values():
     decode_shared_lz_positive.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 306
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 306
 for _lib in _libs.values():
     if not _lib.has("encode_shared_lz_signed", "cdecl"):
         continue
@@ -1754,7 +1754,7 @@ for _lib in _libs.values():
     encode_shared_lz_signed.restype = c_int
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 307
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 307
 for _lib in _libs.values():
     if not _lib.has("decode_shared_lz_signed", "cdecl"):
         continue
@@ -1763,7 +1763,25 @@ for _lib in _libs.values():
     decode_shared_lz_signed.restype = None
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 310
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 310
+for _lib in _libs.values():
+    if not _lib.has("encode_4_into_5", "cdecl"):
+        continue
+    encode_4_into_5 = _lib.get("encode_4_into_5", "cdecl")
+    encode_4_into_5.argtypes = [POINTER(c_int32), POINTER(uint16_t)]
+    encode_4_into_5.restype = None
+    break
+
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 311
+for _lib in _libs.values():
+    if not _lib.has("decode_5_into_4", "cdecl"):
+        continue
+    decode_5_into_4 = _lib.get("decode_5_into_4", "cdecl")
+    decode_5_into_4.argtypes = [POINTER(c_int16), POINTER(c_int32)]
+    decode_5_into_4.restype = None
+    break
+
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 314
 for _lib in _libs.values():
     if not _lib.has("CRC", "cdecl"):
         continue
@@ -1772,105 +1790,105 @@ for _lib in _libs.values():
     CRC.restype = uint32_t
     break
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 6
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 6
 try:
     VERSION = '0.106-DEV'
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 9
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 9
 try:
-    VERSION_ID = 0x00000106
+    VERSION_ID = 0x00000107
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 20
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 20
 try:
     NSEQ_MAX = 32
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 21
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 21
 try:
     DISPATCH_DELAY = 6
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 22
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 22
 try:
     RESETTLE_DELAY = 5
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 23
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 23
 try:
     HEARTBEAT_DELAY = 1024
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 24
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 24
 try:
     CMD_BUFFER_SIZE = 128
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 27
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 27
 try:
     ADC_STAT_SAMPLES = 16000
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 29
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 29
 try:
     MAX_STATE_SLOTS = 64
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 31
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 31
 try:
     PAGES_PER_SLOT = 256
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 281
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 281
 def MAX(x, y):
     return (x > y) and x or y
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 282
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 282
 def MIN(x, y):
     return (x < y) and x or y
 
-# /fast/lusee/coreloop/coreloop/core_loop.h: 283
+# /home/lusee-night/coreloop/coreloop/core_loop.h: 283
 def IS_NEG(x):
     return (x < 0) and 1 or 0
 
-core_state = struct_core_state# /fast/lusee/coreloop/coreloop/core_loop.h: 138
+core_state = struct_core_state# /home/lusee-night/coreloop/coreloop/core_loop.h: 138
 
-route_state = struct_route_state# /fast/lusee/coreloop/coreloop/core_loop.h: 69
+route_state = struct_route_state# /home/lusee-night/coreloop/coreloop/core_loop.h: 69
 
-sequencer_state = struct_sequencer_state# /fast/lusee/coreloop/coreloop/core_loop.h: 75
+sequencer_state = struct_sequencer_state# /home/lusee-night/coreloop/coreloop/core_loop.h: 75
 
-sequencer_program = struct_sequencer_program# /fast/lusee/coreloop/coreloop/core_loop.h: 93
+sequencer_program = struct_sequencer_program# /home/lusee-night/coreloop/coreloop/core_loop.h: 93
 
-core_state_base = struct_core_state_base# /fast/lusee/coreloop/coreloop/core_loop.h: 102
+core_state_base = struct_core_state_base# /home/lusee-night/coreloop/coreloop/core_loop.h: 102
 
-delayed_cdi_sending = struct_delayed_cdi_sending# /fast/lusee/coreloop/coreloop/core_loop.h: 124
+delayed_cdi_sending = struct_delayed_cdi_sending# /home/lusee-night/coreloop/coreloop/core_loop.h: 124
 
-saved_core_state = struct_saved_core_state# /fast/lusee/coreloop/coreloop/core_loop.h: 151
+saved_core_state = struct_saved_core_state# /home/lusee-night/coreloop/coreloop/core_loop.h: 151
 
-startup_hello = struct_startup_hello# /fast/lusee/coreloop/coreloop/core_loop.h: 157
+startup_hello = struct_startup_hello# /home/lusee-night/coreloop/coreloop/core_loop.h: 157
 
-heartbeat = struct_heartbeat# /fast/lusee/coreloop/coreloop/core_loop.h: 168
+heartbeat = struct_heartbeat# /home/lusee-night/coreloop/coreloop/core_loop.h: 168
 
-meta_data = struct_meta_data# /fast/lusee/coreloop/coreloop/core_loop.h: 176
+meta_data = struct_meta_data# /home/lusee-night/coreloop/coreloop/core_loop.h: 176
 
-housekeeping_data_base = struct_housekeeping_data_base# /fast/lusee/coreloop/coreloop/core_loop.h: 183
+housekeeping_data_base = struct_housekeeping_data_base# /home/lusee-night/coreloop/coreloop/core_loop.h: 183
 
-housekeeping_data_0 = struct_housekeeping_data_0# /fast/lusee/coreloop/coreloop/core_loop.h: 190
+housekeeping_data_0 = struct_housekeeping_data_0# /home/lusee-night/coreloop/coreloop/core_loop.h: 190
 
-housekeeping_data_1 = struct_housekeeping_data_1# /fast/lusee/coreloop/coreloop/core_loop.h: 195
+housekeeping_data_1 = struct_housekeeping_data_1# /home/lusee-night/coreloop/coreloop/core_loop.h: 195
 
-housekeeping_data_99 = struct_housekeeping_data_99# /fast/lusee/coreloop/coreloop/core_loop.h: 201
+housekeeping_data_99 = struct_housekeeping_data_99# /home/lusee-night/coreloop/coreloop/core_loop.h: 201
 
 # No inserted files
 
