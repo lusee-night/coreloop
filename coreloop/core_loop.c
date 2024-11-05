@@ -26,13 +26,28 @@ bool tick_tock;
 bool drop_df;
 bool soft_reset_flag;
 
-uint32_t heartbeat_packet_count;
+uint32_t heartbeat_packet_count=100;
 
 // thing that are touched in the interrupt need to be proclaimed volatile
-volatile uint32_t heartbeat_counter;
-volatile uint32_t resettle_counter;
+volatile uint64_t heartbeat_counter;
+volatile uint64_t resettle_counter;
+volatile uint64_t cdi_wait_counter; 
+volatile uint64_t cdi_dispatch_counter;
+volatile uint64_t tap_counter;
+
 uint16_t flash_store_pointer;
 
+
+
+void mini_wait (uint32_t ticks) {
+    uint64_t val = tap_counter+ticks;
+    // since we are in a tight loop and the other thing is running on 100Hz, we should be fine
+    // do not want <= sign here since there could be overflow
+    #ifdef NOTREAL
+    exit(1); // implement this!!
+    #endif  
+    while (tap_counter!=val) {}
+}
 
 
 void debug_helper(uint8_t arg) {
@@ -43,7 +58,8 @@ void debug_helper(uint8_t arg) {
 void core_init_state(){   
     default_seq (&state.seq);
     state.base.errors = 0;
-    state.base.corr_products_mask=0b1111111111111111; //65535
+    state.cmd_start = state.cmd_end = 0;
+    state.base.corr_products_mask=0xFFFF; //65535, everything on
     state.base.spectrometer_enable = false;
     state.base.rand_state = 0xFEEDD0D0;
     spec_set_spectrometer_enable(false);
@@ -53,18 +69,23 @@ void core_init_state(){
     for (int i=0; i<NSPECTRA; i++) state.base.actual_bitslice[i] = MIN(state.seq.bitslice[i],0x1F); // to convert FF to 16
     spec_set_spectrometer_enable(false);
     state.base.sequencer_step = 0xFF;
+    state.dispatch_delay = DISPATCH_DELAY;
     state.sequencer_enabled = false;
     state.program.Nseq = 0;
     state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
+    state.cdi_dispatch.tr_count = 0xFF; // >0F so disabled.            
     tick_tock = true;
     state.base.weight_current = state.base.weight_previous = 0;
     drop_df = false;
     update_time();
     unique_packet_id = state.base.time_32;
-    fill_derived();
 
     set_spectrometer_to_sequencer();
+    tap_counter = 0;
+    cdi_dispatch_counter = 0;
     heartbeat_counter = HEARTBEAT_DELAY;
+    resettle_counter = 0;
+    cdi_wait_counter = 0;
 }
 
 bool process_waveform() {
@@ -86,6 +107,14 @@ void core_loop()
     flash_size = 0;
     flash_write = 0;
     flash_wait = 0;
+    spec_set_spectrometer_enable(false);
+    spec_clear_df_flag();
+    // now empty the CDI command buffer in case we are doing the reset.
+    #ifndef NOTREAL
+    uint8_t tmp;
+    while (cdi_new_command(&tmp, &tmp, &tmp)) {};
+    #endif
+
     send_hello_packet();
     core_init_state();
     #ifndef NOTREAL
@@ -102,7 +131,9 @@ void core_loop()
         process_spectrometer();
         process_gain_range();
         // we always process just one CDI interfacing things
-        process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+        if (cdi_ready()) {
+            process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+        }
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness we call the interrupt routine
@@ -125,10 +156,9 @@ uint8_t MSYS_EI5_IRQHandler(void)
 
     uint32_t tocpy;
     /* Clear the interrupt within the timer */
-    if (resettle_counter > 0) resettle_counter--;   
-    if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
-    if (heartbeat_counter > 0) heartbeat_counter--;
-     
+    tap_counter++;
+
+
     #ifndef NOTREAL
      // flash processing.
     if (flash_wait>0) {
@@ -210,22 +240,58 @@ void update_time() {
     state.base.time_32 = sec32;
     state.base.time_16 = sec16;
     state.base.rand_state += sec32;
+    state.base.uC_time = tap_counter;
 }
 
-
-void fill_derived() {
-    state.Navg1 = 1 << state.seq.Navg1_shift;
-    state.Navg2 = 1 << state.seq.Navg2_shift;
-    state.tr_avg = 1 << state.seq.tr_avg_shift; 
-    // total shift takes into account frequency averaging;
-    state.Navg2_total_shift = state.seq.Navg2_shift;
-    state.Nfreq = NCHANNELS; 
-    if (state.seq.Navgf == 2 ) { state.Navg2_total_shift += 1; state.Nfreq = NCHANNELS/2; }
-    if ((state.seq.Navgf == 3 ) || (state.seq.Navgf == 4)) { state.Navg2_total_shift += 2; state.Nfreq = NCHANNELS/4;} 
-    for (int i=0; i<NINPUT; i++) {
-        state.gain_auto_max[i] = (state.seq.gain_auto_min[i] * state.seq.gain_auto_mult[i]);
-    }   
+// return batch size for stage 1 averaging
+uint16_t get_Navg1(struct core_state *s)
+{
+    return 1 << s->seq.Navg1_shift;
 }
+
+// return batch size for stage 2 averaging (to TICK/TOCK buffer)
+uint16_t get_Navg2(struct core_state *s)
+{
+    return 1 << s->seq.Navg2_shift;
+}
+
+// return number of frequencies in the outgoing spectra
+uint16_t get_Nfreq(struct core_state *s)
+{
+    switch(s->seq.Navgf) {
+        case 1: return NCHANNELS;
+        case 2: return NCHANNELS/2;
+        case 3: return NCHANNELS/4;
+        case 4: return NCHANNELS/4;
+        default: return NCHANNELS;
+    }
+}
+
+// return number of frequencies to average in time-resolved spectra
+uint16_t get_tr_avg(struct core_state *s)
+{
+    return 1 << s->seq.tr_avg_shift;
+}
+
+// return max gain (computed as min gain times multiplication factor)
+uint16_t get_gain_auto_max(struct core_state *s, int i)
+{
+        return s->seq.gain_auto_min[i] * s->seq.gain_auto_mult[i];
+}
+
+// for symmetry: return min gain stored in seq struct
+uint16_t get_gain_auto_min(struct core_state *s, int i)
+{
+        return s->seq.gain_auto_min[i];
+}
+
+// return length (i.e., number of int_16_t, not bytes)
+// of single
+uint32_t get_tr_length(struct core_state *s)
+{
+    return (s->seq.tr_stop - s->seq.tr_start) >> s->seq.tr_avg_shift;
+}
+
 
 void reset_errormasks() {
     state.base.errors = 0;
@@ -244,6 +310,7 @@ void RFS_stop() {
 void RFS_start() {
     debug_print ("\n\rStarting spectrometer\n\r");
     state.base.spectrometer_enable = true;
+    state.base.weight_previous = state.base.weight_current = 0;
     avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
@@ -253,7 +320,7 @@ void RFS_start() {
         state.base.sequencer_substep = state.program.seq_times[0];
         state.seq = state.program.seq[0];
     }
-    fill_derived();
+//    fill_derived();
     set_spectrometer_to_sequencer();
     spec_set_spectrometer_enable(true);
     //drop_df = true;

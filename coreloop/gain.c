@@ -27,11 +27,11 @@ bool analog_gain_control() {
     
     for (int i = 0; i < NINPUT; i++) {
         if (state.seq.gain[i] != GAIN_AUTO) continue; // Don't do anything unless AGC is enabled
-        int32_t cmax = MAX(state.base.ADC_stat[i].max-0x1FFF, state.base.ADC_stat[i].min-0x1FFF);
+        int32_t cmax = MAX(state.base.ADC_stat[i].max-0x1FFF, -(state.base.ADC_stat[i].min-0x1FFF));
         if ((state.base.
                 ADC_stat[i].invalid_count_max>0) || (state.base.ADC_stat[i].invalid_count_min>0)) cmax = 10000; // blow through.
         //debug_print("AGC: Channel %i max = %i (%i %i) \n", i, cmax, state.gain_auto_max[i], state.seq.gain_auto_min[i]);
-        if (cmax > state.gain_auto_max[i]) {
+        if (cmax > get_gain_auto_max(&state, i)) {
             if (state.base.actual_gain[i] > GAIN_LOW) {
                 state.base.actual_gain[i] --;
                 state.base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
@@ -60,7 +60,7 @@ void process_gain_range() {
             // gains have changed. wait for settle and trigger. 
             debug_print("\n\rGains changed, resettle\n\r");
             resettle = true;
-            resettle_counter = RESETTLE_DELAY;
+            resettle_counter = tap_counter+RESETTLE_DELAY;
         } else {
             if (range_adc) {
                 range_adc = 0;
@@ -71,7 +71,7 @@ void process_gain_range() {
         //if (range_adc) debug_print("not yet \n");
     }
 
-    if ((resettle) & (resettle_counter == 0)) {
+    if ((resettle) & (resettle_counter >= tap_counter)) {
         trigger_ADC_stat();
         resettle = false;
         if (state.base.spectrometer_enable) {

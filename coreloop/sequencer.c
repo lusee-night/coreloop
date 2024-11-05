@@ -49,8 +49,8 @@ void default_seq (struct sequencer_state *seq)
     seq->format =  OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
     seq->reject_ratio = 0; // no rejection by default
     seq->reject_maxbad = 0;
-
-
+    seq->tr_start = 1;
+    seq->tr_stop = 0;
 }
 
 void advance_sequencer() {
@@ -72,7 +72,6 @@ if (state.base.sequencer_substep == 0) {
     bool restart = restart_needed(&state.seq, &state.program.seq[state.base.sequencer_step]); 
     if (restart) RFS_stop();
     state.seq = state.program.seq[state.base.sequencer_step];
-    fill_derived();
     set_spectrometer_to_sequencer();
     if (restart) RFS_start();
     }      

@@ -35,7 +35,7 @@ def process_md(fname):
         print (offset, name, desc)
         if offset[:3] != " 0x":
             continue
-        if not (("RFS_SET" in name) or ("CTRL_"in name)):
+        if not (("RFS_" in name) or ("CTRL_"in name)):
             continue
         of.write (f"// {desc}\n")
         of.write(f"#define {name} {offset}\n\n")
