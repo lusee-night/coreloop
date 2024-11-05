@@ -29,23 +29,24 @@ bool soft_reset_flag;
 uint32_t heartbeat_packet_count=100;
 
 // thing that are touched in the interrupt need to be proclaimed volatile
-volatile uint32_t heartbeat_counter;
-volatile uint32_t resettle_counter;
-volatile uint32_t cdi_wait_counter; 
-volatile uint32_t general_upcounter;
+volatile uint64_t heartbeat_counter;
+volatile uint64_t resettle_counter;
+volatile uint64_t cdi_wait_counter; 
+volatile uint64_t cdi_dispatch_counter;
+volatile uint64_t tap_counter;
 
 uint16_t flash_store_pointer;
 
 
 
 void mini_wait (uint32_t ticks) {
-    uint32_t val = general_upcounter+ticks;
+    uint64_t val = tap_counter+ticks;
     // since we are in a tight loop and the other thing is running on 100Hz, we should be fine
     // do not want <= sign here since there could be overflow
     #ifdef NOTREAL
     exit(1); // implement this!!
     #endif  
-    while (general_upcounter!=val) {}
+    while (tap_counter!=val) {}
 }
 
 
@@ -57,7 +58,8 @@ void debug_helper(uint8_t arg) {
 void core_init_state(){   
     default_seq (&state.seq);
     state.base.errors = 0;
-    state.base.corr_products_mask=0b1111111111111111; //65535
+    state.cmd_start = state.cmd_end = 0;
+    state.base.corr_products_mask=0xFFFF; //65535, everything on
     state.base.spectrometer_enable = false;
     state.base.rand_state = 0xFEEDD0D0;
     spec_set_spectrometer_enable(false);
@@ -67,6 +69,7 @@ void core_init_state(){
     for (int i=0; i<NSPECTRA; i++) state.base.actual_bitslice[i] = MIN(state.seq.bitslice[i],0x1F); // to convert FF to 16
     spec_set_spectrometer_enable(false);
     state.base.sequencer_step = 0xFF;
+    state.dispatch_delay = DISPATCH_DELAY;
     state.sequencer_enabled = false;
     state.program.Nseq = 0;
     state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
@@ -78,6 +81,8 @@ void core_init_state(){
     unique_packet_id = state.base.time_32;
 
     set_spectrometer_to_sequencer();
+    tap_counter = 0;
+    cdi_dispatch_counter = 0;
     heartbeat_counter = HEARTBEAT_DELAY;
     resettle_counter = 0;
     cdi_wait_counter = 0;
@@ -126,7 +131,9 @@ void core_loop()
         process_spectrometer();
         process_gain_range();
         // we always process just one CDI interfacing things
-        process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+        if (cdi_ready()) {
+            process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+        }
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness we call the interrupt routine
@@ -149,11 +156,7 @@ uint8_t MSYS_EI5_IRQHandler(void)
 
     uint32_t tocpy;
     /* Clear the interrupt within the timer */
-    if (resettle_counter > 0) resettle_counter--;   
-    if (state.cdi_dispatch.int_counter > 0) state.cdi_dispatch.int_counter--;
-    if (heartbeat_counter > 0) heartbeat_counter--;
-    if (cdi_wait_counter > 0) cdi_wait_counter--;
-    general_upcounter++;
+    tap_counter++;
 
 
     #ifndef NOTREAL
@@ -237,6 +240,7 @@ void update_time() {
     state.base.time_32 = sec32;
     state.base.time_16 = sec16;
     state.base.rand_state += sec32;
+    state.base.uC_time = tap_counter;
 }
 
 // return batch size for stage 1 averaging

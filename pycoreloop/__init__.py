@@ -1,6 +1,7 @@
 from . import core_loop as pystruct
-
+from . import core_loop_errors as _errors
 from . import lusee_commands as command
+
 command_from_value, value_from_command = {}, {}
 for name in dir(command):
     if name[0]=="_":
@@ -17,5 +18,12 @@ for name in dir(appId):
     value = getattr(appId, name)
     appId_from_value [value] = name
     value_from_appId [name] = value
+
+error_bits = {}
+for i in range(32):
+    error_bits [1<<i] = f"RESERVED"
+for k,v in vars(_errors).items():
+    if type(v)==int and v in error_bits:
+        error_bits[v] = k
 
 

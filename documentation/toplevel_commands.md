@@ -8,6 +8,7 @@ Commands above 0xA0 are parsed internally by the test framework and not describe
 |  Hex | Name                |  Description                                       |
 |------|---------------------|----------------------------------------------------|                             
 | 0x10 | RFS_SETTINGS        | Master command for uC control                                      | 
+| 0x11 | RFS_SPECIAL         | Special commands for uC control that skip the queue                | 
 | 0xA0 | CTRL_OUTLIER_NUM    | Generate outliers in this number                                   |
 | 0xA1 | CTRL_OUTLIER_AMP    | Generate outliers of this amplitude in units of 1/256              |
 | 0xA2 | CTRL_OUTLIER_BINS   | Generate outliers of this many (sequential) bins                   |

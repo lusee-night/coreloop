@@ -50,8 +50,6 @@ bool transfer_from_df()
         df_ptr = (int32_t *)SPEC_BUF;
         mask = 1;
     }
-    //debug_print_dec(accept);
-    //debug_print("done.\n\r");
 
     // do not copy data, if not accepted
     if (accept) {

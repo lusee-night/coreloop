@@ -2,7 +2,7 @@
 # SPECTROMETER MODES triggered by RFS_Settings
 
 
-### 0x0X - trigger modes
+### 0x0X - basic commands
 
 | 0x0M | Name                |  Description                                       |
 |------|---------------------|----------------------------------------------------|                             
@@ -17,16 +17,27 @@
 | 0x08 | RFS_SET_WAVEFORM    | Request ADC waform arg contains channel number                                         |
 | 0x09 | RFS_SET_WAIT_TICKS  | Wait arg number of ticks (10ms) before processing next CMD (careful with 64 buffer!)   |
 | 0x0A | RFS_SET_WAIT_SECS   | Wait arg number of seconds before processing next CMD (careful with 64 buffer!)        |
+| 0x0B | RFS_SET_WAIT_MINS   | Wait arg number of mins before processing next CMD (careful with 64 buffer!)        |
+| 0x0C | RFS_SET_WAIT_HRS    | Wait arg number of mins before processing next CMD (careful with 64 buffer!)        |
 | 0x0D | RFS_SET_DEBUG       | Debug command (used only in debugging)
+| 0x0E | RFS_SET_HEARTBEAT   | Enable (arg>1) and disable (arg=0) heartbeat.                                          |
 | 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue               |
 
-### 0x1X Stored sequencer modes
+
+### 0x1X - further basic commands
+
+| 0x1M | Name               |  Description                                          |
+|------|--------------------|------------------------------------------------------|                             
+| 0x11 | RFS_SET_CDI_FW_DLY | Control the underlying FW interpacket delay (1.28ms) |
+| 0x12 | RFS_SET_CDI_SW_DLY | Control the delay between spectral packets           |
 
 
-| 0x1M | Name               |  Description                                       |
+### 0x2X Stored sequencer modes
+
+| 0x2M | Name               |  Description                                       |
 |------|--------------------|----------------------------------------------------|                             
-| 0x10 | RFS_SET_LOAD_FL    | Load sequencer mode from flash                     |
-| 0x11 | RFS_SET_STORE_FL   | Store sequencer mode into flash                    |
+| 0x20 | RFS_SET_LOAD_FL    | Load sequencer mode from flash                     |
+| 0x21 | RFS_SET_STORE_FL   | Store sequencer mode into flash                    |
 
 
 ### 0x3X Gain Settings and Bit slicing

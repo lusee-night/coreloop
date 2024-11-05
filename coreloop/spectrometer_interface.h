@@ -75,6 +75,8 @@ void spec_recall();
 // make the CDI interface generate raw waveform;
 void spec_request_waveform(uint8_t ch);
 
+// set the counter between packets sent by the CDI interface when it needs to chop
+void spec_set_fw_cdi_delay(uint32_t delay);
 
 // disable certain channels (by connecting it to ground)
 void spec_disable_channel (uint8_t ch);
@@ -113,7 +115,6 @@ bool spec_get_ADC_stat(struct ADC_stat *stat);
 
 // get spacecraft time as per commands RFS_SCM_F1-F3
 void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec);
-
 
 //returns true if a new spectrum is ready (DF flag is set)
 bool spec_new_spectrum_ready();

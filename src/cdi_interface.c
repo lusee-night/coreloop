@@ -28,6 +28,7 @@ int cmd_ndx = 0; // current command
 int Ncommands = 0; // number of commands
 int wait_ndx = 0;
 int out_packet_ndx = 0;
+uint32_t cdi_command_counter;
 
 void* TLM_BUF;
 // sockets
@@ -37,6 +38,7 @@ struct sockaddr_in serverAddr;
 
 
 void cdi_init(){
+    cdi_command_counter = 0;
     TLM_BUF = malloc(STAGING_AREA_SIZE);
     switch(cdi_format) {
         case CMD_FILE: {
@@ -141,7 +143,13 @@ bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
     *arg_low = arg_low_list[cmd_ndx];
     cmd_ndx++;
     if (cmd_ndx < Ncommands) wait_ndx = wait_list[cmd_ndx]; else wait_ndx = 0;
+    cdi_command_counter++;
     return true;
+}
+
+
+uint32_t cdi_command_count() {
+    return cdi_command_counter;
 }
 
 bool cdi_ready() {return true;}
