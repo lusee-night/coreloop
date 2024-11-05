@@ -88,6 +88,7 @@ bool process_cdi()
     state.cmd_start = (state.cmd_start + 1) % CMD_BUFFER_SIZE;
     arg_low = state.cmd_arg_low[state.cmd_start];
     arg_high = state.cmd_arg_high[state.cmd_start];
+    uint16_t arg = (arg_high << 8) | arg_low;
     debug_print ("\r\nProcessing CDI command: cmd = ");
     debug_print_hex(cmd);
     debug_print(", arg_hi = ");
@@ -96,6 +97,29 @@ bool process_cdi()
     debug_print_hex(arg_low);
     debug_print("\r\n");
 
+    switch (arg) {
+        case CTRL_OUTLIER_NUM: {
+            state.outliers.num = arg;
+            break;
+        }
+        case CTRL_OUTLIER_AMP: {
+            state.outliers.amp = arg;
+            break;
+        }
+        case CTRL_OUTLIER_BINS: {
+            state.outliers.bins = arg;
+            break;
+        }
+        case RFS_SETTINGS: {
+            goto rfs_settings;
+        }
+        default: {
+            debug_print ("   Commmand not implemented, ignoring.\n\r");
+            state.base.errors |= CDI_COMMAND_UNKNOWN;
+            break;
+        }
+    }
+    rfs_settings:
     switch (arg_high) {
         case RFS_SET_START:
             if (!state.base.spectrometer_enable) {
