@@ -2,7 +2,10 @@
 # CHANGELOG
 
 ## Version 1r07
- * Arnur to fill in
+ * Add Github workflow to run uncrater tests on each commit
+ * Add encoding/decoding functions to pack 4 int32_t values into 5 uint16_t
+ * Fix sending time-resolved data, send in 16 packets that are in correspondence with averaged products
+ * Add safe_abs function to handle INT32_MIN correctly
 	
 ## Version 1r06
  * Revamped how timers are treated
