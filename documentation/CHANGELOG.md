@@ -1,6 +1,12 @@
 
 # CHANGELOG
 
+## Version 1r08
+* Add 16 bit formats for spectra (10+6 and 4 to 5) to enum output_format
+* Add corresponding functions `dispatch_16bit_10_plus_6_data`, `dispatch_16bit_4_to_5_data` to `spectra_out.c`
+* Add `value_from_format`, `format_from_value` dicts to pycoreloop
+* Set error flag if a command attempts to change spectrometer settings while it is runnning
+
 ## Version 1r07
  * Add Github workflow to run uncrater tests on each commit
  * Add encoding/decoding functions to pack 4 int32_t values into 5 uint16_t

@@ -6,7 +6,7 @@
 #define VERSION "0.106-DEV"
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000107
+#define VERSION_ID 0x00000108
 
 
 #include <inttypes.h>
@@ -64,6 +64,9 @@ enum output_format {
     OUTPUT_32BIT,
     OUTPUT_16BIT_UPDATES,
     OUTPUT_16BIT_FLOAT1,
+    OUTPUT_16BIT_10_PLUS_6,
+    OUTPUT_16BIT_4_TO_5,
+    OUTPUT_16BIT_SHARED_LZ
 };
 
 struct route_state {
