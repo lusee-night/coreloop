@@ -26,4 +26,12 @@ for k,v in vars(_errors).items():
     if type(v)==int and v in error_bits:
         error_bits[v] = k
 
+# dict that maps format code (str) to format value (int)
+value_from_format = { name: getattr(pystruct, name)
+                         for name in dir(pystruct)
+                         if name.startswith("OUTPUT_") }
 
+# dict that maps format value (int) to format code (str)
+format_from_value = { getattr(pystruct, name): name
+                         for name in dir(pystruct)
+                         if name.startswith("OUTPUT_") }

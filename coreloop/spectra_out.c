@@ -21,6 +21,24 @@ void send_metadata_packet() {
     reset_errormasks();
 }
 
+// write packet id to the beginning of the buffer
+// make crc_ptr to point to the next int32_t after packet_id
+// make data_ptr to point to the data buffer (after CRC)
+void write_packet_id(uint32_t packet_id, char** data_ptr, char** crc_ptr)
+{
+    char *cdi_ptr = (char*)TLM_BUF;
+
+    // write packet_id
+    memcpy(cdi_ptr, &packet_id, sizeof packet_id);
+    cdi_ptr += sizeof state.cdi_dispatch.packet_id;
+
+    // save pointer to CRC
+    *crc_ptr = cdi_ptr;
+    cdi_ptr += sizeof(CRC(cdi_ptr, 1));
+
+    // save pointer to the beginning of actual data, to compute its CRC
+    *data_ptr = cdi_ptr;
+}
 
 void dispatch_32bit_data() {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
@@ -64,12 +82,101 @@ void dispatch_32bit_data() {
     cdi_dispatch(state.cdi_dispatch.appId, packet_size);
 }
 
+void dispatch_16bit_10_plus_6_data() {
+    // if we are in tick, we are copyng over TOCK, otherwise TICK !!
+    const int32_t *ddr_ptr = spectra_read_buffer(tick_tock);
+    ddr_ptr += state.cdi_dispatch.prod_count * NCHANNELS; //state.Nfreq; // pointer to current block of data.
+
+    char* crc_ptr;
+    char* data_ptr;
+    write_packet_id(state.cdi_dispatch.packet_id, &data_ptr, &crc_ptr);
+    char* const data_start_ptr = data_ptr;
+
+    uint32_t data_size = state.cdi_dispatch.Nfreq * sizeof(uint16_t);
+    uint32_t packet_size = data_size + 2 * sizeof(int32_t);
+
+    wait_for_cdi_ready();
+
+    uint16_t val_out;
+    int32_t val_in;
+
+    for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
+        if (state.cdi_dispatch.Navgf == 1) {
+            val_in = ddr_ptr[i];
+        } else if (state.cdi_dispatch.Navgf == 2) {
+            val_in = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
+        } else if (state.cdi_dispatch.Navgf == 3) {
+            val_in = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
+        } else if (state.cdi_dispatch.Navgf == 4) {
+            val_in = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
+        }
+        val_out = encode_10plus6(val_in);
+        memcpy(data_ptr, &val_out, sizeof val_out);
+        data_ptr += sizeof val_out;
+    }
+
+    // compute CRC
+    uint32_t crc = CRC(data_start_ptr, data_size);
+    memcpy(crc_ptr, &crc, sizeof(crc));
+
+    cdi_dispatch(state.cdi_dispatch.appId, packet_size);
+}
+
 void dispatch_16bit_updates_data() {
     cdi_not_implemented("16bit w updates data format");
 }
 
 void dispatch_16bit_float1_data() {
     cdi_not_implemented("16bit w float1 data format");
+}
+
+void dispatch_16bit_shared_lz_data() {
+    cdi_not_implemented("16bit shared LZ format");
+}
+
+void dispatch_16bit_4_to_5_data() {
+    // if we are in tick, we are copyng over TOCK, otherwise TICK !!
+    const int32_t *ddr_ptr = spectra_read_buffer(tick_tock);
+    ddr_ptr += state.cdi_dispatch.prod_count * NCHANNELS;
+
+    char* crc_ptr;
+    char* data_ptr;
+    write_packet_id(state.cdi_dispatch.packet_id, &data_ptr, &crc_ptr);
+    // save pointer to the beginning of actual data, to compute its CRC
+    char* const data_start_ptr = data_ptr;
+
+    uint32_t data_size = state.cdi_dispatch.Nfreq * 5 * sizeof(uint16_t) / 4;
+    uint32_t packet_size = data_size + 2 * sizeof(int32_t);
+    wait_for_cdi_ready();
+
+    // buffers for encoding
+    int32_t vals_in[4];
+    uint16_t vals_out[5];
+
+    for (int i = 0; i < state.cdi_dispatch.Nfreq; i++) {
+        if (i > 0 && i % 4 == 0) {
+            // we accumulated 4 values in vals_in;
+            // now we compress them into vals_out and copy to CDI buffer
+            encode_4_into_5(vals_in, vals_out);
+            memcpy(data_ptr, vals_out, sizeof vals_out);
+            data_ptr += sizeof vals_out;
+        }
+        if (state.cdi_dispatch.Navgf == 1) {
+            vals_in[i % 4] = ddr_ptr[i];
+        } else if (state.cdi_dispatch.Navgf == 2) {
+            vals_in[i % 4] = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
+        } else if (state.cdi_dispatch.Navgf == 3) {
+            vals_in[i % 4] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
+        } else if (state.cdi_dispatch.Navgf == 4) {
+            vals_in[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
+        }
+    }
+
+    // compute CRC
+    uint32_t crc = CRC(data_start_ptr, data_size);
+    memcpy(crc_ptr, &crc, sizeof(crc));
+
+    cdi_dispatch(state.cdi_dispatch.appId, packet_size);
 }
 
 // send NSPECTRA packets
@@ -205,6 +312,15 @@ bool process_delayed_cdi_dispatch() {
                     break;
                 case OUTPUT_16BIT_FLOAT1:
                     dispatch_16bit_float1_data();
+                    break;
+                case OUTPUT_16BIT_10_PLUS_6:
+                    dispatch_16bit_10_plus_6_data();
+                    break;
+                case OUTPUT_16BIT_4_TO_5:
+                    dispatch_16bit_4_to_5_data();
+                    break;
+                case OUTPUT_16BIT_SHARED_LZ:
+                    dispatch_16bit_shared_lz_data();
                     break;
                 default:
                     cdi_not_implemented("Unsupported output format");
