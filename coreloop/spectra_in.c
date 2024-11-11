@@ -178,7 +178,7 @@ void process_spectrometer() {
                 int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
                 for (int i = 200; i < 200 + state.outliers.bins; i++) {
                     for (int j = 0; j < NSPECTRA_AUTO; j++) {
-                        SPEC_BUF_INT32[j*NCHANNELS + i] = int(SPEC_BUF_INT32[j*NCHANNELS + i]*(1 + state.outliers.amp/256));
+                        SPEC_BUF_INT32[j*NCHANNELS + i] = (SPEC_BUF_INT32[j*NCHANNELS + i]*(1 + state.outliers.amp/256));
                     }
                     state.outliers.num--;
                 }
