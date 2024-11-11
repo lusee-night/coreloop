@@ -6,7 +6,7 @@
 #define VERSION "0.106-DEV"
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000106
+#define VERSION_ID 0x00000107
 
 
 #include <inttypes.h>
