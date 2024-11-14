@@ -56,6 +56,7 @@ void debug_helper(uint8_t arg, struct core_state* state) {
 
 
 void core_init_state(struct core_state* state){
+    memset(state, 0, sizeof(struct core_state));
     default_seq (&state->seq);
     state->base.errors = 0;
     state->cmd_start = state->cmd_end = 0;
