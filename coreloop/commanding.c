@@ -322,12 +322,24 @@ bool process_cdi()
 
 
         case RFS_SET_AVG_SET:
-            state.seq.Navg1_shift = arg_low & 0x0F;
-            state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
+            if (state.base.spectrometer_enable) {
+                // changing settings while spectrometer is running is not allowed;
+                // do nothing but set the error flag
+                state.base.errors |= CDI_COMMAND_BAD;
+            } else {
+                state.seq.Navg1_shift = arg_low & 0x0F;
+                state.seq.Navg2_shift = (arg_low & 0xF0) >> 4;
+            }
 
             break;
         case RFS_SET_AVG_FREQ:
-            state.seq.Navgf = arg_low;
+            if (state.base.spectrometer_enable) {
+                // changing settings while spectrometer is running is not allowed;
+                // do nothing but set the error flag
+                state.base.errors |= CDI_COMMAND_BAD;
+            } else {
+                state.seq.Navgf = arg_low;
+            }
             break;
         case RFS_SET_AVG_NOTCH:
             state.seq.notch = arg_low;
@@ -339,7 +351,7 @@ bool process_cdi()
             state.seq.med_frac = arg_low;
             break;
         case RFS_SET_OUTPUT_FORMAT:
-            if (arg_low > 2) {
+            if (arg_low > (uint8_t)OUTPUT_16BIT_SHARED_LZ) {
                 state.base.errors |= CDI_COMMAND_BAD_ARGS;
             } else {
                 state.seq.format = arg_low;
@@ -360,20 +372,36 @@ bool process_cdi()
             state.seq.reject_maxbad = arg_low;
             break;
         case RFS_SET_TR_START_LSB:
-            state.seq.tr_start = ((state.seq.tr_start & 0xFF00) +arg_low);
+            if (state.base.spectrometer_enable) {
+                // changing settings while spectrometer is running is not allowed;
+                // do nothing but set the error flag
+                state.base.errors |= CDI_COMMAND_BAD;
+            } else {
+                state.seq.tr_start = ((state.seq.tr_start & 0xFF00) +arg_low);
+            }
             break;
         case RFS_SET_TR_STOP_LSB:
-            state.seq.tr_stop = ((state.seq.tr_stop & 0xFF00) +arg_low);
+            if (state.base.spectrometer_enable) {
+                state.base.errors |= CDI_COMMAND_BAD;
+            } else {
+                state.seq.tr_stop = ((state.seq.tr_stop & 0xFF00) +arg_low);
+            }
             break;
         case RFS_SET_TR_ST_MSB:
-            state.seq.tr_start = ((state.seq.tr_start & 0x00FF) + ((arg_low & (0x0F)) << 8));
-            state.seq.tr_stop = ((state.seq.tr_stop & 0x00FF) + ((arg_low & (0xF0)) << 4));
+            if (state.base.spectrometer_enable) {
+                state.base.errors |= CDI_COMMAND_BAD;
+            } else {
+                state.seq.tr_start = ((state.seq.tr_start & 0x00FF) + ((arg_low & (0x0F)) << 8));
+                state.seq.tr_stop = ((state.seq.tr_stop & 0x00FF) + ((arg_low & (0xF0)) << 4));
+            }
             break;
         case RFS_SET_TR_AVG_SHIFT:
-            state.seq.tr_avg_shift = arg_low;
+            if (state.base.spectrometer_enable) {
+                state.base.errors |= CDI_COMMAND_BAD;
+            } else {
+                state.seq.tr_avg_shift = arg_low;
+            }
             break;
-
-
         case RFS_SET_CAL_FRAC_SET:
             cdi_not_implemented("RFS_SET_CAL_FRAC_SET");
             break;
