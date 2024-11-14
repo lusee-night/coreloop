@@ -40,12 +40,12 @@ void default_seq (struct sequencer_state *seq)
     seq->Navg1_shift = 14;
     seq->Navg2_shift = 3;
     seq->Navgf = 1;
-    for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i]=0x1F;
+    for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i] = 0x1F;
     seq->notch = 0;
     seq->hi_frac = 0xFF;
     seq->med_frac = 0x00;
-    seq->bitslice_keep_bits=13;
-    seq->format =  OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
+    seq->bitslice_keep_bits = 13;
+    seq->format = OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
     seq->reject_ratio = 0; // no rejection by default
     seq->reject_maxbad = 0;
     seq->tr_start = 1;
@@ -53,28 +53,24 @@ void default_seq (struct sequencer_state *seq)
 }
 
 void advance_sequencer(struct core_state* state) {
-
-state->base.sequencer_substep--;
-if (state->base.sequencer_substep == 0) {
-    state->base.sequencer_step = (state->base.sequencer_step+1)%state->program.Nseq;
-    if (state->base.sequencer_step == 0) {
-        state->base.sequencer_counter++;
-        if ((state->program.sequencer_repeat>0) & (state->base.sequencer_counter == state->program.sequencer_repeat)) {
-            //debug_print("Sequencer done.\n");
-            RFS_stop(state);
-        } else {
-            //debug_print("Starting sequencer cycle # %i/%i\n", state->base.sequencer_counter+1, state->base.sequencer_repeat);
+    state->base.sequencer_substep--;
+    if (state->base.sequencer_substep == 0) {
+        state->base.sequencer_step = (state->base.sequencer_step+1)%state->program.Nseq;
+        if (state->base.sequencer_step == 0) {
+            state->base.sequencer_counter++;
+            if ((state->program.sequencer_repeat>0) & (state->base.sequencer_counter == state->program.sequencer_repeat)) {
+                //debug_print("Sequencer done.\n");
+                RFS_stop(state);
+            } else {
+                //debug_print("Starting sequencer cycle # %i/%i\n", state->base.sequencer_counter+1, state->base.sequencer_repeat);
+            }
         }
+
+        state->base.sequencer_substep = state->program.seq_times[state->base.sequencer_step];
+        bool restart = restart_needed(&state->seq, &state->program.seq[state->base.sequencer_step]);
+        if (restart) RFS_stop(state);
+        state->seq = state->program.seq[state->base.sequencer_step];
+        set_spectrometer_to_sequencer(state);
+        if (restart) RFS_start(state);
     }
-    
-    state->base.sequencer_substep = state->program.seq_times[state->base.sequencer_step];
-    bool restart = restart_needed(&state->seq, &state->program.seq[state->base.sequencer_step]);
-    if (restart) RFS_stop(state);
-    state->seq = state->program.seq[state->base.sequencer_step];
-    set_spectrometer_to_sequencer(state);
-    if (restart) RFS_start(state);
-    }      
 }
-
-
-

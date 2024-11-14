@@ -321,7 +321,6 @@ void RFS_start(struct core_state* state) {
         state->base.sequencer_substep = state->program.seq_times[0];
         state->seq = state->program.seq[0];
     }
-//    fill_derived();
     set_spectrometer_to_sequencer(state);
     spec_set_spectrometer_enable(true);
     //drop_df = true;

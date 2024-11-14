@@ -269,7 +269,7 @@ uint32_t get_next_tr_baseAppID(struct core_state* state) {
 }
 
 
-void transfer_to_cdi (struct core_state* state) {
+void transfer_to_cdi(struct core_state* state) {
     debug_print ("$");
     new_unique_packet_id();
     update_time(state);

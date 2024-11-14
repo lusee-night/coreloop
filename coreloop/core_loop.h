@@ -31,7 +31,6 @@
 #define PAGES_PER_SLOT 256
 
 // global variables, will need to fix
-//extern struct core_state state;
 extern uint16_t avg_counter;
 extern uint32_t unique_packet_id;
 extern uint8_t leading_zeros_min[NSPECTRA];
@@ -234,7 +233,7 @@ uint32_t get_tr_length(struct core_state *s);
 
 
 // set routing for a channel
-void set_route (struct core_state* state, uint8_t ch, uint8_t arg_low);
+void set_route(struct core_state* state, uint8_t ch, uint8_t arg_low);
 
 // update spectrometer gain to match those in state.
 void update_spec_gains(struct core_state*);
@@ -252,7 +251,7 @@ void update_time(struct core_state*);
 void process_spectrometer(struct core_state*);
 
 // transfer data to CDI if needed
-void transfer_to_cdi (struct core_state*);
+void transfer_to_cdi(struct core_state*);
 // process delayed CDI dispatch
 bool process_delayed_cdi_dispatch(struct core_state*);
 
@@ -262,7 +261,7 @@ bool bitslice_control(struct core_state*);
 
 // sequencer control
 void set_spectrometer_to_sequencer(struct core_state*);
-void default_seq (struct sequencer_state *seq);
+void default_seq(struct sequencer_state *seq);
 void advance_sequencer(struct core_state*);
 
 // debuggin functions

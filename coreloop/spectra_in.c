@@ -54,7 +54,7 @@ bool transfer_from_df(struct core_state* state)
 
     // do not copy data, if not accepted
     if (accept) {
-        state->base.weight_current ++;
+        state->base.weight_current++;
         for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
 
             //debug_print_dec(sp); debug_print("\n\r");
