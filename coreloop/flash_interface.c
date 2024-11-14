@@ -35,13 +35,13 @@ void flash_state_clear(uint8_t slot) {
 
 
 
-void flash_state_store (uint8_t slot) {
+void flash_state_store(uint8_t slot, struct core_state* state) {
     debug_print("\r\nStoring state to slot ");
     debug_print_dec(slot);
     debug_print("\r\n");
     tmp_state.in_use = 0xBEBEC;
 
-    tmp_state.state = state;
+    tmp_state.state = *state;
     /*uint8_t* b = (uint8_t *)(&tmp_state.state);
     for (int i=0;i<sizeof(struct core_state);i++) b[i] = i%0xff;*/
 
@@ -57,7 +57,7 @@ void flash_state_store (uint8_t slot) {
 }
 
 
-void  Read_Flash_uC (uint32_t size) {
+void  Read_Flash_uC(uint32_t size) {
     // cannot reuse flash_size, since this would trigger write in the interrupt!!
     while (size>0) {
         //debug_print("flash read ")
@@ -77,7 +77,7 @@ void  Read_Flash_uC (uint32_t size) {
 }
 
 
-bool flash_state_restore(uint8_t slot) {
+bool flash_state_restore(uint8_t slot, struct core_state* state) {
     // try to restore state from flash
     // return true if successful 
     //memset(&tmp_state, 0,  sizeof(tmp_state));
@@ -104,17 +104,17 @@ bool flash_state_restore(uint8_t slot) {
         if (crc == tmp_state.CRC) {
          // VICTORY
             debug_print("\r\nCRC match, buying ");
-            state = tmp_state.state;
+            *state = tmp_state.state;
             return true;
         }
-        debug_print("\r\n CRC fail ?!");void debug_helper(uint8_t arg);
-        state.base.errors |= FLASH_CRC_FAIL;
+        debug_print("\r\n CRC fail ?!");
+        state->base.errors |= FLASH_CRC_FAIL;
         return false;
      }
     return false;
  }
 
-void restore_state() {
+void restore_state(struct core_state* state) {
     uint32_t arg1 = spec_read_uC_register(0);  // register contains argumed passed from bootloader
     if (arg1 == 1) {
         debug_print("Ignoring saved states\r\n");
@@ -132,19 +132,19 @@ void restore_state() {
     }
 
     flash_store_pointer == 0;
-    while (!flash_state_restore(flash_store_pointer)) {
-        flash_store_pointer++;
-        if (flash_store_pointer == MAX_STATE_SLOTS) {
-            // ideally start with a random store to avoid flash wear, but at this point we have nothing.
-            flash_store_pointer = 0;
-            return;
-        }
-    }
+//    while (!flash_state_restore(state, flash_store_pointer)) {
+//        flash_store_pointer++;
+//        if (flash_store_pointer == MAX_STATE_SLOTS) {
+//            // ideally start with a random store to avoid flash wear, but at this point we have nothing.
+//            flash_store_pointer = 0;
+//            return;
+//        }
+//    }
     debug_print("Restored existing state from slot ")
     debug_print_dec(flash_store_pointer);
     debug_print("\r\n");
-    if (state.base.spectrometer_enable) {
-        RFS_start();
+    if (state->base.spectrometer_enable) {
+        RFS_start(state);
     }
     
 }

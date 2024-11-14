@@ -903,18 +903,6 @@ struct_ADC_stat._fields_ = [
     ('sumv2', uint64_t),
 ]
 
-# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 141
-class struct_core_state(Structure):
-    pass
-
-# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 34
-for _lib in _libs.values():
-    try:
-        state = (struct_core_state).in_dll(_lib, "state")
-        break
-    except:
-        pass
-
 # /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 35
 for _lib in _libs.values():
     try:
@@ -1245,6 +1233,10 @@ struct_delayed_cdi_sending._fields_ = [
     ('packet_id', uint32_t),
 ]
 
+# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 141
+class struct_core_state(Structure):
+    pass
+
 struct_core_state._pack_ = 1
 struct_core_state.__slots__ = [
     'seq',
@@ -1411,14 +1403,6 @@ struct_housekeeping_data_99._fields_ = [
     ('section_break', uint32_t),
 ]
 
-# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 210
-for _lib in _libs.values():
-    try:
-        state = (struct_core_state).in_dll(_lib, "state")
-        break
-    except:
-        pass
-
 # /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 211
 for _lib in _libs.values():
     try:
@@ -1441,7 +1425,7 @@ for _lib in _libs.values():
     if not _lib.has("process_cdi", "cdecl"):
         continue
     process_cdi = _lib.get("process_cdi", "cdecl")
-    process_cdi.argtypes = []
+    process_cdi.argtypes = [POINTER(struct_core_state)]
     process_cdi.restype = c_bool
     break
 
@@ -1450,7 +1434,7 @@ for _lib in _libs.values():
     if not _lib.has("RFS_stop", "cdecl"):
         continue
     RFS_stop = _lib.get("RFS_stop", "cdecl")
-    RFS_stop.argtypes = []
+    RFS_stop.argtypes = [POINTER(struct_core_state)]
     RFS_stop.restype = None
     break
 
@@ -1459,7 +1443,7 @@ for _lib in _libs.values():
     if not _lib.has("RFS_start", "cdecl"):
         continue
     RFS_start = _lib.get("RFS_start", "cdecl")
-    RFS_start.argtypes = []
+    RFS_start.argtypes = [POINTER(struct_core_state)]
     RFS_start.restype = None
     break
 
@@ -1468,7 +1452,7 @@ for _lib in _libs.values():
     if not _lib.has("restart_spectrometer", "cdecl"):
         continue
     restart_spectrometer = _lib.get("restart_spectrometer", "cdecl")
-    restart_spectrometer.argtypes = []
+    restart_spectrometer.argtypes = [POINTER(struct_core_state)]
     restart_spectrometer.restype = None
     break
 
@@ -1531,7 +1515,7 @@ for _lib in _libs.values():
     if not _lib.has("set_route", "cdecl"):
         continue
     set_route = _lib.get("set_route", "cdecl")
-    set_route.argtypes = [uint8_t, uint8_t]
+    set_route.argtypes = [POINTER(struct_core_state), uint8_t, uint8_t]
     set_route.restype = None
     break
 
@@ -1540,7 +1524,7 @@ for _lib in _libs.values():
     if not _lib.has("update_spec_gains", "cdecl"):
         continue
     update_spec_gains = _lib.get("update_spec_gains", "cdecl")
-    update_spec_gains.argtypes = []
+    update_spec_gains.argtypes = [POINTER(struct_core_state)]
     update_spec_gains.restype = None
     break
 
@@ -1558,7 +1542,7 @@ for _lib in _libs.values():
     if not _lib.has("reset_errormasks", "cdecl"):
         continue
     reset_errormasks = _lib.get("reset_errormasks", "cdecl")
-    reset_errormasks.argtypes = []
+    reset_errormasks.argtypes = [POINTER(struct_core_state)]
     reset_errormasks.restype = None
     break
 
@@ -1567,7 +1551,7 @@ for _lib in _libs.values():
     if not _lib.has("update_time", "cdecl"):
         continue
     update_time = _lib.get("update_time", "cdecl")
-    update_time.argtypes = []
+    update_time.argtypes = [POINTER(struct_core_state)]
     update_time.restype = None
     break
 
@@ -1576,7 +1560,7 @@ for _lib in _libs.values():
     if not _lib.has("process_spectrometer", "cdecl"):
         continue
     process_spectrometer = _lib.get("process_spectrometer", "cdecl")
-    process_spectrometer.argtypes = []
+    process_spectrometer.argtypes = [POINTER(struct_core_state)]
     process_spectrometer.restype = None
     break
 
@@ -1585,7 +1569,7 @@ for _lib in _libs.values():
     if not _lib.has("transfer_to_cdi", "cdecl"):
         continue
     transfer_to_cdi = _lib.get("transfer_to_cdi", "cdecl")
-    transfer_to_cdi.argtypes = []
+    transfer_to_cdi.argtypes = [POINTER(struct_core_state)]
     transfer_to_cdi.restype = None
     break
 
@@ -1594,7 +1578,7 @@ for _lib in _libs.values():
     if not _lib.has("process_delayed_cdi_dispatch", "cdecl"):
         continue
     process_delayed_cdi_dispatch = _lib.get("process_delayed_cdi_dispatch", "cdecl")
-    process_delayed_cdi_dispatch.argtypes = []
+    process_delayed_cdi_dispatch.argtypes = [POINTER(struct_core_state)]
     process_delayed_cdi_dispatch.restype = c_bool
     break
 
@@ -1603,7 +1587,7 @@ for _lib in _libs.values():
     if not _lib.has("process_gain_range", "cdecl"):
         continue
     process_gain_range = _lib.get("process_gain_range", "cdecl")
-    process_gain_range.argtypes = []
+    process_gain_range.argtypes = [POINTER(struct_core_state)]
     process_gain_range.restype = None
     break
 
@@ -1612,7 +1596,7 @@ for _lib in _libs.values():
     if not _lib.has("bitslice_control", "cdecl"):
         continue
     bitslice_control = _lib.get("bitslice_control", "cdecl")
-    bitslice_control.argtypes = []
+    bitslice_control.argtypes = [POINTER(struct_core_state)]
     bitslice_control.restype = c_bool
     break
 
@@ -1621,7 +1605,7 @@ for _lib in _libs.values():
     if not _lib.has("set_spectrometer_to_sequencer", "cdecl"):
         continue
     set_spectrometer_to_sequencer = _lib.get("set_spectrometer_to_sequencer", "cdecl")
-    set_spectrometer_to_sequencer.argtypes = []
+    set_spectrometer_to_sequencer.argtypes = [POINTER(struct_core_state)]
     set_spectrometer_to_sequencer.restype = None
     break
 
@@ -1639,7 +1623,7 @@ for _lib in _libs.values():
     if not _lib.has("advance_sequencer", "cdecl"):
         continue
     advance_sequencer = _lib.get("advance_sequencer", "cdecl")
-    advance_sequencer.argtypes = []
+    advance_sequencer.argtypes = [POINTER(struct_core_state)]
     advance_sequencer.restype = None
     break
 
@@ -1648,7 +1632,7 @@ for _lib in _libs.values():
     if not _lib.has("debug_helper", "cdecl"):
         continue
     debug_helper = _lib.get("debug_helper", "cdecl")
-    debug_helper.argtypes = [uint8_t]
+    debug_helper.argtypes = [uint8_t, POINTER(struct_core_state)]
     debug_helper.restype = None
     break
 
@@ -1666,7 +1650,7 @@ for _lib in _libs.values():
     if not _lib.has("send_hello_packet", "cdecl"):
         continue
     send_hello_packet = _lib.get("send_hello_packet", "cdecl")
-    send_hello_packet.argtypes = []
+    send_hello_packet.argtypes = [POINTER(struct_core_state)]
     send_hello_packet.restype = None
     break
 
@@ -1675,7 +1659,7 @@ for _lib in _libs.values():
     if not _lib.has("process_hearbeat", "cdecl"):
         continue
     process_hearbeat = _lib.get("process_hearbeat", "cdecl")
-    process_hearbeat.argtypes = []
+    process_hearbeat.argtypes = [POINTER(struct_core_state)]
     process_hearbeat.restype = c_bool
     break
 
@@ -1684,7 +1668,7 @@ for _lib in _libs.values():
     if not _lib.has("process_housekeeping", "cdecl"):
         continue
     process_housekeeping = _lib.get("process_housekeeping", "cdecl")
-    process_housekeeping.argtypes = []
+    process_housekeeping.argtypes = [POINTER(struct_core_state)]
     process_housekeeping.restype = c_bool
     break
 
@@ -1804,7 +1788,7 @@ except:
 
 # /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 9
 try:
-    VERSION_ID = 0x00000107
+    VERSION_ID = 0x00000108
 except:
     pass
 
@@ -1868,8 +1852,6 @@ def MIN(x, y):
 def IS_NEG(x):
     return (x < 0) and 1 or 0
 
-core_state = struct_core_state# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 141
-
 route_state = struct_route_state# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 72
 
 sequencer_state = struct_sequencer_state# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 78
@@ -1879,6 +1861,8 @@ sequencer_program = struct_sequencer_program# /home/narn/code/lusee_night/corelo
 core_state_base = struct_core_state_base# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 105
 
 delayed_cdi_sending = struct_delayed_cdi_sending# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 127
+
+core_state = struct_core_state# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 141
 
 saved_core_state = struct_saved_core_state# /home/narn/code/lusee_night/coreloop/coreloop/core_loop.h: 154
 
