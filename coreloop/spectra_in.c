@@ -174,15 +174,6 @@ void process_spectrometer() {
                 if (state.sequencer_enabled) advance_sequencer();
             }
             if (avg_counter > get_Navg2(&state)) debug_print("ERROR: avg_counter exceeded get_Navg2\n");
-            if (state.outliers.num > 0) {
-                int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
-                for (int i = 200; i < 200 + state.outliers.bins; i++) {
-                    for (int j = 0; j < NSPECTRA_AUTO; j++) {
-                        SPEC_BUF_INT32[j*NCHANNELS + i] = (SPEC_BUF_INT32[j*NCHANNELS + i]*(1 + state.outliers.amp/256));
-                    }
-                    state.outliers.num--;
-                }
-            }
         }
     }
 }
