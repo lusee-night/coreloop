@@ -245,12 +245,12 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     return true;
 }
 
-void spec_request_waveform(uint8_t ch) {
+void spec_request_waveform(uint8_t ch, int dly) {
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
     int Nsamples = UINT14_MAX;
     if (ch == 4) {
-        for (int i=0; i<4; i++) spec_request_waveform(i);
+        for (int i=0; i<4; i++) spec_request_waveform(i, dly);
     } else {
         if (ADC_mode == ADC_RAMP) {
             for (size_t i = 0; i < Nsamples; i++){

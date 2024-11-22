@@ -1,6 +1,9 @@
 
 # CHANGELOG
 
+## Version 1r09
+ * Added ability to take synchronized waveforms at SSL using a large delay in spec_get_waveform
+
 ## Version 1r08
 * Add 16 bit formats for spectra (10+6 and 4 to 5) to enum output_format
 * Add corresponding functions `dispatch_16bit_10_plus_6_data`, `dispatch_16bit_4_to_5_data` to `spectra_out.c`
