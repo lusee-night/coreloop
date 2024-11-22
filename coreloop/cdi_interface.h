@@ -8,6 +8,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+extern struct outlier_info outliers;
+
+// correspond to the CTRL_OUTLIER_* toplevel commands
+struct outlier_info {
+    uint16_t num;
+    uint16_t amp;
+    uint16_t bins;
+};
+
 // cdi interface section
 void cdi_init();
 // fills the command buffer with the next command from the CDI 

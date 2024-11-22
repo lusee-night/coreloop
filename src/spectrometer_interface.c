@@ -7,7 +7,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
-#include <core_loop.h>
 #include <time.h>
 #include "LuSEE_IO.h"
 
@@ -154,13 +153,13 @@ bool spec_new_spectrum_ready() {
             }
         }
         // TODO: this is probably not in the right place. Look at how to check if commands received are related to outliers in commanding.c cdi_fill_command_buffer() rather than in here
-        if (state.outliers.num > 0) {
+        if (outliers.num > 0) {
             int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
-            for (int i = 200; i < 200 + state.outliers.bins; i++) {
+            for (int i = 200; i < 200 + outliers.bins; i++) {
                 for (int j = 0; j < NSPECTRA_AUTO; j++) {
-                    SPEC_BUF_INT32[j*NCHANNELS + i] = (SPEC_BUF_INT32[j*NCHANNELS + i]*(1 + state.outliers.amp/256));
+                    SPEC_BUF_INT32[j*NCHANNELS + i] = (SPEC_BUF_INT32[j*NCHANNELS + i]*(1 + outliers.amp/256));
                 }
-                state.outliers.num--;
+                outliers.num--;
             }
         }
     return true;

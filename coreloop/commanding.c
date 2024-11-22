@@ -99,15 +99,15 @@ bool process_cdi()
 
     switch (arg) {
         case CTRL_OUTLIER_NUM: {
-            state.outliers.num = arg;
+            outliers.num = arg;
             break;
         }
         case CTRL_OUTLIER_AMP: {
-            state.outliers.amp = arg;
+            outliers.amp = arg;
             break;
         }
         case CTRL_OUTLIER_BINS: {
-            state.outliers.bins = arg;
+            outliers.bins = arg;
             break;
         }
         case RFS_SETTINGS: {

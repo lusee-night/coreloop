@@ -29,6 +29,7 @@ int Ncommands = 0; // number of commands
 int wait_ndx = 0;
 int out_packet_ndx = 0;
 uint32_t cdi_command_counter;
+struct outlier_info outliers;
 
 void* TLM_BUF;
 // sockets

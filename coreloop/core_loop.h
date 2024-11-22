@@ -137,13 +137,6 @@ struct delayed_cdi_sending {
 
 };
 
-// correspond to the CTRL_OUTLIER_* toplevel commands
-struct outlier_info {
-    uint16_t num;
-    uint16_t amp;
-    uint16_t bins;
-};
-
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
     struct sequencer_state seq;
@@ -156,7 +149,6 @@ struct core_state {
     uint16_t cmd_start, cmd_end;
     uint32_t cmd_counter;
     uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
-    struct outlier_info outliers;
 };
 
 struct saved_core_state {
