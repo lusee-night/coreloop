@@ -91,7 +91,7 @@ void core_init_state(){
 bool process_waveform() {
     if (!request_waveform) return false;
     wait_for_cdi_ready();
-    spec_request_waveform(request_waveform & 7);
+    spec_request_waveform(request_waveform & 7, 16+state.dispatch_delay*4);
     request_waveform = 0;
     return true;
 }
