@@ -30,6 +30,15 @@
 |------|--------------------|------------------------------------------------------|                             
 | 0x11 | RFS_SET_CDI_FW_DLY | Control the underlying FW interpacket delay (1.28ms) |
 | 0x12 | RFS_SET_CDI_SW_DLY | Control the delay between spectral packets           |
+| 0x12 | RFS_SET_WR_ADR_LSB | This writes a register through uC (hence queued!!)
+| 0x13 | RFS_SET_WR_ADR_MSB | ADR writes adreres, VAL writes value from LSB to MSB
+| 0x14 | RFS_SET_WR_VAL_0   | 
+| 0x15 | RFS_SET_WR_VAL_1   | 
+| 0x16 | RFS_SET_WR_VAL_2   | 
+| 0x17 | RFS_SET_WR_VAL_3   | This triggers the actual register write
+
+
+
 
 
 ### 0x2X Stored sequencer modes
@@ -96,13 +105,19 @@
 
 | 0x7M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x70 | RFS_SET_CAL_FRAC_SET | set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
-| 0x71 | RFS_SET_CAL_MAX_SET  | set max drift guard in units of 0.1ppm
-| 0x72 | RFS_SET_CAL_LOCK_SET | set lock drift guard in units of 0.01ppm
-| 0x73 | RFS_SET_CAL_SNR_SET  | set snr required for lock 
-| 0x74 | RFS_SET_CAL_BIN_ST   | set starting bin (/(2*4)) 
-| 0x75 | RFS_SET_CAL_BIN_EN   | set end bin (/(2*4))
-| 0x76 | RFS_SET_CAL_ANT_MASK   | set antenna mask as the lower 4 bits. 0x00001111 = all antennas enabled
+| 0x70 | RFS_SET_CAL_ENABLE   | Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode
+| 0x71 | RFS_SET_CAL_AVG      | bits 0-1 Nac, bits 2-5 Nac2 , buts 6-7 = notch_index
+| 0x72 | RFS_SET_CAL_DEF_DRIFT| Set default drift 100 = alpha = 1
+| 0x73 | RFS_SET_CAL_ANT_EN    | bits 0-3 = antenna mask
+| 0x74 | RFS_SET_CAL_SNR_ON   | 
+| 0x75 | RFS_SET_CAL_SNR_OFF | 
+| 0x76 | RFS_SET_CAL_NSETTLE |  Nsettle
+| 0x77 | RFS_SET_WEIGHT_START | Start setting weights. Sets zeroth weight and initializes cnt
+| 0x78 | RFS_SET_WEIGHT_NEXT  | Next weight
+| 0x79 | RFS_SET_CHANNEL_LO   | Set channel for raw PFB acquisition, LSB
+| 0x7A | RFS_SET_CHANNEL_HI   |  Set channel for raw PFB acquisition, MSB 2 bits
+
+
 
 ### 0x8X spectral zoom functionality 
 
