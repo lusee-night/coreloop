@@ -295,7 +295,7 @@ bool process_delayed_cdi_dispatch() {
     if (cdi_dispatch_counter > tap_counter) return false;
     // we always send 16 products + some time resolved
     // we sent all we had, return to the core loop and let spectra accumulate
-    if (state.cdi_dispatch.prod_count >= NSPECTRA && state.cdi_dispatch.tr_count >= NSPECTRA) {
+    if (state.cdi_dispatch.prod_count >= NSPECTRA && state.cdi_dispatch.tr_count >= NSPECTRA && state.cdi_dispatch.cal_count >= NCALPACKETS) {
         // we already sent all spectra, averaged and time resolved, nothing to do
         return false;
     }
@@ -335,6 +335,9 @@ bool process_delayed_cdi_dispatch() {
         dispatch_tr_data();
         state.cdi_dispatch.tr_count++;
         state.cdi_dispatch.tr_appId++;
+    } else if (state.cdi_dispatch.cal_count < NCALPACKETS) {
+        dispatch_calibrator_data();
+        state.cdi_dispatch.cal_count++;
     }
 
     cdi_dispatch_counter = tap_counter + state.dispatch_delay;

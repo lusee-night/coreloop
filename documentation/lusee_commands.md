@@ -30,12 +30,12 @@
 |------|--------------------|------------------------------------------------------|                             
 | 0x11 | RFS_SET_CDI_FW_DLY | Control the underlying FW interpacket delay (1.28ms) |
 | 0x12 | RFS_SET_CDI_SW_DLY | Control the delay between spectral packets           |
-| 0x12 | RFS_SET_WR_ADR_LSB | This writes a register through uC (hence queued!!)
-| 0x13 | RFS_SET_WR_ADR_MSB | ADR writes adreres, VAL writes value from LSB to MSB
-| 0x14 | RFS_SET_WR_VAL_0   | 
-| 0x15 | RFS_SET_WR_VAL_1   | 
-| 0x16 | RFS_SET_WR_VAL_2   | 
-| 0x17 | RFS_SET_WR_VAL_3   | This triggers the actual register write
+| 0x13 | RFS_SET_WR_ADR_LSB | This writes a register through uC. First command resets value to zero
+| 0x14 | RFS_SET_WR_ADR_MSB | ADR writes adreres, VAL writes value from LSB to MSB
+| 0x15 | RFS_SET_WR_VAL_0   | Val bits 0-7
+| 0x16 | RFS_SET_WR_VAL_1   | Val bits 8-15
+| 0x17 | RFS_SET_WR_VAL_2   | Val bits 16-23
+| 0x18 | RFS_SET_WR_VAL_3   | Val bits 24-32. This triggers the actual register write
 
 
 
@@ -79,7 +79,7 @@
 | 0x51 | RFS_SET_AVG_FREQ      | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
 | 0x52 | RFS_SET_AVG_NOTCH     | set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256 
 | 0x53 | RFS_SET_AVG_SET_HI    | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
-| 0x54 | RFS_SET_AVG_SET_MID  | set medium priority fraction, low priority is 1-high-medium
+| 0x54 | RFS_SET_AVG_SET_MID   | set medium priority fraction, low priority is 1-high-medium
 | 0x55 | RFS_SET_OUTPUT_FORMAT | set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
 | 0x56 | RFS_SET_PRODMASK_LOW  | set the output correlation mask products 0-7 (autocorrelations are 4 LSB) 
 | 0x57 | RFS_SET_PRODMASK_HIGH | set the output correlation mask products 8-15
@@ -103,33 +103,37 @@
 
 ### 0x7X Calibration Settings
 
-| 0x7M | Name           |  Description                                       |
-|------|----------------|----------------------------------------------------|                             
-| 0x70 | RFS_SET_CAL_ENABLE   | Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode
-| 0x71 | RFS_SET_CAL_AVG      | bits 0-1 Nac, bits 2-5 Nac2 , buts 6-7 = notch_index
-| 0x72 | RFS_SET_CAL_DEF_DRIFT| Set default drift 100 = alpha = 1
-| 0x73 | RFS_SET_CAL_ANT_EN    | bits 0-3 = antenna mask
-| 0x74 | RFS_SET_CAL_SNR_ON   | 
-| 0x75 | RFS_SET_CAL_SNR_OFF | 
-| 0x76 | RFS_SET_CAL_NSETTLE |  Nsettle
-| 0x77 | RFS_SET_WEIGHT_START | Start setting weights. Sets zeroth weight and initializes cnt
-| 0x78 | RFS_SET_WEIGHT_NEXT  | Next weight
-| 0x79 | RFS_SET_CHANNEL_LO   | Set channel for raw PFB acquisition, LSB
-| 0x7A | RFS_SET_CHANNEL_HI   |  Set channel for raw PFB acquisition, MSB 2 bits
+| 0x7M | Name                      |  Description                                       |
+|------|---------------------------|----------------------------------------------------|                             
+| 0x70 | RFS_SET_CAL_ENABLE        | Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode
+| 0x71 | RFS_SET_CAL_AVG           | bits 0-1 Nac, bits 2-5 Nac2 
+| 0x72 | RFS_SET_CAL_DRIFT_GUARD   | Set drift guard in units of 0.1 ppm
+| 0x73 | RFS_SET_CAL_DRIFT_STEP    | Sets drift stepping in units of 0.01ppm
+| 0x74 | RFS_SET_CAL_ANT_EN        | bits 0-3 = antenna mask
+| 0x75 | RFS_SET_CAL_SNR_ON        | SNR required to get a lock
+| 0x76 | RFS_SET_CAL_SNR_OFF       | SNR required to drop from a lock 
+| 0x77 | RFS_SET_CAL_NSETTLE       | Nsettle
+| 0x78 | RFS_SET_CAL_CORRA         | Famouse CoRRA settinh
+| 0x79 | RFS_SET_CAL_CORRB         | Even more famous CorrB setting
+| 0x7A | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
+| 0x7B | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
+| 0x7C | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
+| 0x7D | RFS_SET_CAL_MODE          | set calibration mode, including PFB acquisitio debug modes
+| 0x7E | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
+| 0x7F | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
 
 
+### 0x9X spectral zoom functionality 
 
-### 0x8X spectral zoom functionality 
-
-| 0x8M | Name                 |  Description                                       |
+| 0x9M | Name                 |  Description                                       |
 |------|----------------------|----------------------------------------------------|                             
-| 0x80 | RFS_SET_ZOOM_EN      | enable zoom channel
-| 0x81 | RFS_SET_ZOOM_SET1    | set zoom 1 input channel 
-| 0x82 | RFS_SET_ZOOM_SET1_LO | set zoom 1 spectral channel low bits 
-| 0x83 | RFS_SET_ZOOM_SET1_HI | set zoom 1 spectral channel high bits
-| 0x84 | RFS_SET_ZOOM_SET2    | set zoom 2 input channel 
-| 0x85 | RFS_SET_ZOOM_SET2_LO | set zoom 2 spectral channel# low bits 
-| 0x86 | RFS_SET_ZOOM_SET2_HI | set zoom 2 spectral channel# high bits
+| 0x90 | RFS_SET_ZOOM_EN      | enable zoom channel
+| 0x91 | RFS_SET_ZOOM_SET1    | set zoom 1 input channel 
+| 0x92 | RFS_SET_ZOOM_SET1_LO | set zoom 1 spectral channel low bits 
+| 0x93 | RFS_SET_ZOOM_SET1_HI | set zoom 1 spectral channel high bits
+| 0x94 | RFS_SET_ZOOM_SET2    | set zoom 2 input channel 
+| 0x95 | RFS_SET_ZOOM_SET2_LO | set zoom 2 spectral channel# low bits 
+| 0x96 | RFS_SET_ZOOM_SET2_HI | set zoom 2 spectral channel# high bits
 
 ### 0x8X - 0xFX reserved for future use
 

@@ -79,6 +79,24 @@
 // Control the delay between spectral packets
 #define RFS_SET_CDI_SW_DLY  0x12 
 
+// This writes a register through uC. First command resets value to zero
+#define RFS_SET_WR_ADR_LSB  0x13 
+
+// ADR writes adreres, VAL writes value from LSB to MSB
+#define RFS_SET_WR_ADR_MSB  0x14 
+
+// Val bits 0-7
+#define RFS_SET_WR_VAL_0  0x15 
+
+// Val bits 8-15
+#define RFS_SET_WR_VAL_1  0x16 
+
+// Val bits 16-23
+#define RFS_SET_WR_VAL_2  0x17 
+
+// Val bits 24-32. This triggers the actual register write
+#define RFS_SET_WR_VAL_3  0x18 
+
 // Load sequencer mode from flash
 #define RFS_SET_LOAD_FL  0x20 
 
@@ -160,47 +178,74 @@
 // frequency averaging
 #define RFS_SET_TR_AVG_SHIFT  0x65 
 
-// set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
-#define RFS_SET_CAL_FRAC_SET  0x70 
+// Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode
+#define RFS_SET_CAL_ENABLE  0x70 
 
-// set max drift guard in units of 0.1ppm
-#define RFS_SET_CAL_MAX_SET  0x71 
+// bits 0-1 Nac, bits 2-5 Nac2
+#define RFS_SET_CAL_AVG  0x71 
 
-// set lock drift guard in units of 0.01ppm
-#define RFS_SET_CAL_LOCK_SET  0x72 
+// Set drift guard in units of 0.1 ppm
+#define RFS_SET_CAL_DRIFT_GUARD  0x72 
 
-// set snr required for lock
-#define RFS_SET_CAL_SNR_SET  0x73 
+// Sets drift stepping in units of 0.01ppm
+#define RFS_SET_CAL_DRIFT_STEP  0x73 
 
-// set starting bin (/(2*4))
-#define RFS_SET_CAL_BIN_ST  0x74 
+// bits 0-3 = antenna mask
+#define RFS_SET_CAL_ANT_EN  0x74 
 
-// set end bin (/(2*4))
-#define RFS_SET_CAL_BIN_EN  0x75 
+// SNR required to get a lock
+#define RFS_SET_CAL_SNR_ON  0x75 
 
-// set antenna mask as the lower 4 bits. 0x00001111 = all antennas enabled
-#define RFS_SET_CAL_ANT_MASK  0x76 
+// SNR required to drop from a lock
+#define RFS_SET_CAL_SNR_OFF  0x76 
+
+// Nsettle
+#define RFS_SET_CAL_NSETTLE  0x77 
+
+// Famouse CoRRA settinh
+#define RFS_SET_CAL_CORRA  0x78 
+
+// Even more famous CorrB setting
+#define RFS_SET_CAL_CORRB  0x79 
+
+// Start setting weights. Set the ndx (0-255)
+#define RFS_SET_CAL_WEIGHT_NDX_LO  0x7A 
+
+// Start setting weights. Set the ndx+256
+#define RFS_SET_CAL_WEIGHT_NDX_HI  0x7B 
+
+// Sets weigth and advances index
+#define RFS_SET_CAL_WEIGHT_VAL  0x7C 
+
+// set calibration mode, including PFB acquisitio debug modes
+#define RFS_SET_CAL_MODE  0x7D 
+
+// set PFB NDX (8 LSB bits)
+#define RFS_SET_CAL_PFB_NDX_LO  0x7E 
+
+// set PFB NDX (3 MSB bits)
+#define RFS_SET_CAL_PFB_NDX_HI  0x7F 
 
 // enable zoom channel
-#define RFS_SET_ZOOM_EN  0x80 
+#define RFS_SET_ZOOM_EN  0x90 
 
 // set zoom 1 input channel
-#define RFS_SET_ZOOM_SET1  0x81 
+#define RFS_SET_ZOOM_SET1  0x91 
 
 // set zoom 1 spectral channel low bits
-#define RFS_SET_ZOOM_SET1_LO  0x82 
+#define RFS_SET_ZOOM_SET1_LO  0x92 
 
 // set zoom 1 spectral channel high bits
-#define RFS_SET_ZOOM_SET1_HI  0x83 
+#define RFS_SET_ZOOM_SET1_HI  0x93 
 
 // set zoom 2 input channel
-#define RFS_SET_ZOOM_SET2  0x84 
+#define RFS_SET_ZOOM_SET2  0x94 
 
 // set zoom 2 spectral channel# low bits
-#define RFS_SET_ZOOM_SET2_LO  0x85 
+#define RFS_SET_ZOOM_SET2_LO  0x95 
 
 // set zoom 2 spectral channel# high bits
-#define RFS_SET_ZOOM_SET2_HI  0x86 
+#define RFS_SET_ZOOM_SET2_HI  0x96 
 
 // enable (DD>0), disable sequencer  (DD=0)
 #define RFS_SET_SEQ_EN  0xA0 

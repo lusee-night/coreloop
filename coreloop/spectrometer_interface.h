@@ -9,6 +9,7 @@
 
 #define NCHANNELS 2048
 #define NSPECTRA 16
+#define NCALPACKETS 16 
 #define NSPECTRA_AUTO 4
 #define NINPUT 4
 #define UINT14_MAX 16384
@@ -139,5 +140,8 @@ void spec_set_ADC_custom_pattern();
 // read the argument registers from bootloader
 uint32_t spec_read_uC_register(uint8_t num);
 void spec_write_uC_register(uint8_t num, uint32_t value);
+
+// read writes general register
+void spec_reg_write(uint16_t reg, uint32_t value);
 
 #endif

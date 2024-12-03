@@ -1,5 +1,6 @@
 #include "lusee_commands.h"
 #include "spectrometer_interface.h"
+#include "calibrator_interface.h"
 #include "cdi_interface.h"
 #include "core_loop.h"
 #include <stdlib.h>
@@ -58,9 +59,10 @@ bool process_cdi()
             if (arg_high == RFS_SET_RESET) {
                 cmd_soft_reset(arg_low);
                 return true;
+            } else if (arg_high == RFS_SET_TIME_TO_DIE) {
+                return true;
             } else {
-                cdi_not_implemented("RFS_SPECIAL");
-                state.base.errors |= CDI_COMMAND_UNKNOWN;
+                cdi_not_implemented("Special command");
             }
             return false;
         } else if (cmd==RFS_SETTINGS)  {
@@ -172,7 +174,6 @@ bool process_cdi()
             break;
 
         case RFS_SET_TIME_TO_DIE:
-            debug_print("Recevied time-to-die.\n\r");
             return true;
 
 
@@ -188,6 +189,34 @@ bool process_cdi()
         case RFS_SET_CDI_SW_DLY:
             state.dispatch_delay = arg_low;
             break;
+
+
+        case RFS_SET_WR_ADR_LSB:
+            state.reg_address = arg_low;
+            state.reg_value = 0;
+            break;
+
+        case RFS_SET_WR_ADR_MSB:
+            state.reg_address = (state.reg_address & 0xFF) | (arg_low << 8);
+            break;
+
+        case RFS_SET_WR_VAL_0:
+            state.reg_value = (state.reg_value & 0xFFFFFF00) + arg_low;
+            break;
+
+        case RFS_SET_WR_VAL_1:
+            state.reg_value = (state.reg_value & 0xFFFF00FF) + (arg_low << 8);
+            break;
+
+        case RFS_SET_WR_VAL_2:
+            state.reg_value = (state.reg_value & 0xFF00FFFF) + (arg_low << 16);
+            break;
+
+        case RFS_SET_WR_VAL_3:
+            state.reg_value = (state.reg_value & 0x00FFFFFF) + (arg_low << 24);
+            spec_reg_write(state.reg_address, state.reg_value);
+            break;
+
 
         case RFS_SET_LOAD_FL:
             // load the sequencer program # arg_low (0-255) into state.program
@@ -378,48 +407,70 @@ bool process_cdi()
                 state.seq.tr_avg_shift = arg_low;
             }
             break;
-        case RFS_SET_CAL_FRAC_SET:
-            cdi_not_implemented("RFS_SET_CAL_FRAC_SET");
+
+        // CALIBRATOR SECTION
+        case RFS_SET_CAL_ENABLE:
+            calib_enable(arg_low);
             break;
-        case RFS_SET_CAL_MAX_SET:
-            cdi_not_implemented("RFS_SET_CAL_MAX_SET");
+        case RFS_SET_CAL_AVG:
+            calib_set_Navg(arg_low & 0x03, (arg_low & 0x3C) >> 2);
             break;
-        case RFS_SET_CAL_LOCK_SET:
-            cdi_not_implemented("RFS_SET_CAL_LOCK_SET");
+        case RFS_SET_CAL_DRIFT_GUARD:
+            calib_set_drift_guard(arg_low);
             break;
-        case RFS_SET_CAL_SNR_SET:
-            cdi_not_implemented("RFS_SET_CAL_SNR_SET");
+        case RFS_SET_CAL_DRIFT_STEP:
+            calib_set_drift_step(arg_low);
             break;
-        case RFS_SET_CAL_BIN_ST:
-            cdi_not_implemented("RFS_SET_CAL_BIN_ST");
+        case RFS_SET_CAL_ANT_EN:
+            calib_antenna_mask(arg_low);
             break;
-        case RFS_SET_CAL_BIN_EN:
-            cdi_not_implemented("RFS_SET_CAL_BIN_EN");
+        case RFS_SET_CAL_SNR_ON:
+            calib_set_SNR_lock_on(arg_low);
             break;
-        case RFS_SET_CAL_ANT_MASK:
-            cdi_not_implemented("RFS_SET_CAL_ANT_MASK");
+
+        case RFS_SET_CAL_SNR_OFF:
+            calib_set_SNR_lock_off(arg_low);
             break;
-        case RFS_SET_ZOOM_EN:
-            cdi_not_implemented("RFS_SET_ZOOM_EN");
+
+        case RFS_SET_CAL_NSETTLE:
+            calib_set_Nsettle(arg_low);
             break;
-        case RFS_SET_ZOOM_SET1:
-            cdi_not_implemented("RFS_SET_ZOOM_SET1");
+
+        case RFS_SET_CAL_CORRA:
+            calib_set_delta_drift_corA(arg_low);
             break;
-        case RFS_SET_ZOOM_SET1_LO:
-            cdi_not_implemented("RFS_SET_ZOOM_SET1_LO");
+
+        case RFS_SET_CAL_CORRB:
+            calib_set_delta_drift_corB(arg_low);
             break;
-        case RFS_SET_ZOOM_SET1_HI:
-            cdi_not_implemented("RFS_SET_ZOOM_SET1_HI");
+
+        case RFS_SET_CAL_WEIGHT_NDX_LO:
+            state.cal.weight_ndx = arg_low;
             break;
-        case RFS_SET_ZOOM_SET2:
-            cdi_not_implemented("RFS_SET_ZOOM_SET2");
+        
+        case RFS_SET_CAL_WEIGHT_NDX_HI:
+            state.cal.weight_ndx = 256 + arg_low;
             break;
-        case RFS_SET_ZOOM_SET2_LO:
-            cdi_not_implemented("RFS_SET_ZOOM_SET2_LO");
+        
+        case RFS_SET_CAL_WEIGHT_VAL:
+            calib_set_weight(state.cal.weight_ndx, arg_low);
+            state.cal.weight_ndx++;
             break;
-        case RFS_SET_ZOOM_SET2_HI:
-            cdi_not_implemented("RFS_SET_ZOOM_SET2_HI");
+        case RFS_SET_CAL_MODE:
+            calib_set_mode(arg_low);
             break;
+
+        case RFS_SET_CAL_PFB_NDX_LO: 
+            calib_set_PFB_index(arg_low+(calib_get_PFB_index()&0xFF00));
+            break;
+        case RFS_SET_CAL_PFB_NDX_HI:
+            calib_set_PFB_index((arg_low & 0x07) << 8 
+                        +(calib_get_PFB_index()&0x00FF));
+            break;
+
+
+
+         // SEQUENCER SECTION
         case RFS_SET_SEQ_EN:
             if (state.base.spectrometer_enable) {
                 state.base.errors |= CDI_COMMAND_BAD;

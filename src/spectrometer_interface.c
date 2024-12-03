@@ -317,3 +317,6 @@ void spec_set_fw_cdi_delay(uint32_t delay) {}
 
  uint32_t spec_read_uC_register(uint8_t num) {return boot_registers[num];}
  void spec_write_uC_register(uint8_t num, uint32_t value) {boot_registers[num] = value;}
+
+ void spec_reg_write(uint16_t reg, uint32_t value) {}
+ 

@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000109
+#define VERSION_ID 0x00000200
 
 
 #include <inttypes.h>
@@ -129,16 +129,25 @@ struct delayed_cdi_sending {
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
     uint8_t tr_count; // time-resolved packet number that needs to be sent
+    uint8_t cal_count; // number of calibrator packets that need to be sent;
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
 
 };
 
+struct calibrator_state {
+    uint8_t mode;
+    uint8_t readout_mode;
+    uint16_t weight_ndx;
+};
+
+
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
     struct sequencer_state seq;
     struct core_state_base base;
+    struct calibrator_state cal;
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
     bool sequencer_enabled;
@@ -147,6 +156,8 @@ struct core_state {
     uint16_t cmd_start, cmd_end;
     uint32_t cmd_counter;
     uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
+    uint16_t reg_address; // address of the register to be written (for commands that do that)
+    int32_t reg_value; // value to be written to the register
 };
 
 struct saved_core_state {
@@ -272,6 +283,11 @@ void cdi_not_implemented(const char *msg);
 void send_hello_packet();
 bool process_hearbeat();
 bool process_housekeeping();
+
+// calibrator functions
+void calib_set_mode (uint8_t mode);
+void process_calibrator();
+void dispatch_calibrator_data();
 
 // Update random stae in state.base.rand_state
 inline static void update_random_state() {state.base.rand_state = 1103515245 * state.base.rand_state + 12345;}
