@@ -11,7 +11,7 @@
 #define CAL_MODE3_DATASIZE (24*1024*sizeof(uint32_t))
 #define CAL_PACKET_OUT_SIZE (4096)
 
-uint32_t register_scratch[NCALREGS];
+uint32_t register_scratch[CAL_NREGS];
 
 
 
@@ -32,22 +32,22 @@ void process_calibrator() {
         int size;
         switch (state.cal.readout_mode) {
             case 0: 
-                memcpy (CAL_BUF, CAL_DATA,CAL_MODE0_DATASIZE);
+                memcpy ((void *) CAL_BUF, (void *)CAL_DATA,CAL_MODE0_DATASIZE);
                 break;
             case 1: 
         
                 // this looks wrong, but it is actually corret as per documents
                 // there are large gaps
                 for (int i = 0; i<4; i++) {
-                    memcpy (CAL_BUF + 2*i*CAL_MODE1_CHUNKSIZE, 
-                            CAL_DATA + i*CAL_MODE1_CHUNKSIZE, CAL_MODE1_CHUNKSIZE);
+                    memcpy ((void *)(CAL_BUF + 2*i*CAL_MODE1_CHUNKSIZE), 
+                            (void *)(CAL_DATA + i*CAL_MODE1_CHUNKSIZE), CAL_MODE1_CHUNKSIZE);
                 }
                 break;
             case 2:  break; // not implemented 
             case 3: 
                 // let's copy everything for now
                 size  = 24*1024*sizeof(uint32_t);
-                memcpy (CAL_BUF, CAL_DATA, size);                
+                memcpy ((void*) CAL_BUF, (void *)CAL_DATA, size);                
                 break;
         }
         cal_clear_df_flag();
@@ -67,11 +67,11 @@ void dispatch_calibrator_data() {
         uint32_t* ptr  = (uint32_t *)(TLM_BUF+4); // first 4 bytes are packet id
         *ptr = state.base.time_32; ptr++;
         *ptr = state.base.time_16; ptr++;
-        for (int i=0; i<NCALREGS; i++) {
+        for (int i=0; i<CAL_NREGS; i++) {
             *ptr = register_scratch[i];
             ptr++;
         }
-        packet_size = (3+NCALREGS)*sizeof(uint32_t);
+        packet_size = (3+CAL_NREGS)*sizeof(uint32_t);
     } else {
         uint32_t size;
         if (state.cal.readout_mode == 0) {
@@ -83,8 +83,13 @@ void dispatch_calibrator_data() {
         }
 
         uint32_t start = (state.cdi_dispatch.cal_count-1)*CAL_PACKET_OUT_SIZE;
-        packet_size = MIN(size-start, CAL_PACKET_OUT_SIZE);
-        memcpy (TLM_BUF+4, CAL_BUF+start, packet_size);
+        if (start+CAL_PACKET_OUT_SIZE <= size) {
+            packet_size = size-start;
+            state.cdi_dispatch.cal_count=0xFF; //we're done
+        } else {
+            packet_size = CAL_PACKET_OUT_SIZE;
+        }
+        memcpy ((void *)(TLM_BUF+4), (void *)(CAL_BUF+start), packet_size);
         packet_size += 4; // account for unique packet id
     }
     cdi_dispatch(AppID_Calibrator_Data+state.cdi_dispatch.cal_count, packet_size);

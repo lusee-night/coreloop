@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define NCALREGS 497
+#define CAL_NREGS 497
+#define CAL_NWEIGHTS 410
+#define CAL_START_WEIGHT 90
 
 // put calibration into a default state
 void calib_init();
