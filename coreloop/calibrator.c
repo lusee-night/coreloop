@@ -92,5 +92,6 @@ void dispatch_calibrator_data() {
         memcpy ((void *)(TLM_BUF+4), (void *)(CAL_BUF+start), packet_size);
         packet_size += 4; // account for unique packet id
     }
+    debug_print("c");
     cdi_dispatch(AppID_Calibrator_Data+state.cdi_dispatch.cal_count, packet_size);
 }
