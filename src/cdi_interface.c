@@ -8,6 +8,9 @@
 #include <fcntl.h>
 
 #include "cdi_interface.h"
+
+#include <lusee_commands.h>
+
 #include "cdi_options.h"
 
 
@@ -145,6 +148,25 @@ bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
     cmd_ndx++;
     if (cmd_ndx < Ncommands) wait_ndx = wait_list[cmd_ndx]; else wait_ndx = 0;
     cdi_command_counter++;
+    uint16_t arg = (*arg_high << 8) | *arg_low;
+    printf("Coreloop making new command\n");
+    switch (arg) {
+        case CTRL_OUTLIER_NUM: {
+            outliers.num = arg;
+            break;
+        }
+        case CTRL_OUTLIER_AMP: {
+            outliers.amp = arg;
+            break;
+        }
+        case CTRL_OUTLIER_BINS: {
+            outliers.bins = arg;
+            break;
+        }
+        default: {
+            break;
+        }
+    }
     return true;
 }
 

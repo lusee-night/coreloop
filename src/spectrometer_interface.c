@@ -44,14 +44,14 @@ void spectrometer_init() {
         return;
     }
     for (int i = 0; i < NCHANNELS * NSPECTRA; i++) {
-        if (fscanf(file, "%i", &true_spectrum[i]) != 1) {                
+        if (fscanf(file, "%i", &true_spectrum[i]) != 1) {
             printf("Error reading from file: %s\n", true_spectrum_filename);
             fclose(file);
             return;
         }
     }
     fclose(file);
-    
+
     file = fopen(ramp_spectrum_filename, "r");
     if (file == NULL) {
         printf("Error opening file: %s\n", ramp_spectrum_filename);
@@ -121,9 +121,9 @@ bool spec_new_spectrum_ready() {
     if (ns_passed > topass) {
         time_spec_start = time_now;
         df_flag = true;
-        int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;    
+        int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
         // TODO: Check if this is correct, the corresponding plots in uncrater are not correct
-        if (ADC_mode == ADC_RAMP) {            
+        if (ADC_mode == ADC_RAMP) {
             for (int i = 0; i < NCHANNELS; i++) {
                 int32_t spec = (int)ramp_spectrum[i];
                 for (int j = 0; j < NSPECTRA; j++) {
@@ -154,10 +154,10 @@ bool spec_new_spectrum_ready() {
         }
         // TODO: this is probably not in the right place. Look at how to check if commands received are related to outliers in commanding.c cdi_fill_command_buffer() rather than in here
         if (outliers.num > 0) {
-            int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
+            printf("Injecting............\n");
             for (int i = 200; i < 200 + outliers.bins; i++) {
                 for (int j = 0; j < NSPECTRA_AUTO; j++) {
-                    SPEC_BUF_INT32[j*NCHANNELS + i] = (SPEC_BUF_INT32[j*NCHANNELS + i]*(1 + outliers.amp/256));
+                    SPEC_BUF_INT32[j*NCHANNELS + i] *= (1 + outliers.amp/256);
                 }
                 outliers.num--;
             }
@@ -178,7 +178,7 @@ void spec_set_reset() {};
 // RFS_SET_STORE Stores current configuration
 void spec_store() {spec_not_implemented();};
 
-// RFS_SET_RECALL  Recalls configuration from previous store 
+// RFS_SET_RECALL  Recalls configuration from previous store
 void spec_recall() {spec_not_implemented();};
 
 
@@ -238,7 +238,7 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     ms_high.min =-200*3*7;
     ms_high.invalid_count_max = ms_high.invalid_count_min = 0;
     ms_high.valid_count = 1<<15;
-    
+
     ms_low.sumv = 0;
     ms_low.sumv2 = 200*200/7*(1<<15);
     ms_low.max = 200*3/7;
@@ -285,7 +285,7 @@ void spec_disable_channel (uint8_t ch) {}
     struct timespec time_now;
     clock_gettime(CLOCK_REALTIME, &time_now);
     const float ticks_per_sec = 1/(244e-6/16);
-    unsigned long long elapsed_ticks = (time_now.tv_sec - time_start.tv_sec)*ticks_per_sec  
+    unsigned long long elapsed_ticks = (time_now.tv_sec - time_start.tv_sec)*ticks_per_sec
                              + (time_now.tv_nsec - time_start.tv_nsec)*(ticks_per_sec/1e9);
 
 
