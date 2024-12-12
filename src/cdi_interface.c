@@ -150,7 +150,7 @@ bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low ) {
     cdi_command_counter++;
     uint16_t arg = (*arg_high << 8) | *arg_low;
     printf("Coreloop making new command\n");
-    switch (arg) {
+    switch (*cmd) {
         case CTRL_OUTLIER_NUM: {
             outliers.num = arg;
             break;

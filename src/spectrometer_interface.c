@@ -152,8 +152,10 @@ bool spec_new_spectrum_ready() {
                 SPEC_BUF_INT32[i*NCHANNELS+j] = spec;
             }
         }
-        // TODO: this is probably not in the right place. Look at how to check if commands received are related to outliers in commanding.c cdi_fill_command_buffer() rather than in here
+        // TODO: this condition does get reached if outliers.num is set in cdi_interface.c cdi_new_command()
+        // verify that this is what injection should actually be doing for a given outlier num, amp, and bin #, or if there is a logical error
         if (outliers.num > 0) {
+            printf("Outliers num: %d\n", outliers.num);
             printf("Injecting............\n");
             for (int i = 200; i < 200 + outliers.bins; i++) {
                 for (int j = 0; j < NSPECTRA_AUTO; j++) {
@@ -162,7 +164,7 @@ bool spec_new_spectrum_ready() {
                 outliers.num--;
             }
         }
-    return true;
+        return true;
     }
     return false;
 }
