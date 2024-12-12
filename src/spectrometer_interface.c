@@ -122,7 +122,6 @@ bool spec_new_spectrum_ready() {
         time_spec_start = time_now;
         df_flag = true;
         int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;
-        // TODO: Check if this is correct, the corresponding plots in uncrater are not correct
         if (ADC_mode == ADC_RAMP) {
             for (int i = 0; i < NCHANNELS; i++) {
                 int32_t spec = (int)ramp_spectrum[i];
