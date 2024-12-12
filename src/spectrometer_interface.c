@@ -153,6 +153,7 @@ bool spec_new_spectrum_ready() {
         }
         // TODO: this condition does get reached if outliers.num is set in cdi_interface.c cdi_new_command()
         // verify that this is what injection should actually be doing for a given outlier num, amp, and bin #, or if there is a logical error
+        // related TODO comments are in uncrater test_reject.py
         if (outliers.num > 0) {
             printf("Outliers num: %d\n", outliers.num);
             printf("Injecting............\n");
