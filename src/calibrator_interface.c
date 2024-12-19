@@ -83,3 +83,6 @@ void calib_zero_weights() {
 void calib_set_weight(int index, uint8_t value) {
     // Placeholder implementation
 }
+
+void calib_hold_drift(bool hold) {
+}

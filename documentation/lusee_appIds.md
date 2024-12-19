@@ -20,7 +20,10 @@
 |    5x | AppID_SpectraTRMed          | Med      | Time-resolved spectra, medium priority
 |    6x | AppID_SpectraTRLow          | Low      | Time-resolved Spectra, low priority
 |    7x | AppID_ZoomSpectra           | High     | Spectral zoom-in spectra
-|    8x | AppID_Calibrator_Data       | High     | Calibrator data
+|    80 | AppID_Calibrator_MetaData   | High     | Calibrator metadata packet
+|    81 | AppID_Calibrator_Data       | High     | Calibrator main payload (x3)
+|    84 | AppID_Calibrator_RawPFB     | High     | Calibrator raw PFB (8 packets for 4 x R/I)
+|    8C | AppID_Calibrator_Debug      | High     | Calibrator debug data (8 packets)
 |    Dx | AppID_SpectraVeryLow        | VeryLow  | Very low priority, not expected to be normally downloaded
 |    Ex | AppID_FW_DirectSpectrum     | High     | x= 0...4 for 4 autocorrelatins
 |    Fx | AppID_RawADC                | High     | x= 0..4 for 4 raw ADC data streams

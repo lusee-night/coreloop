@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define CAL_NREGS 497
+#define CAL_NREGS 498
 #define CAL_NWEIGHTS 410
 #define CAL_START_WEIGHT 90
 
@@ -39,10 +39,11 @@ void calib_set_Navg (int Navg2, int Navg3);
 // set drift guard in 0.1 ppm
 void calib_set_drift_guard (int val);   
 
-// set drift step in 0.01 ppm
-void calib_set_drift_step (int val);   
 
-// set drift guard during lock in 0.001ppm
+// hold drift fixed
+void calib_hold_drift(bool hold);
+
+// set drift guard during lock in 0.001ppm at x16
 void calib_set_drift_step (int val); 
 
 // set SNR required to get lock

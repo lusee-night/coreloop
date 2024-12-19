@@ -53,8 +53,17 @@
 // Spectral zoom-in spectra; Priority:  High     
 #define AppID_ZoomSpectra 0x0270
 
-// Calibrator data; Priority:  High     
-#define AppID_Calibrator_Data 0x0280
+// Calibrator metadata packet; Priority:  High     
+#define AppID_Calibrator_MetaData 0x0280
+
+// Calibrator main payload (x3); Priority:  High     
+#define AppID_Calibrator_Data 0x0281
+
+// Calibrator raw PFB (8 packets for 4 x R/I); Priority:  High     
+#define AppID_Calibrator_RawPFB 0x0284
+
+// Calibrator debug data (8 packets); Priority:  High     
+#define AppID_Calibrator_Debug 0x028C
 
 // Very low priority, not expected to be normally downloaded; Priority:  VeryLow  
 #define AppID_SpectraVeryLow 0x02D0

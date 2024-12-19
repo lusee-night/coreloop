@@ -15,7 +15,7 @@
 
 
 // Constants
-#define NSEQ_MAX 32
+#define NSEQ_MAX 5
 #define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
@@ -133,6 +133,7 @@ struct delayed_cdi_sending {
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
+    uint32_t cal_packet_id;
 
 };
 
@@ -329,5 +330,9 @@ void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);
+
+// fft
+void fft_precompute_tables();
+void fft(uint32_t *real, uint32_t *imag);
 
 #endif // CORE_LOOP_H

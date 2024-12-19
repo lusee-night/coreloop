@@ -410,7 +410,8 @@ bool process_cdi()
 
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
-            calib_enable(arg_low);
+            calib_set_mode(arg_low);
+            calib_enable(arg_low & 1);
             break;
         case RFS_SET_CAL_AVG:
             calib_set_Navg(arg_low & 0x03, (arg_low & 0x3C) >> 2);
@@ -456,15 +457,16 @@ bool process_cdi()
             calib_set_weight(state.cal.weight_ndx, arg_low);
             state.cal.weight_ndx++;
             break;
-        case RFS_SET_CAL_MODE:
-            calib_set_mode(arg_low);
+
+        case RFS_SET_CAL_WEIGHT_ZERO:
+            calib_zero_weights();
             break;
 
         case RFS_SET_CAL_PFB_NDX_LO: 
             calib_set_PFB_index(arg_low+(calib_get_PFB_index()&0xFF00));
             break;
         case RFS_SET_CAL_PFB_NDX_HI:
-            calib_set_PFB_index((arg_low & 0x07) << 8 
+            calib_set_PFB_index(((arg_low & 0x07) << 8) 
                         +(calib_get_PFB_index()&0x00FF));
             break;
 

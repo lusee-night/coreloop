@@ -1,3 +1,4 @@
+#undef __STRICT_ANSI__
 #include <stdint.h>
 #include <stdio.h>
 #include <math.h>
@@ -11,10 +12,10 @@
 // Precomputed sine and cosine tables for the first quadrant
 int32_t sine_table[TABLE_SIZE];
 
-void precompute_tables() {
+void fft_precompute_tables() {
     for (int i = 0; i < TABLE_SIZE; i++) {
         double angle = M_PI_2 * i / TABLE_SIZE;
-        sine_table[i] = (int32_t)(sin(angle) * FIXED_POINT_SCALE);
+//        sine_table[i] = (int32_t)(sin(angle) * FIXED_POINT_SCALE);
     }
 }
 
@@ -92,23 +93,7 @@ void fft(uint32_t *real, uint32_t *imag) {
 }
 
 
-int main() {
-    precompute_tables();
 
-    uint32_t real[FFT_SIZE] = {0}; // Initialize real part to 0
-    uint32_t imag[FFT_SIZE] = {0}; // Initialize imaginary part to 0
 
-    fft(real, imag);
 
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        printf ("%i \n", sine_table[i]); 
-    }
-    return 0;
-    // Output the transformed data
-    for (int i = 0; i < FFT_SIZE; i++) {
-     
-        printf("real[%d] = %u, imag[%d] = %u\n", i, real[i], i, imag[i]);
-    }
 
-    return 0;
-}

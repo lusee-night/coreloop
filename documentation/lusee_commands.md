@@ -105,7 +105,7 @@
 
 | 0x7M | Name                      |  Description                                       |
 |------|---------------------------|----------------------------------------------------|                             
-| 0x70 | RFS_SET_CAL_ENABLE        | Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode
+| 0x70 | RFS_SET_CAL_ENABLE        | Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode, higher bits more modes
 | 0x71 | RFS_SET_CAL_AVG           | bits 0-1 Nac, bits 2-5 Nac2 
 | 0x72 | RFS_SET_CAL_DRIFT_GUARD   | Set drift guard in units of 0.1 ppm
 | 0x73 | RFS_SET_CAL_DRIFT_STEP    | Sets drift stepping in units of 0.01ppm
@@ -118,7 +118,7 @@
 | 0x7A | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
 | 0x7B | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
 | 0x7C | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
-| 0x7D | RFS_SET_CAL_MODE          | set calibration mode, including PFB acquisitio debug modes
+| 0x7D | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
 | 0x7E | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
 | 0x7F | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
 
