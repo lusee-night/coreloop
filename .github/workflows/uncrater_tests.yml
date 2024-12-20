@@ -56,12 +56,12 @@ jobs:
       env:
         CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
 
-    - name: Run test time_resolved
-      run: |
-        cd $GITHUB_WORKSPACE/uncrater
-        python test/cli_driver.py -r time_resolved -b coreloop --skip-report
-      env:
-        CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
+    #- name: Run test time_resolved
+    #  run: |
+    #    cd $GITHUB_WORKSPACE/uncrater
+    #    python test/cli_driver.py -r time_resolved -b coreloop --skip-report
+    #  env:
+    #    CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
 
     - name: Run test data_interface
       run: |

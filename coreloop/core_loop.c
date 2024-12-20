@@ -15,13 +15,12 @@
 
 /***************** GLOBAL STATE ******************/
 
-struct core_state state;
+//struct core_state state;
 uint16_t avg_counter = 0;
 uint32_t unique_packet_id;
 uint8_t leading_zeros_min[NSPECTRA];
 uint8_t leading_zeros_max[NSPECTRA];
 uint8_t housekeeping_request;
-uint32_t section_break;
 uint8_t range_adc, resettle, request_waveform; 
 bool tick_tock;
 bool drop_df;
@@ -51,38 +50,38 @@ void mini_wait (uint32_t ticks) {
 }
 
 
-void debug_helper(uint8_t arg) {
-    flash_state_restore(arg);
+void debug_helper(uint8_t arg, struct core_state* state) {
+    flash_state_restore(arg, state);
 }
 
 
-void core_init_state(){   
-    default_seq (&state.seq);
-    state.base.errors = 0;
-    state.cmd_start = state.cmd_end = 0;
-    state.base.corr_products_mask=0xFFFF; //65535, everything on
-    state.base.spectrometer_enable = false;
-    state.base.rand_state = 0xFEEDD0D0;
+void core_init_state(struct core_state* state){
+    memset(state, 0, sizeof(struct core_state));
+    default_seq (&state->seq);
+    state->base.errors = 0;
+    state->cmd_start = state->cmd_end = 0;
+    state->base.corr_products_mask=0xFFFF; //65535, everything on
+    state->base.spectrometer_enable = false;
+    state->base.rand_state = 0xFEEDD0D0;
     spec_set_spectrometer_enable(false);
     housekeeping_request = 0;
     range_adc = 0;
-    for (int i=0; i<NINPUT; i++) state.base.actual_gain[i] = GAIN_MED;
-    for (int i=0; i<NSPECTRA; i++) state.base.actual_bitslice[i] = MIN(state.seq.bitslice[i],0x1F); // to convert FF to 16
+    for (int i=0; i<NINPUT; i++) state->base.actual_gain[i] = GAIN_MED;
+    for (int i=0; i<NSPECTRA; i++) state->base.actual_bitslice[i] = MIN(state->seq.bitslice[i],0x1F); // to convert FF to 16
     spec_set_spectrometer_enable(false);
-    state.base.sequencer_step = 0xFF;
-    state.dispatch_delay = DISPATCH_DELAY;
-    state.sequencer_enabled = false;
-    state.program.Nseq = 0;
-    state.cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
-    state.cdi_dispatch.tr_count = 0xFF; // >0F so disabled.
-    state.cdi_dispatch.cal_count = 0xFF; // disabled          
+    state->base.sequencer_step = 0xFF;
+    state->dispatch_delay = DISPATCH_DELAY;
+    state->sequencer_enabled = false;
+    state->program.Nseq = 0;
+    state->cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
+    state->cdi_dispatch.tr_count = 0xFF; // >0F so disabled.            
     tick_tock = true;
-    state.base.weight_current = state.base.weight_previous = 0;
+    state->base.weight_current = state->base.weight_previous = 0;
     drop_df = false;
-    update_time();
-    unique_packet_id = state.base.time_32;
+    update_time(state);
+    unique_packet_id = state->base.time_32;
 
-    set_spectrometer_to_sequencer();
+    set_spectrometer_to_sequencer(state);
     tap_counter = 0;
     cdi_dispatch_counter = 0;
     heartbeat_counter = HEARTBEAT_DELAY;
@@ -91,21 +90,20 @@ void core_init_state(){
     calib_init();
 }
 
-bool process_waveform() {
+bool process_waveform(struct core_state* state) {
     if (!request_waveform) return false;
     wait_for_cdi_ready();
-    spec_request_waveform(request_waveform & 7, 16+state.dispatch_delay*4);
+    spec_request_waveform(request_waveform & 7, 16+state->dispatch_delay*4);
     request_waveform = 0;
     return true;
 }
 
 
-void core_loop()
+void core_loop(struct core_state* state)
 {
     soft_reset_flag = false;
     request_waveform = 0 ;
     range_adc = 0;
-    section_break = 0;
     spec_set_spectrometer_enable(false);
     spec_clear_df_flag();
     // now empty the CDI command buffer in case we are doing the reset.
@@ -114,25 +112,25 @@ void core_loop()
     while (cdi_new_command(&tmp, &tmp, &tmp)) {};
     #endif
 
-    send_hello_packet();
-    core_init_state();
+    send_hello_packet(state);
+    core_init_state(state);
     #ifndef NOTREAL
     // restore state from flash if unscheduled reset occured
-    restore_state();
+    restore_state(state);
     #endif
 
     for (;;)
     {
-        update_time();
+        update_time(state);
         // Check if we have a new CDI command and process it.
         // If this functions returns true, it means we got the time-to-die command
-        if (process_cdi()) break;
-        process_spectrometer();
-        process_calibrator(); 
-        process_gain_range();
+        if (process_cdi(state)) break;
+        process_spectrometer(state);
+        process_calibrator(state);
+        process_gain_range(state);
         // we always process just one CDI interfacing things
         if (cdi_ready()) {
-            process_hearbeat() | process_delayed_cdi_dispatch() | process_housekeeping() | process_waveform();
+            process_hearbeat(state) | process_delayed_cdi_dispatch(state) | process_housekeeping(state) | process_waveform(state);
         }
 
 #ifdef NOTREAL
@@ -159,16 +157,16 @@ uint8_t MSYS_EI5_IRQHandler(void)
 }
 
 
-void update_time() {
+void update_time(struct core_state* state) {
     // why is this not working is not clear.
     //spec_get_time(&state.base.time_seconds, &state.base.time_subseconds);
     uint32_t sec32;
     uint16_t sec16;
     spec_get_time(&sec32, &sec16);
-    state.base.time_32 = sec32;
-    state.base.time_16 = sec16;
-    state.base.rand_state += sec32;
-    state.base.uC_time = tap_counter;
+    state->base.time_32 = sec32;
+    state->base.time_16 = sec16;
+    state->base.rand_state += sec32;
+    state->base.uC_time = tap_counter;
 }
 
 // return batch size for stage 1 averaging
@@ -221,44 +219,43 @@ uint32_t get_tr_length(struct core_state *s)
 }
 
 
-void reset_errormasks() {
-    state.base.errors = 0;
-    state.base.spec_overflow = 0;
-    state.base.notch_overflow = 0;
+void reset_errormasks(struct core_state* state) {
+    state->base.errors = 0;
+    state->base.spec_overflow = 0;
+    state->base.notch_overflow = 0;
 }
 
 
-void RFS_stop() {
+void RFS_stop(struct core_state* state) {
     debug_print ("\n\rStopping spectrometer\n\r");
-    state.base.spectrometer_enable = false;
+    state->base.spectrometer_enable = false;
     spec_set_spectrometer_enable(false);
 }
 
 
-void RFS_start() {
+void RFS_start(struct core_state* state) {
     debug_print ("\n\rStarting spectrometer\n\r");
-    state.base.spectrometer_enable = true;
-    state.base.weight_previous = state.base.weight_current = 0;
+    state->base.spectrometer_enable = true;
+    state->base.weight_previous = state->base.weight_current = 0;
     avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
-    if (state.sequencer_enabled) {
-        state.base.sequencer_counter = 0;
-        state.base.sequencer_step = 0;
-        state.base.sequencer_substep = state.program.seq_times[0];
-        state.seq = state.program.seq[0];
+    if (state->sequencer_enabled) {
+        state->base.sequencer_counter = 0;
+        state->base.sequencer_step = 0;
+        state->base.sequencer_substep = state->program.seq_times[0];
+        state->seq = state->program.seq[0];
     }
-//    fill_derived();
-    set_spectrometer_to_sequencer();
+    set_spectrometer_to_sequencer(state);
     spec_set_spectrometer_enable(true);
     //drop_df = true;
 }
 
 
-void restart_spectrometer()
+void restart_spectrometer(struct core_state* state)
 {
-    RFS_stop();
-    RFS_start();
+    RFS_stop(state);
+    RFS_start(state);
 }
 
 void trigger_ADC_stat() {

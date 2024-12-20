@@ -1,6 +1,9 @@
 
 # CHANGELOG
 
+## Version 1r10
+ * Removed global state
+
 ## Version 1r09
  * Added ability to take synchronized waveforms at SSL using a large delay in spec_get_waveform
 
