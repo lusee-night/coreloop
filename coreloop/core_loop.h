@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000109
+#define VERSION_ID 0x00000110
 
 
 #include <inttypes.h>
@@ -34,7 +34,6 @@ extern uint32_t unique_packet_id;
 extern uint8_t leading_zeros_min[NSPECTRA];
 extern uint8_t leading_zeros_max[NSPECTRA];
 extern uint8_t housekeeping_request;
-extern uint32_t section_break;
 extern uint8_t range_adc, resettle, request_waveform; 
 extern bool tick_tock;
 extern bool drop_df;
@@ -198,9 +197,6 @@ struct housekeeping_data_1 {
     uint8_t actual_gain[NINPUT];
 };
 
-struct housekeeping_data_99 {
-    uint32_t section_break;
-};
 
 
 

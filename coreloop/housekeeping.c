@@ -78,13 +78,6 @@ bool process_housekeeping(struct core_state* state) {
             }
             cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_1));
             break;
-
-        case 99:
-            debug_print ("Sending section break (hk 99)\n\r");
-            struct housekeeping_data_99 *hk_99 = (struct housekeeping_data_99 *)TLM_BUF;
-            hk_99->section_break = section_break++;
-            cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_99));
-            break;
     }
     debug_print("E:");
     debug_print_dec(state->base.errors);
