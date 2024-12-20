@@ -63,7 +63,7 @@ bool process_cdi(struct core_state* state)
                 return true;
             } else {
                 cdi_not_implemented("RFS_SPECIAL");
-                state.base.errors |= CDI_COMMAND_UNKNOWN;
+                state->base.errors |= CDI_COMMAND_UNKNOWN;
             }
             return false;
         } else if (cmd==RFS_SETTINGS)  {
@@ -193,29 +193,29 @@ bool process_cdi(struct core_state* state)
 
 
         case RFS_SET_WR_ADR_LSB:
-            state.reg_address = arg_low;
-            state.reg_value = 0;
+            state->reg_address = arg_low;
+            state->reg_value = 0;
             break;
 
         case RFS_SET_WR_ADR_MSB:
-            state.reg_address = (state.reg_address & 0xFF) | (arg_low << 8);
+            state->reg_address = (state->reg_address & 0xFF) | (arg_low << 8);
             break;
 
         case RFS_SET_WR_VAL_0:
-            state.reg_value = (state.reg_value & 0xFFFFFF00) + arg_low;
+            state->reg_value = (state->reg_value & 0xFFFFFF00) + arg_low;
             break;
 
         case RFS_SET_WR_VAL_1:
-            state.reg_value = (state.reg_value & 0xFFFF00FF) + (arg_low << 8);
+            state->reg_value = (state->reg_value & 0xFFFF00FF) + (arg_low << 8);
             break;
 
         case RFS_SET_WR_VAL_2:
-            state.reg_value = (state.reg_value & 0xFF00FFFF) + (arg_low << 16);
+            state->reg_value = (state->reg_value & 0xFF00FFFF) + (arg_low << 16);
             break;
 
         case RFS_SET_WR_VAL_3:
-            state.reg_value = (state.reg_value & 0x00FFFFFF) + (arg_low << 24);
-            spec_reg_write(state.reg_address, state.reg_value);
+            state->reg_value = (state->reg_value & 0x00FFFFFF) + (arg_low << 24);
+            spec_reg_write(state->reg_address, state->reg_value);
             break;
 
 
@@ -411,7 +411,7 @@ bool process_cdi(struct core_state* state)
 
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
-            calib_set_mode(arg_low);
+            calib_set_mode(state, arg_low);
             calib_enable(arg_low & 1);
             break;
         case RFS_SET_CAL_AVG:
@@ -447,16 +447,16 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_CAL_WEIGHT_NDX_LO:
-            state.cal.weight_ndx = arg_low;
+            state->cal.weight_ndx = arg_low;
             break;
         
         case RFS_SET_CAL_WEIGHT_NDX_HI:
-            state.cal.weight_ndx = 256 + arg_low;
+            state->cal.weight_ndx = 256 + arg_low;
             break;
         
         case RFS_SET_CAL_WEIGHT_VAL:
-            calib_set_weight(state.cal.weight_ndx, arg_low);
-            state.cal.weight_ndx++;
+            calib_set_weight(state->cal.weight_ndx, arg_low);
+            state->cal.weight_ndx++;
             break;
 
         case RFS_SET_CAL_WEIGHT_ZERO:

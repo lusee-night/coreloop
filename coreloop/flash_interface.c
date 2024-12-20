@@ -38,7 +38,7 @@ void flash_state_store(uint8_t slot, struct core_state* state) {
     debug_print("\r\n");
     tmp_state.in_use = 0xBEBEC;
 
-    tmp_state.state = state;
+    tmp_state.state = *state;
     /*uint8_t* b = (uint8_t *)(&tmp_state.state);
     for (int i=0;i<sizeof(struct core_state);i++) b[i] = i%0xff;*/
 
@@ -70,7 +70,7 @@ void flash_state_store(uint8_t slot, struct core_state* state) {
 }
 
 
-void  Read_Flash_uC (uint32_t size) {
+void  Read_Flash_uC (uint32_t size, void** flash_addr, void** flash_buf) {
     // cannot reuse flash_size, since this would trigger write in the interrupt!!
     while (size>0) {
         SPI_read_page(*flash_addr);  //opcode 03h  read page

@@ -281,7 +281,7 @@ bool process_hearbeat(struct core_state*);
 bool process_housekeeping(struct core_state*);
 
 // calibrator functions
-void calib_set_mode (uint8_t mode);
+void calib_set_mode (struct core_state* state, uint8_t mode);
 void process_calibrator(struct core_state* state);
 void dispatch_calibrator_data(struct core_state* state);
 

@@ -74,7 +74,8 @@ void core_init_state(struct core_state* state){
     state->sequencer_enabled = false;
     state->program.Nseq = 0;
     state->cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
-    state->cdi_dispatch.tr_count = 0xFF; // >0F so disabled.            
+    state->cdi_dispatch.tr_count = 0xFF; // >0F so disabled. 
+    state->cdi_dispatch.cal_count = 0xFF; // >0F so disabled.            
     tick_tock = true;
     state->base.weight_current = state->base.weight_previous = 0;
     drop_df = false;

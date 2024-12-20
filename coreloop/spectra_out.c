@@ -43,7 +43,7 @@ void write_packet_id(uint32_t packet_id, char** data_ptr, char** crc_ptr)
 void dispatch_32bit_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
     const int32_t *ddr_ptr = spectra_read_buffer(tick_tock);
-    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state.Nfreq; // pointer to current block of data.
+    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state->Nfreq; // pointer to current block of data.
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
     int32_t *crc_ptr;
 
@@ -77,7 +77,7 @@ void dispatch_32bit_data(struct core_state* state) {
 
     // we don't want to do this ,since the incoming data are still compared
     // against this. Instead, we will zero it in df_transfer
-    //memset(ddr_ptr, 0, state.state->cdi_dispatch.Nfreq * sizeof(uint32_t));
+    //memset(ddr_ptr, 0, state->state->cdi_dispatch.Nfreq * sizeof(uint32_t));
     *crc_ptr = CRC(cdi_ptr, data_size);
     cdi_dispatch(state->cdi_dispatch.appId, packet_size);
 }
@@ -337,7 +337,7 @@ bool process_delayed_cdi_dispatch(struct core_state* state) {
         state->cdi_dispatch.tr_appId++;
     } else if (state->cdi_dispatch.cal_count < NCALPACKETS) {
         dispatch_calibrator_data(state);
-        state.cdi_dispatch.cal_count++;
+        state->cdi_dispatch.cal_count++;
     }
 
     cdi_dispatch_counter = tap_counter + state->dispatch_delay;
