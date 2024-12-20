@@ -20,7 +20,6 @@ uint32_t unique_packet_id;
 uint8_t leading_zeros_min[NSPECTRA];
 uint8_t leading_zeros_max[NSPECTRA];
 uint8_t housekeeping_request;
-uint32_t section_break;
 uint8_t range_adc, resettle, request_waveform; 
 bool tick_tock;
 bool drop_df;
@@ -89,10 +88,10 @@ void core_init_state(struct core_state* state){
     cdi_wait_counter = 0;
 }
 
-bool process_waveform() {
+bool process_waveform(struct core_state* state) {
     if (!request_waveform) return false;
     wait_for_cdi_ready();
-    spec_request_waveform(request_waveform & 7, 16+state.dispatch_delay*4);
+    spec_request_waveform(request_waveform & 7, 16+state->dispatch_delay*4);
     request_waveform = 0;
     return true;
 }
@@ -103,7 +102,6 @@ void core_loop(struct core_state* state)
     soft_reset_flag = false;
     request_waveform = 0 ;
     range_adc = 0;
-    section_break = 0;
     flash_clear = 0;
     flash_size = 0;
     flash_write = 0;
@@ -133,7 +131,7 @@ void core_loop(struct core_state* state)
         process_gain_range(state);
         // we always process just one CDI interfacing things
         if (cdi_ready()) {
-            process_hearbeat(state) | process_delayed_cdi_dispatch(state) | process_housekeeping(state) | process_waveform();
+            process_hearbeat(state) | process_delayed_cdi_dispatch(state) | process_housekeeping(state) | process_waveform(state);
         }
 
 #ifdef NOTREAL
