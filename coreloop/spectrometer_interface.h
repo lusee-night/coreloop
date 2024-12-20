@@ -72,8 +72,8 @@ void spec_store();
 // RFS_SET_RECALL  Recalls configuration from previous store 
 void spec_recall();
 
-// make the CDI interface generate raw waveform;
-void spec_request_waveform(uint8_t ch);
+// make the CDI interface generate raw waveform (together with delay, set to zero for something sensible)
+void spec_request_waveform(uint8_t ch, int dly);
 
 // set the counter between packets sent by the CDI interface when it needs to chop
 void spec_set_fw_cdi_delay(uint32_t delay);

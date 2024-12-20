@@ -1,10 +1,12 @@
 name: Run uncrater tests
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
-      - automate_uncrater
 
 jobs:
   build:
@@ -14,6 +16,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
     - name: Clone uncrater repo
       uses: GuillaumeFalourd/clone-github-repo-action@v2.3
       with:
@@ -21,24 +28,26 @@ jobs:
         repository: 'uncrater'
         branch: 'main'
 
-    - name: Compile coreloop library
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-        make -j cl_utils coreloop
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
     - name: Install packets
       run: |
         cd $GITHUB_WORKSPACE/uncrater
         pip install -r requirements.txt
     - name: Set CORELOOP_DIR environment variable
       run: echo "CORELOOP_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+    - name: Generate pycoreloop
+      run: |
+        cd pycoreloop
+        make clean
+        make -j
+        cd ..
+
+    - name: Compile coreloop library
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make -j cl_utils coreloop
 
     - name: Run test alive
       run: |
@@ -61,8 +70,7 @@ jobs:
       env:
         CORELOOP_DIR: ${{ env.CORELOOP_DIR }}
 
-
-    - name: Run standalon (pytest) encoding tests
+    - name: Run standalone (pytest) tests
       run: |
         cd $GITHUB_WORKSPACE/uncrater
         pytest test/standalone/
