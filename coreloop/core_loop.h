@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000109
+#define VERSION_ID 0x00000110
 
 
 #include <inttypes.h>
@@ -29,13 +29,11 @@
 #define PAGES_PER_SLOT 256
 
 // global variables, will need to fix
-extern struct core_state state;
 extern uint16_t avg_counter;
 extern uint32_t unique_packet_id;
 extern uint8_t leading_zeros_min[NSPECTRA];
 extern uint8_t leading_zeros_max[NSPECTRA];
 extern uint8_t housekeeping_request;
-extern uint32_t section_break;
 extern uint8_t range_adc, resettle, request_waveform; 
 extern bool tick_tock;
 extern bool drop_df;
@@ -199,28 +197,25 @@ struct housekeeping_data_1 {
     uint8_t actual_gain[NINPUT];
 };
 
-struct housekeeping_data_99 {
-    uint32_t section_break;
-};
 
 
 
-extern struct core_state state;
+//extern struct core_state state;
 extern bool soft_reset_flag;
 
 // main function
-void core_loop();
+void core_loop(struct core_state*);
 
 // process a CDI command
-bool process_cdi();
+bool process_cdi(struct core_state*);
 //
 
 
 
 // starts / stops / restarts the spectrometer
-void RFS_stop();
-void RFS_start();
-void restart_spectrometer();
+void RFS_stop(struct core_state*);
+void RFS_start(struct core_state*);
+void restart_spectrometer(struct core_state*);
 
 // derived quantities in the state
 uint16_t get_Navg1(struct core_state *s);
@@ -232,49 +227,49 @@ uint32_t get_tr_length(struct core_state *s);
 
 
 // set routing for a channel
-void set_route (uint8_t ch, uint8_t arg_low);
+void set_route(struct core_state* state, uint8_t ch, uint8_t arg_low);
 
 // update spectrometer gain to match those in state.
-void update_spec_gains();
+void update_spec_gains(struct core_state*);
 
 // get ADC samples
 void trigger_ADC_stat();
 
 // reset errormask
-void reset_errormasks();
+void reset_errormasks(struct core_state*);
 
 // update times in global state
-void update_time();
+void update_time(struct core_state*);
 
 // see if new spectra are ready
-void process_spectrometer();
+void process_spectrometer(struct core_state*);
 
 // transfer data to CDI if needed
-void transfer_to_cdi ();
+void transfer_to_cdi(struct core_state*);
 // process delayed CDI dispatch
-bool process_delayed_cdi_dispatch();
+bool process_delayed_cdi_dispatch(struct core_state*);
 
 // automatic control for bit-slicing.
-void process_gain_range();
-bool bitslice_control();
+void process_gain_range(struct core_state*);
+bool bitslice_control(struct core_state*);
 
 // sequencer control
-void set_spectrometer_to_sequencer();
-void default_seq (struct sequencer_state *seq);
-void advance_sequencer();
+void set_spectrometer_to_sequencer(struct core_state*);
+void default_seq(struct sequencer_state *seq);
+void advance_sequencer(struct core_state*);
 
 // debuggin functions
-void debug_helper(uint8_t arg);
+void debug_helper(uint8_t arg, struct core_state*);
 void cdi_not_implemented(const char *msg);
 
 
 // housekeeping functions
-void send_hello_packet();
-bool process_hearbeat();
-bool process_housekeeping();
+void send_hello_packet(struct core_state* state);
+bool process_hearbeat(struct core_state*);
+bool process_housekeeping(struct core_state*);
 
 // Update random stae in state.base.rand_state
-inline static void update_random_state() {state.base.rand_state = 1103515245 * state.base.rand_state + 12345;}
+inline static void update_random_state(struct core_state* s) {s->base.rand_state = 1103515245 * s->base.rand_state + 12345;}
 
 inline static void new_unique_packet_id() {unique_packet_id++;}
 

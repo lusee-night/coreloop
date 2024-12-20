@@ -13,8 +13,11 @@ enum cmd_format cdi_format = CMD_FILE;
 struct cdi_dtype cdi_in;
 struct cdi_dtype cdi_out;
 
+
 int main(int argc, char *argv[]) {
-    
+
+    struct core_state global_state;
+
     strcpy(cdi_in.file, DEFAULT_FILE_IN);
     strcpy(cdi_out.file, DEFAULT_FILE_OUT);
     cdi_in.port = DEFAULT_PORT_IN;
@@ -61,7 +64,7 @@ int main(int argc, char *argv[]) {
     soft_reset_flag = 0;
     do {
         printf("HERE {soft_reset_flag: %d}\n", soft_reset_flag);
-        core_loop();
+        core_loop(&global_state);
     } while (soft_reset_flag);
 
 
