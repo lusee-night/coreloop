@@ -76,8 +76,8 @@ void process_calibrator(struct core_state* state) {
         
         cal_clear_df_flag();
         state->cdi_dispatch.cal_count=0;
-        new_unique_packet_id();
-        state->cdi_dispatch.cal_packet_id = unique_packet_id;
+        new_unique_packet_id(state);
+        state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
         hk++;
     } else  {
         if ((state->cdi_dispatch.cal_count >0xF0))

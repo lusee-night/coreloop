@@ -33,7 +33,7 @@ class UserString:
         if isinstance(seq, bytes):
             self.data = seq
         elif isinstance(seq, UserString):
-            self.data = seq.data[:]
+            self.data = data[:]
         else:
             self.data = str(seq).encode()
 

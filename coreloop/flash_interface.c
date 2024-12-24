@@ -136,17 +136,17 @@ void restore_state(struct core_state* state) {
         return;
     }
 
-    flash_store_pointer = 0;
-    while (!flash_state_restore(flash_store_pointer, state)) {
-        flash_store_pointer++;
-        if (flash_store_pointer == MAX_STATE_SLOTS) {
+    state->flash_store_pointer = 0;
+    while (!flash_state_restore(state->flash_store_pointer, state)) {
+        state->flash_store_pointer++;
+        if (state->flash_store_pointer == MAX_STATE_SLOTS) {
             // ideally start with a random store to avoid flash wear, but at this point we have nothing.
-            flash_store_pointer = 0;
+            state->flash_store_pointer = 0;
             return;
         }
     }
     debug_print("Restored existing state from slot ")
-    debug_print_dec(flash_store_pointer);
+    debug_print_dec(state->flash_store_pointer);
     debug_print("\r\n");
     if (state->base.spectrometer_enable) {
         RFS_start(state);

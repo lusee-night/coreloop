@@ -31,10 +31,10 @@
 // Start data acquisition. To start anything setup by 0x1x or 0x2x
 #define RFS_SET_START  0x01 
 
-// Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs
+// Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs  0x10 init and mark program begin
 #define RFS_SET_RESET  0x02 
 
-// Stores current configuration
+// Stores current CMD loop from program begin
 #define RFS_SET_STORE  0x03 
 
 // Recalls configuration from previous store

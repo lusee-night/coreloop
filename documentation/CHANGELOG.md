@@ -1,6 +1,13 @@
 
 # CHANGELOG
 
+
+## Version 2r01
+ * Removed sequencer
+
+## Version 2r00
+ * Added Calibration support
+
 ## Version 1r10
  * Removed global state
 

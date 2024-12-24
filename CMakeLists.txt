@@ -8,7 +8,7 @@ ADD_CUSTOM_TARGET(generate_h_from_md ALL COMMAND make -C ../pycoreloop)
 
 set(SOURCE_FILES src/main.c src/LuSEE_IO.c src/LuSEE_SPI.c src/cdi_interface.c src/spectrometer_interface.c 
     src/calibrator_interface.c coreloop/core_loop.c coreloop/commanding.c coreloop/flash_interface.c coreloop/spectra_in.c 
-    coreloop/spectra_out.c coreloop/housekeeping.c coreloop/gain.c coreloop/sequencer.c coreloop/utils.c
+    coreloop/spectra_out.c coreloop/housekeeping.c coreloop/gain.c coreloop/utils.c coreloop/sequencer.c
     coreloop/calibrator.c coreloop/fft_1024.c)
 
 

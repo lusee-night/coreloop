@@ -13,7 +13,7 @@
 void send_hello_packet(struct core_state* state) {
     debug_print ("Sending hello packet.\n\r")
     struct startup_hello *payload = (struct startup_hello*) (TLM_BUF);
-    new_unique_packet_id();
+    new_unique_packet_id(state);
     update_time(state);
     wait_for_cdi_ready();
     payload->SW_version = VERSION_ID;
@@ -21,18 +21,18 @@ void send_hello_packet(struct core_state* state) {
     payload->FW_ID = spec_get_version(1);
     payload->FW_Date = spec_get_version(2);
     payload->FW_Time = spec_get_version(3);
-    payload->unique_packet_id = unique_packet_id;
+    payload->unique_packet_id = state->unique_packet_id;
     payload->time_32 = state->base.time_32;
     payload->time_16 = state->base.time_16;
     cdi_dispatch(AppID_uC_Start, sizeof(struct startup_hello));
 }
 
 bool process_hearbeat(struct core_state* state) {
-    if (heartbeat_counter >= tap_counter) return false;
+    if (state->timing.heartbeat_counter >= tap_counter) return false;
     debug_print("H");
     struct heartbeat *payload = (struct heartbeat*) (TLM_BUF);
     wait_for_cdi_ready();
-    payload->packet_count = heartbeat_packet_count;
+    payload->packet_count = state->heartbeat_packet_count;
     update_time(state);
     payload->time_32 = state->base.time_32;
     payload->time_16 = state->base.time_16;
@@ -43,25 +43,25 @@ bool process_hearbeat(struct core_state* state) {
     payload->magic[4] = 'R';
     payload->magic[5] = 'L';
     cdi_dispatch(AppID_uC_Heartbeat, sizeof(struct heartbeat));
-    heartbeat_counter = tap_counter + HEARTBEAT_DELAY;
-    heartbeat_packet_count++;
+    state->timing.heartbeat_counter = tap_counter + HEARTBEAT_DELAY;
+    state->heartbeat_packet_count++;
     return true;
 }
 
 
 bool process_housekeeping(struct core_state* state) {
-    if (housekeeping_request == 0) return false;
-    housekeeping_request--; // go back to the original one
+    if (state->housekeeping_request == 0) return false;
+    state->housekeeping_request--; // go back to the original one
     struct housekeeping_data_base *base = (struct housekeeping_data_base *)TLM_BUF;
     spec_get_TVS(state->base.TVS_sensors);
     update_time(state);
     wait_for_cdi_ready();
     base->version = VERSION_ID;
-    base->unique_packet_id = unique_packet_id;
+    base->unique_packet_id = state->unique_packet_id;
     base->errors = state->base.errors;
-    base->housekeeping_type = housekeeping_request;
+    base->housekeeping_type = state->housekeeping_request;
 
-    switch (housekeeping_request) {
+    switch (state->housekeeping_request) {
         case 0:
             debug_print ("Sending housekeeping type 0\n\r");
             struct housekeeping_data_0 *hk0 = (struct housekeeping_data_0 *)TLM_BUF;
@@ -83,7 +83,7 @@ bool process_housekeeping(struct core_state* state) {
     debug_print_dec(state->base.errors);
     debug_print("\n");
 
-    housekeeping_request = 0;
+    state->housekeeping_request = 0;
     state->base.errors = 0;
     return true;
 }

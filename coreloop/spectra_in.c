@@ -24,12 +24,12 @@ bool transfer_from_df(struct core_state* state)
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)SPEC_BUF;
-    int32_t *ddr_ptr = spectra_write_buffer(tick_tock);
-    const int32_t *ddr_ptr_previous = spectra_read_buffer(tick_tock);
+    int32_t *ddr_ptr = spectra_write_buffer(state->tick_tock);
+    const int32_t *ddr_ptr_previous = spectra_read_buffer(state->tick_tock);
     uint16_t mask = 1;
     bool accept = true;
     //debug_print("Processing spectra...\n\r");
-    if ((state->seq.reject_ratio>0) & (state->base.weight_previous>(get_Navg2(state)/2))) {
+    if ((state->base.reject_ratio>0) & (state->base.weight_previous>(get_Navg2(state)/2))) {
         //debug_print("Check for outlier....")
         uint32_t bad = 0;
         for (uint16_t sp = 0; sp< NSPECTRA_AUTO; sp++) {
@@ -37,7 +37,7 @@ bool transfer_from_df(struct core_state* state)
                 for (uint16_t i = 0; i < NCHANNELS; i++) {
                     int32_t val = *df_ptr;
                     int32_t previous_val = *ddr_ptr_previous/state->base.weight_previous;
-                    if (abs(val-previous_val)>(previous_val/state->seq.reject_ratio)) {
+                    if (abs(val-previous_val)>(previous_val/state->base.reject_ratio)) {
                         bad++;
                     }
                     df_ptr++;
@@ -46,7 +46,7 @@ bool transfer_from_df(struct core_state* state)
             } else {df_ptr+=NCHANNELS; ddr_ptr_previous+=NCHANNELS;}
             mask <<= 1;
         }   
-        if (bad > state->seq.reject_maxbad)  accept = false;
+        if (bad > state->base.reject_maxbad)  accept = false;
         // reinitialize the pointers
         df_ptr = (int32_t *)SPEC_BUF;
         mask = 1;
@@ -58,14 +58,14 @@ bool transfer_from_df(struct core_state* state)
         for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
 
             //debug_print_dec(sp); debug_print("\n\r");
-            leading_zeros_min[sp] = 32;
-            leading_zeros_max[sp] = 0;
+            state->leading_zeros_min[sp] = 32;
+            state->leading_zeros_max[sp] = 0;
             if (state->base.corr_products_mask & (mask)) {
                 if (sp < NSPECTRA_AUTO) {
                     
                     for (uint16_t i = 0; i < NCHANNELS; i++) {
-                        int32_t data =  (get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]) >> state->seq.Navg2_shift);
-                        if (avg_counter) {
+                        int32_t data =  (get_with_zeros(*df_ptr, &state->leading_zeros_min[sp], &state->leading_zeros_max[sp]) >> state->base.Navg2_shift);
+                        if (state->avg_counter) {
                             *ddr_ptr += data;
                         } else {
                             *ddr_ptr = data;
@@ -75,8 +75,8 @@ bool transfer_from_df(struct core_state* state)
                     }
                 } else {
                     for (uint16_t i = 0; i < NCHANNELS; i++) {
-                        int32_t data = (*df_ptr) >> state->seq.Navg2_shift;
-                        if (avg_counter) {
+                        int32_t data = (*df_ptr) >> state->base.Navg2_shift;
+                        if (state->avg_counter) {
                             *ddr_ptr += data;
                         } else {
                             *ddr_ptr = data;
@@ -93,21 +93,21 @@ bool transfer_from_df(struct core_state* state)
     } // if (accept)
 
     transfer_time_resolved_from_df(state);
-    avg_counter++;
+    state->avg_counter++;
 
     return accept;
 }
 
 bool transfer_time_resolved_from_df(struct core_state* state)
 {
-    if (state->seq.tr_stop <= state->seq.tr_start) {
+    if (state->base.tr_stop <= state->base.tr_start) {
         return false;
     }
 
     const int32_t* const df_ptr = (int32_t *)SPEC_BUF;
 
-    uint16_t* const tr_ptr_start = tr_spectra_write_buffer(tick_tock);
-    uint16_t* tr_ptr = tr_ptr_start + avg_counter * NSPECTRA * get_tr_length(state);
+    uint16_t* const tr_ptr_start = tr_spectra_write_buffer(state->tick_tock);
+    uint16_t* tr_ptr = tr_ptr_start + state->avg_counter * NSPECTRA * get_tr_length(state);
     if (tr_ptr > tr_ptr_start + TR_SPEC_DATA_SIZE) {
         return false;
     }
@@ -117,10 +117,10 @@ bool transfer_time_resolved_from_df(struct core_state* state)
     for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
         if (state->base.corr_products_mask & (mask)) {
             const int32_t* const spectrum_ptr = df_ptr + sp * NCHANNELS;
-            for (uint16_t i = state->seq.tr_start; i < state->seq.tr_stop; i += get_tr_avg(state)) {
+            for (uint16_t i = state->base.tr_start; i < state->base.tr_stop; i += get_tr_avg(state)) {
                 int32_t val = 0;
                 for (uint16_t j = 0; j < get_tr_avg(state); j++) {
-                    val += (spectrum_ptr[i+j] >> state->seq.tr_avg_shift);
+                    val += (spectrum_ptr[i+j] >> state->base.tr_avg_shift);
                 }
                 *tr_ptr = encode_10plus6(val);
                 tr_ptr++;
@@ -142,8 +142,8 @@ void process_spectrometer(struct core_state* state) {
         debug_print ("*");
         
 
-        if (drop_df) {  // we were asked to drop a frame
-            drop_df = false;
+        if (state->drop_df) {  // we were asked to drop a frame
+            state->drop_df = false;
             spec_df_dropped(); // ignore any drooped so far
             spec_clear_df_flag();
         } else {
@@ -163,19 +163,18 @@ void process_spectrometer(struct core_state* state) {
 
             // Check if we have reached filled up Stage 2 averaging
             // and if so, push things out to CDI
-            if (avg_counter == get_Navg2(state)) {
-                avg_counter = 0;                
-                tick_tock = !tick_tock;
+            if (state->avg_counter == get_Navg2(state)) {
+                state->avg_counter = 0;                
+                state->tick_tock = !state->tick_tock;
                 state->base.weight_previous = state->base.weight_current;
                 state->base.weight_current = 0;
                 // Now one by one, we will loop through the packets placed in DDR Memory
                 // For each channel, set the APID, send it to the SRAM
                 // Then check to see if this software or the client will control the CDI writes
                 transfer_to_cdi(state);
-                if (state->sequencer_enabled) advance_sequencer(state);
             }
 
-            if (avg_counter > get_Navg2(state)) debug_print("ERROR: avg_counter exceeded get_Navg2\n");
+            if (state->avg_counter > get_Navg2(state)) debug_print("ERROR: avg_counter exceeded get_Navg2\n");
         }
     }
 }
