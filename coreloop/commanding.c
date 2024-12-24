@@ -218,6 +218,9 @@ bool process_cdi(struct core_state* state)
             spec_reg_write(state->reg_address, state->reg_value);
             break;
 
+        case RFS_SET_TEMP_ALARM:
+            state->watchdog.FPGA_max_temp = arg_low;
+            break;
 
         case RFS_SET_LOAD_FL:
             // load the sequencer program # arg_low (0-255) into state->program

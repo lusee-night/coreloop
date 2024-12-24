@@ -33,7 +33,7 @@ class UserString:
         if isinstance(seq, bytes):
             self.data = seq
         elif isinstance(seq, UserString):
-            self.data = data[:]
+            self.data = seq.data[:]
         else:
             self.data = str(seq).encode()
 
@@ -980,6 +980,12 @@ except:
 # /fast/lusee/coreloop/coreloop/core_loop_errors.h: 33
 try:
     FLASH_CRC_FAIL = (1 << 19)
+except:
+    pass
+
+# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 34
+try:
+    FPGA_TEMP_HIGH = (1 << 20)
 except:
     pass
 

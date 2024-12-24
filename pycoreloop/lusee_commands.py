@@ -98,6 +98,9 @@ RFS_SET_WR_VAL_2 =  0x17
 # Val bits 24-32. This triggers the actual register write
 RFS_SET_WR_VAL_3 =  0x18 
 
+# Value
+RFS_SET_TEMP_ALARM =  0x19 
+
 # Load sequencer mode from flash
 RFS_SET_LOAD_FL =  0x20 
 

@@ -124,6 +124,10 @@ struct calibrator_state {
     uint16_t weight_ndx;
 };
 
+struct watchdog_config {
+    uint8_t FPGA_max_temp;
+    // here add watchdog configuration if needed
+};
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
@@ -132,6 +136,7 @@ struct core_state {
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
+    struct watchdog_config watchdog;
     uint16_t avg_counter;
     uint32_t unique_packet_id;
     uint8_t leading_zeros_min[NSPECTRA];
@@ -171,6 +176,7 @@ struct heartbeat {
     uint32_t packet_count;
     uint32_t time_32;
     uint16_t time_16;
+    uint16_t TVS_sensors[4];
     char magic[6];
 };
 
@@ -210,9 +216,9 @@ void core_loop(struct core_state*);
 
 // process a CDI command
 bool process_cdi(struct core_state*);
-//
 
-
+// process watchdogs and temperature alarms
+void process_watchdogs (struct core_state*);
 
 // starts / stops / restarts the spectrometer
 void RFS_stop(struct core_state*);

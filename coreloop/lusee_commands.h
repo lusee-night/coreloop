@@ -97,6 +97,9 @@
 // Val bits 24-32. This triggers the actual register write
 #define RFS_SET_WR_VAL_3  0x18 
 
+// Value
+#define RFS_SET_TEMP_ALARM  0x19 
+
 // Load sequencer mode from flash
 #define RFS_SET_LOAD_FL  0x20 
 

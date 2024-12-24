@@ -53,7 +53,6 @@ bool process_housekeeping(struct core_state* state) {
     if (state->housekeeping_request == 0) return false;
     state->housekeeping_request--; // go back to the original one
     struct housekeeping_data_base *base = (struct housekeeping_data_base *)TLM_BUF;
-    spec_get_TVS(state->base.TVS_sensors);
     update_time(state);
     wait_for_cdi_ready();
     base->version = VERSION_ID;

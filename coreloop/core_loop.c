@@ -64,6 +64,7 @@ void core_init_state(struct core_state* state){
     state->avg_counter = 0;
     update_time(state);
     state->unique_packet_id = state->base.time_32;
+    state->watchdog.FPGA_max_temp = 90;
 
     set_spectrometer(state);
     tap_counter = 0;
@@ -105,10 +106,11 @@ void core_loop(struct core_state* state)
 
     for (;;)
     {
-        update_time(state);
+        
         // Check if we have a new CDI command and process it.
         // If this functions returns true, it means we got the time-to-die command
         if (process_cdi(state)) break;
+        process_watchdogs(state);
         process_spectrometer(state);
         process_calibrator(state);
         process_gain_range(state);

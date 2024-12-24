@@ -36,6 +36,7 @@
 | 0x16 | RFS_SET_WR_VAL_1   | Val bits 8-15
 | 0x17 | RFS_SET_WR_VAL_2   | Val bits 16-23
 | 0x18 | RFS_SET_WR_VAL_3   | Val bits 24-32. This triggers the actual register write
+| 0x19 | RFS_SET_TEMP_ALARM | Value |
 
 
 

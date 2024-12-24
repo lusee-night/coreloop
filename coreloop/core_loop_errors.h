@@ -31,6 +31,7 @@
 #define DF_SPECTRA_DROPPED (1<<17)
 #define DF_CAL_DROPPED (1<<18)
 #define FLASH_CRC_FAIL (1<<19)
+#define FPGA_TEMP_HIGH (1<<20)
 
 
 
