@@ -20,7 +20,7 @@
 #define CAL_MODE3_PACKETSIZE (3*1024*sizeof(uint32_t)) 
 #define CAL_MODE3_APPID_OFFSET 11
 uint32_t register_scratch[CAL_NREGS];
-bool pckt=false;
+int32_t hk;
 
 
 void calib_set_mode(struct core_state* state, uint8_t mode) {
@@ -40,12 +40,12 @@ void calib_set_mode(struct core_state* state, uint8_t mode) {
     
     // debug 
     memset((void *) CAL_BUF, 0, CAL_MODE0_DATASIZE);
-
+    hk=-1;
 }
 
 
 void process_calibrator(struct core_state* state) {
-    if (cal_new_cal_ready()||pckt) {
+    if (cal_new_cal_ready()) {
         
         debug_print("C");
         uint32_t *tst = (uint32_t *)(CAL_BUF+CAL_MODE0_CHUNKSIZE*4);
@@ -56,7 +56,7 @@ void process_calibrator(struct core_state* state) {
             cal_clear_df_flag();
             return;
         }
-        pckt=false;
+        
         
         if (cal_df_dropped()) state->base.errors |= DF_CAL_DROPPED;
         cal_copy_registers(register_scratch);
@@ -78,8 +78,18 @@ void process_calibrator(struct core_state* state) {
         state->cdi_dispatch.cal_count=0;
         new_unique_packet_id();
         state->cdi_dispatch.cal_packet_id = unique_packet_id;
+        hk++;
+    } else  {
+        if ((state->cdi_dispatch.cal_count >0xF0))
+            if (hk==4) {
+                calib_set_readout_mode(0b11);
+                state->cal.readout_mode = 3;
+        } else if (hk==5) {
+                calib_set_readout_mode(0b00);
+                state->cal.readout_mode = 0;
+                hk = 0;
+        }
     }
-
 }
 
 void dispatch_calibrator_data(struct core_state* state) {
