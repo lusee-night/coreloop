@@ -188,47 +188,53 @@ RFS_SET_CAL_ENABLE =  0x70
 # bits 0-1 Nac, bits 2-5 Nac2
 RFS_SET_CAL_AVG =  0x71 
 
+# Set the notch index (2 by default for 50+100xn kHz)
+RFS_SET_CAL_NINDEX =  0x72 
+
 # Set drift guard in units of 0.1 ppm
-RFS_SET_CAL_DRIFT_GUARD =  0x72 
+RFS_SET_CAL_DRIFT_GUARD =  0x73 
 
 # Sets drift stepping in units of 0.01ppm
-RFS_SET_CAL_DRIFT_STEP =  0x73 
+RFS_SET_CAL_DRIFT_STEP =  0x74 
 
 # bits 0-3 = antenna mask
-RFS_SET_CAL_ANT_EN =  0x74 
+RFS_SET_CAL_ANT_EN =  0x75 
 
 # SNR required to get a lock
-RFS_SET_CAL_SNR_ON =  0x75 
+RFS_SET_CAL_SNR_ON =  0x76 
+
+# SNR required to get a lock
+RFS_SET_CAL_SNR_ON_HIGH =  0x77 
 
 # SNR required to drop from a lock
-RFS_SET_CAL_SNR_OFF =  0x76 
+RFS_SET_CAL_SNR_OFF =  0x78 
 
 # Nsettle
-RFS_SET_CAL_NSETTLE =  0x77 
+RFS_SET_CAL_NSETTLE =  0x79 
 
 # Famouse CoRRA settinh
-RFS_SET_CAL_CORRA =  0x78 
+RFS_SET_CAL_CORRA =  0x7A 
 
 # Even more famous CorrB setting
-RFS_SET_CAL_CORRB =  0x79 
+RFS_SET_CAL_CORRB =  0x7B 
 
 # Start setting weights. Set the ndx (0-255)
-RFS_SET_CAL_WEIGHT_NDX_LO =  0x7A 
+RFS_SET_CAL_WEIGHT_NDX_LO =  0x7C 
 
 # Start setting weights. Set the ndx+256
-RFS_SET_CAL_WEIGHT_NDX_HI =  0x7B 
+RFS_SET_CAL_WEIGHT_NDX_HI =  0x7D 
 
 # Sets weigth and advances index
-RFS_SET_CAL_WEIGHT_VAL =  0x7C 
+RFS_SET_CAL_WEIGHT_VAL =  0x7E 
 
 # set all weights to zero.
-RFS_SET_CAL_WEIGHT_ZERO =  0x7D 
+RFS_SET_CAL_WEIGHT_ZERO =  0x7F 
 
 # set PFB NDX (8 LSB bits)
-RFS_SET_CAL_PFB_NDX_LO =  0x7E 
+RFS_SET_CAL_PFB_NDX_LO =  0x80 
 
 # set PFB NDX (3 MSB bits)
-RFS_SET_CAL_PFB_NDX_HI =  0x7F 
+RFS_SET_CAL_PFB_NDX_HI =  0x81 
 
 # enable zoom channel
 RFS_SET_ZOOM_EN =  0x90 

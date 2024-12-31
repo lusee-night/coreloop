@@ -414,39 +414,48 @@ bool process_cdi(struct core_state* state)
 
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
-            calib_set_mode(state, arg_low);
-            calib_enable(arg_low & 1);
+            state->cal.mode = arg_low;
+            //calib_set_mode(state, arg_low);
+            //calib_enable(arg_low & 1);
             break;
         case RFS_SET_CAL_AVG:
-            calib_set_Navg(arg_low & 0x03, (arg_low & 0x3C) >> 2);
-            break;
-        case RFS_SET_CAL_DRIFT_GUARD:
-            calib_set_drift_guard(arg_low);
-            break;
-        case RFS_SET_CAL_DRIFT_STEP:
-            calib_set_drift_step(arg_low);
-            break;
-        case RFS_SET_CAL_ANT_EN:
-            calib_antenna_mask(arg_low);
-            break;
-        case RFS_SET_CAL_SNR_ON:
-            calib_set_SNR_lock_on(arg_low);
+            state->cal.Navg2 = arg_low & 0x03;
+            state->cal.Navg3 = (arg_low & 0x3C) >> 2;            
+            //calib_set_Navg(arg_low & 0x03, (arg_low & 0x3C) >> 2);
             break;
 
+        case RFS_SET_CAL_NINDEX:
+            state->cal.notch_index = arg_low;
+            break;
+        case RFS_SET_CAL_DRIFT_GUARD:
+            state->cal.drift_guard = arg_low;   
+            break;
+        case RFS_SET_CAL_DRIFT_STEP:
+            state->cal.drift_step = arg_low;
+            break;
+        case RFS_SET_CAL_ANT_EN:
+            state->cal.antenna_mask = arg_low;
+            break;
+        case RFS_SET_CAL_SNR_ON:
+            state->cal.SNRon = arg_low;
+            break;
+        case RFS_SET_CAL_SNR_ON_HIGH:
+            state->cal.SNRon += (arg_low<<8);
+
         case RFS_SET_CAL_SNR_OFF:
-            calib_set_SNR_lock_off(arg_low);
+            state->cal.SNRoff = arg_low;
             break;
 
         case RFS_SET_CAL_NSETTLE:
-            calib_set_Nsettle(arg_low);
+            state->cal.Nsettle = arg_low;
             break;
 
         case RFS_SET_CAL_CORRA:
-            calib_set_delta_drift_corA(arg_low);
+            state->cal.delta_drift_corA = arg_low;
             break;
 
         case RFS_SET_CAL_CORRB:
-            calib_set_delta_drift_corB(arg_low);
+            state->cal.delta_drift_corB = arg_low;
             break;
 
         case RFS_SET_CAL_WEIGHT_NDX_LO:
@@ -467,11 +476,11 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_CAL_PFB_NDX_LO: 
-            calib_set_PFB_index(arg_low+(calib_get_PFB_index()&0xFF00));
+            state->cal.pfb_index = arg_low + (state->cal.pfb_index & 0xFF00);
             break;
+
         case RFS_SET_CAL_PFB_NDX_HI:
-            calib_set_PFB_index(((arg_low & 0x07) << 8) 
-                        +(calib_get_PFB_index()&0x00FF));
+            state->cal.pfb_index = ((arg_low & 0x07) << 8) + (state->cal.pfb_index & 0x00FF);
             break;
 
         default:

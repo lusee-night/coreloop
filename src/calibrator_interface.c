@@ -86,3 +86,7 @@ void calib_set_weight(int index, uint8_t value) {
 
 void calib_hold_drift(bool hold) {
 }
+
+void calib_set_notch_index(int index) {
+    // Placeholder implementation
+}

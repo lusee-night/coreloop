@@ -10,6 +10,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include "spectrometer_interface.h"
+#include "calibrator.h"
 #include "core_loop_errors.h"
 
 
@@ -56,9 +57,6 @@ struct route_state {
     uint8_t plus, minus;  // we route "plus" - "minus". if minus is FF, it is ground;
 };
 
-
-
-
 struct time_counters {
     uint64_t heartbeat_counter;
     uint64_t resettle_counter;
@@ -66,7 +64,9 @@ struct time_counters {
     uint64_t cdi_dispatch_counter;
 };
 
-// core state base contains additional information that will be dumped with every metadata packet
+
+// core state base contains the crucial state that is dumped with every metadata packet
+
 struct core_state_base {
     uint64_t uC_time;
     uint32_t time_32;
@@ -96,7 +96,8 @@ struct core_state_base {
     uint16_t spec_overflow;  // mean specta overflow mask
     uint16_t notch_overflow; // notch filter overflow mask
     struct ADC_stat ADC_stat[4];    
-    bool spectrometer_enable;
+    bool spectrometer_enable; // spectrometer_enable is true when FFT enegine is running
+    bool calibrator_enable; // calibrator enable is true will enable calibrator with enabling the FFT engine.
     uint32_t rand_state;
     uint8_t weight_previous, weight_current;
 };
@@ -118,11 +119,6 @@ struct delayed_cdi_sending {
 
 };
 
-struct calibrator_state {
-    uint8_t mode;
-    uint8_t readout_mode;
-    uint16_t weight_ndx;
-};
 
 struct watchdog_config {
     uint8_t FPGA_max_temp;
@@ -275,7 +271,9 @@ void send_hello_packet(struct core_state* state);
 bool process_hearbeat(struct core_state*);
 bool process_housekeeping(struct core_state*);
 
+
 // calibrator functions
+void calibrator_default_state (struct calibrator_state* cal);
 void calib_set_mode (struct core_state* state, uint8_t mode);
 void process_calibrator(struct core_state* state);
 void dispatch_calibrator_data(struct core_state* state);

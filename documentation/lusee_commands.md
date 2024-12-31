@@ -108,20 +108,22 @@
 |------|---------------------------|----------------------------------------------------|                             
 | 0x70 | RFS_SET_CAL_ENABLE        | Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode, higher bits more modes
 | 0x71 | RFS_SET_CAL_AVG           | bits 0-1 Nac, bits 2-5 Nac2 
-| 0x72 | RFS_SET_CAL_DRIFT_GUARD   | Set drift guard in units of 0.1 ppm
-| 0x73 | RFS_SET_CAL_DRIFT_STEP    | Sets drift stepping in units of 0.01ppm
-| 0x74 | RFS_SET_CAL_ANT_EN        | bits 0-3 = antenna mask
-| 0x75 | RFS_SET_CAL_SNR_ON        | SNR required to get a lock
-| 0x76 | RFS_SET_CAL_SNR_OFF       | SNR required to drop from a lock 
-| 0x77 | RFS_SET_CAL_NSETTLE       | Nsettle
-| 0x78 | RFS_SET_CAL_CORRA         | Famouse CoRRA settinh
-| 0x79 | RFS_SET_CAL_CORRB         | Even more famous CorrB setting
-| 0x7A | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
-| 0x7B | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
-| 0x7C | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
-| 0x7D | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
-| 0x7E | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
-| 0x7F | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
+| 0x72 | RFS_SET_CAL_NINDEX        | Set the notch index (2 by default for 50+100xn kHz)
+| 0x73 | RFS_SET_CAL_DRIFT_GUARD   | Set drift guard in units of 0.1 ppm
+| 0x74 | RFS_SET_CAL_DRIFT_STEP    | Sets drift stepping in units of 0.01ppm
+| 0x75 | RFS_SET_CAL_ANT_EN        | bits 0-3 = antenna mask
+| 0x76 | RFS_SET_CAL_SNR_ON        | SNR required to get a lock
+| 0x77 | RFS_SET_CAL_SNR_ON_HIGH   | SNR required to get a lock
+| 0x78 | RFS_SET_CAL_SNR_OFF       | SNR required to drop from a lock 
+| 0x79 | RFS_SET_CAL_NSETTLE       | Nsettle
+| 0x7A | RFS_SET_CAL_CORRA         | Famouse CoRRA settinh
+| 0x7B | RFS_SET_CAL_CORRB         | Even more famous CorrB setting
+| 0x7C | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
+| 0x7D | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
+| 0x7E | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
+| 0x7F | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
+| 0x80 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
+| 0x81 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
 
 
 ### 0x9X spectral zoom functionality 

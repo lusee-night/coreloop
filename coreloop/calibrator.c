@@ -22,25 +22,47 @@
 uint32_t register_scratch[CAL_NREGS];
 int32_t hk;
 
+void calibrator_default_state (struct calibrator_state* cal) {
 
-void calib_set_mode(struct core_state* state, uint8_t mode) {
-    state->cal.mode = mode;
-    // bits 1-2 are readout-mode
-    state->cal.readout_mode = (mode & 0b110) >> 1;
-    calib_set_readout_mode(state->cal.readout_mode);   
-    // bits 3-7 are special modes
-    int special_mode = (mode & 0b11111000) >>3;
-    switch(special_mode){
-        case 1:
-            calib_hold_drift(true);
-            break;
-        default:
-            calib_hold_drift(false);
-    }
-    
-    // debug 
+    cal->mode = 0x10;
+    cal->Navg2 = 1; // 64
+    cal->Navg3 = 10; // 1024
+    cal->drift_guard = 120;
+    cal->drift_step = 50;
+    cal->antenna_mask = 0b1111;
+    cal->notch_index = 2;
+    cal->SNRon = 5;
+    cal->SNRoff = 3;
+    cal->Nsettle = 5;
+    cal->delta_drift_corA = 5;
+    cal->delta_drift_corB = 10;
+    cal->pfb_index = 0;
+    cal->weight_ndx = 0;
+}
+
+
+
+void set_calibrator(struct calibrator_state* cal) {
+    calib_set_Navg(cal->Navg2, cal->Navg3);
+    calib_set_drift_guard(cal->drift_guard);
+    calib_set_drift_step(cal->drift_step);
+    calib_antenna_mask(cal->antenna_mask);
+    calib_set_notch_index(cal->notch_index);
+    calib_set_SNR_lock_on(cal->SNRon);
+    calib_set_SNR_lock_off(cal->SNRoff);
+    calib_set_Nsettle(cal->Nsettle);
+    calib_set_delta_drift_corA(cal->delta_drift_corA);
+    calib_set_delta_drift_corB(cal->delta_drift_corB);
+    calib_set_PFB_index(cal->pfb_index);
     memset((void *) CAL_BUF, 0, CAL_MODE0_DATASIZE);
-    hk=-1;
+    if (cal->mode <=4) {
+        calib_set_readout_mode (cal->mode);
+    } else if (cal->mode == CAL_MODE_ZOOM) {
+        calib_set_readout_mode(CAL_MODE_PFB);
+    } else {
+        calib_set_readout_mode(CAL_MODE_NFO);
+    }
+    cal_clear_df_flag();
 }
 
 

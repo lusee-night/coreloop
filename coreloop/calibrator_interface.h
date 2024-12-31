@@ -68,7 +68,8 @@ void calib_zero_weights();
 // set set weight(0-510)
 void calib_set_weight (int index, uint8_t value);
 
-
+// set notch index to use
+void calib_set_notch_index (int index);
 
 
 #endif

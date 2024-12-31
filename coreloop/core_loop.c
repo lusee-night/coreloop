@@ -41,19 +41,21 @@ void debug_helper(uint8_t arg, struct core_state* state) {
 
 
 void core_init_state(struct core_state* state){
+    spec_set_spectrometer_enable(false);
+    calib_enable(false);
     memset(state, 0, sizeof(struct core_state));
     default_state (&state->base);
+    calibrator_default_state(&state->cal);
     state->base.errors = 0;
     state->cmd_start = state->cmd_end = 0;
     state->base.corr_products_mask=0xFFFF; //65535, everything on
     state->base.spectrometer_enable = false;
+    state->base.calibrator_enable = false;
     state->base.rand_state = 0xFEEDD0D0;
-    spec_set_spectrometer_enable(false);
     state->housekeeping_request = 0;
     state->range_adc = 0;
     for (int i=0; i<NINPUT; i++) state->base.actual_gain[i] = GAIN_MED;
     for (int i=0; i<NSPECTRA; i++) state->base.actual_bitslice[i] = MIN(state->base.bitslice[i],0x1F); // to convert FF to 16
-    spec_set_spectrometer_enable(false);
     state->dispatch_delay = DISPATCH_DELAY;
     state->cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
     state->cdi_dispatch.tr_count = 0xFF; // >0F so disabled. 
@@ -72,7 +74,8 @@ void core_init_state(struct core_state* state){
     state->timing.heartbeat_counter = HEARTBEAT_DELAY;
     state->timing.resettle_counter = 0;
     state->timing.cdi_wait_counter = 0;
-    calib_init();
+    state->request_waveform = 0 ;
+    state->range_adc = 0;
 }
 
 bool process_waveform(struct core_state* state) {
@@ -86,11 +89,11 @@ bool process_waveform(struct core_state* state) {
 
 void core_loop(struct core_state* state)
 {
+    spectrometer_init();
+    calib_init();
+    cdi_init();
+
     soft_reset_flag = false;
-    state->request_waveform = 0 ;
-    state->range_adc = 0;
-    spec_set_spectrometer_enable(false);
-    spec_clear_df_flag();
     // now empty the CDI command buffer in case we are doing the reset.
     #ifndef NOTREAL
     uint8_t tmp;
@@ -99,6 +102,8 @@ void core_loop(struct core_state* state)
 
     send_hello_packet(state);
     core_init_state(state);
+    spec_clear_df_flag();
+ 
     #ifndef NOTREAL
     // restore state from flash if unscheduled reset occured
     restore_state(state);
@@ -216,6 +221,7 @@ void RFS_stop(struct core_state* state) {
     debug_print ("\n\rStopping spectrometer\n\r");
     state->base.spectrometer_enable = false;
     spec_set_spectrometer_enable(false);
+    calib_enable(false);
 }
 
 
@@ -228,6 +234,7 @@ void RFS_start(struct core_state* state) {
     memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     set_spectrometer(state);
     spec_set_spectrometer_enable(true);
+    if (state->base.calibrator_enable) calib_enable(true);
     //drop_df = true;
 }
 
