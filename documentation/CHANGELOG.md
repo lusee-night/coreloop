@@ -4,6 +4,9 @@
 
 ## Version 2r01
  * Removed sequencer
+ * Removed global state, completelly
+ * Added watchdog functionality
+ 
 
 ## Version 2r00
  * Added Calibration support
