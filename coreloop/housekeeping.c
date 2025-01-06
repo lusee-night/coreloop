@@ -36,6 +36,10 @@ bool process_hearbeat(struct core_state* state) {
     update_time(state);
     payload->time_32 = state->base.time_32;
     payload->time_16 = state->base.time_16;
+    payload->TVS_sensors[0] = state->base.TVS_sensors[0];
+    payload->TVS_sensors[1] = state->base.TVS_sensors[1];
+    payload->TVS_sensors[2] = state->base.TVS_sensors[2];
+    payload->TVS_sensors[3] = state->base.TVS_sensors[3];
     payload->magic[0] = 'B';
     payload->magic[1] = 'R';
     payload->magic[2] = 'N';
