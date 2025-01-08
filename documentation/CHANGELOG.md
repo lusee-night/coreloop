@@ -7,6 +7,9 @@
 ## Version 2r01
  * Removed sequencer
  * Added temperature watchdog
+ * Removed global state, completelly
+
+ 
 
 ## Version 2r00
  * Added Calibration support
