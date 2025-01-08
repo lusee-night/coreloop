@@ -414,9 +414,12 @@ bool process_cdi(struct core_state* state)
 
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
-            state->cal.mode = arg_low;
-            //calib_set_mode(state, arg_low);
-            //calib_enable(arg_low & 1);
+            if (arg_low<0xFF) {
+                state->cal.mode = arg_low;
+                state->base.calibrator_enable = true;
+            } else {
+                state->base.calibrator_enable = false;
+            }
             break;
         case RFS_SET_CAL_AVG:
             state->cal.Navg2 = arg_low & 0x03;

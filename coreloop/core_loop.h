@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000201
+#define VERSION_ID 0x00000202
 
 
 #include <inttypes.h>

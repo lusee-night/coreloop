@@ -182,7 +182,7 @@ RFS_SET_TR_ST_MSB =  0x64
 # frequency averaging
 RFS_SET_TR_AVG_SHIFT =  0x65 
 
-# Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode, higher bits more modes
+# Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
 RFS_SET_CAL_ENABLE =  0x70 
 
 # bits 0-1 Nac, bits 2-5 Nac2

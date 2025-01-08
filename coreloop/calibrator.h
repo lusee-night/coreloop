@@ -45,7 +45,7 @@ struct calibrator_state {
     // for saving weights
     uint16_t weight_ndx; // weight index when storing weights
 
-    uint8_t powertop_slice, powerbot_slice;
+    uint8_t powertop_slice;
     uint8_t sum1_slice, sum2_slice;
     uint8_t prod1_slice, prod2_slice;
 };
