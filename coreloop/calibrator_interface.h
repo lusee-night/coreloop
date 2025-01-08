@@ -8,14 +8,44 @@
 #define CAL_NWEIGHTS 410
 #define CAL_START_WEIGHT 90
 
+// slicer constants (only things we believe we can actually affect). Bit mas for calib_get_slicer_errors;
+
+#define SLICER_ERR_SUM1 1
+#define SLICER_ERR_SUM2 2
+#define SLICER_ERR_FD   4
+#define SLICER_ERR_SD1   8
+#define SLICER_ERR_SD2   16
+#define SLICER_ERR_SD3   32
+#define SLICER_ERR_PTOP  64
+#define SLICER_ERR_PBOT  128
+#define SLICER_ERR_PROD1  256
+#define SLICER_ERR_PROD2  512
+
+
 // put calibration into a default state
 void calib_init();
 
 // Enable calibrator
 void calib_enable(bool enable);    
 
+// reset
+void cal_reset();
+
+// the hell, slicers
+void calib_set_slicers (uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t sum1_slice, \
+                        uint8_t sum2_slice, uint8_t sd2_slice, uint8_t prod1_slice, uint8_t prod2_slice);
+
+
+
+
+uint32_t calib_get_slicer_errors();
+
+
 // sets the readout mode
 void calib_set_readout_mode (int mode);
+
+// gets the readout mode from the register
+int calib_get_readout_mode(); 
 
 // copy all the registers to the buffer
 void cal_copy_registers(uint32_t *buffer);

@@ -116,7 +116,8 @@ struct delayed_cdi_sending {
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
     uint32_t cal_packet_id;
-
+    uint32_t cal_appId;
+    uint32_t cal_size, cal_packet_size;
 };
 
 
