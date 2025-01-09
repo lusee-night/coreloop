@@ -10,6 +10,7 @@
         "variant": "c",
         "format": "c",
         "string": "c",
-        "calibrator_interface.h": "c"
+        "calibrator_interface.h": "c",
+        "lusee_appids.h": "c"
     }
 }

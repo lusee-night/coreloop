@@ -106,7 +106,7 @@
 
 | 0x7M | Name                      |  Description                                       |
 |------|---------------------------|----------------------------------------------------|                             
-| 0x70 | RFS_SET_CAL_ENABLE        | Enable / disable the calibrator, bit 0 = enable, bits 1-2 = readout mode, higher bits more modes
+| 0x70 | RFS_SET_CAL_ENABLE        | Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
 | 0x71 | RFS_SET_CAL_AVG           | bits 0-1 Nac, bits 2-5 Nac2 
 | 0x72 | RFS_SET_CAL_NINDEX        | Set the notch index (2 by default for 50+100xn kHz)
 | 0x73 | RFS_SET_CAL_DRIFT_GUARD   | Set drift guard in units of 0.1 ppm

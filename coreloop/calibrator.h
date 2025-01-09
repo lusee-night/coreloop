@@ -1,5 +1,6 @@
 #ifndef CALIBRATOR_H
 #define CALIBRATOR_H
+#pragma pack(1)
 #include <inttypes.h>
 
 // set of modes for the calibrator
@@ -7,29 +8,20 @@
 // first few modes are for manual control and actually writeablle to the correct register
 
 // spits out calibration data when having a lock
-#define CAL_MODE_CAL  0b00
+#define CAL_MODE_RAW0  0b00
 // spits out raw PFB samples
-#define CAL_MODE_PFB  0b01
+#define CAL_MODE_RAW1  0b01
 // spits out debug and auxiliary data
-#define CAL_MODE_NFO  0b11
+#define CAL_MODE_RAW3  0b11
 
 // next few modes are for automatic control and are not directly writable to the register
 // find SUM bitslice
-#define CAL_MODE_BS_SUM 0x10
-// find PWR bitslice
-#define CAL_MODE_BS_PWR 0x11
-// find DFT bitslice
-#define CAL_MODE_BS_DFT 0x12
-// find FDX/SDX bitslice
-#define CAL_MODE_BS_FDX 0x13
-//find stage3 bitslice
-#define CAL_MODE_BS_S3 0x14
-
+#define CAL_MODE_BIT_SLICER_SETTLE 0x10
 // find SNRon by heuristics
-#define CAL_MODE_SNR   0x20
+#define CAL_MODE_SNR_SETTLE   0x20
 // acquire data automatically 
 #define CAL_MODE_RUN   0x30
-// run as a blind search mode
+// run as a blind search mode // to be implemented
 #define CAL_MODE_BLIND 0x40
 // run as a spectral zoom
 #define CAL_MODE_ZOOM  0x50
@@ -52,9 +44,32 @@ struct calibrator_state {
 
     // for saving weights
     uint16_t weight_ndx; // weight index when storing weights
+
+    uint8_t powertop_slice;
+    uint8_t sum1_slice, sum2_slice;
+    uint8_t prod1_slice, prod2_slice;
 };
 
 
+struct calibrator_metadata {
+  uint16_t version; 
+  uint32_t unique_packet_id;
+  uint32_t time_32;
+  uint16_t time_16;
+  uint16_t have_lock[4];
+  struct calibrator_state state;
+  int SNR_max, SNR_min;
+  int32_t drift [1024];
+  uint32_t error_regs [30];
+};
+
+struct core_state;
+
+void set_calibrator(struct calibrator_state* cal);
+void calibrator_set_SNR(struct calibrator_state* cal);
+void calibrator_slice_init(struct calibrator_state* cal);
+void calibrator_set_slices(struct calibrator_state* cal);
+struct calibrator_metadata* process_cal_mode11(struct core_state* state);
 
 
 #endif

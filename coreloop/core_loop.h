@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000201
+#define VERSION_ID 0x00000202
 
 
 #include <inttypes.h>
@@ -116,7 +116,8 @@ struct delayed_cdi_sending {
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
     uint32_t cal_packet_id;
-
+    uint32_t cal_appId;
+    uint32_t cal_size, cal_packet_size;
 };
 
 

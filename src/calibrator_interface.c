@@ -90,3 +90,18 @@ void calib_hold_drift(bool hold) {
 void calib_set_notch_index(int index) {
     // Placeholder implementation
 }
+
+
+
+void cal_reset() {};
+
+void calib_set_slicers (uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t sum1_slice, \
+                        uint8_t sum2_slice, uint8_t sd2_slice, uint8_t prod1_slice, uint8_t prod2_slice) {}
+
+
+
+
+uint32_t calib_get_slicer_errors() {}
+
+
+int calib_get_readout_mode() {}

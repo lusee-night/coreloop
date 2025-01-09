@@ -1,11 +1,14 @@
 
 # CHANGELOG
 
+## Version 2r02
+ * Added calibrator support V2 (automatic bitslicing, SNR adjustment, mode switching)
 
 ## Version 2r01
  * Removed sequencer
+ * Added temperature watchdog
  * Removed global state, completelly
- * Added watchdog functionality
+
  
 
 ## Version 2r00

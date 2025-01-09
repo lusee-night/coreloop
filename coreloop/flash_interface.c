@@ -1,3 +1,7 @@
+#include "LuSEE_IO.h"
+#include "LuSEE_SPI.h"
+#include "LuSEE_Flash_cntrl.h"
+
 #include "lusee_commands.h"
 #include "spectrometer_interface.h"
 #include "core_loop.h"
@@ -6,9 +10,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "LuSEE_IO.h"
-#include "LuSEE_SPI.h"
-#include "LuSEE_Flash_cntrl.h"
 
 // FLASH constrol
 struct saved_core_state tmp_state;
