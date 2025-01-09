@@ -241,7 +241,7 @@ void process_calibrator(struct core_state* state) {
             if (cal_df_dropped()) state->base.errors |= DF_CAL_DROPPED;
             if (readout_mode == CAL_MODE_RAW0) {
                 process_cal_mode00(state);
-                calib_set_readout_mode(CAL_MODE_RAW3);
+                //calib_set_readout_mode(CAL_MODE_RAW3);
             } else {
                 struct calibrator_metadata* out = process_cal_mode11(state);
                 if (out->have_lock[0] + out->have_lock[1] + out->have_lock[2] + out->have_lock[3] == 0) {
@@ -257,7 +257,7 @@ void process_calibrator(struct core_state* state) {
             
         } else {
             // if not new data and not transferring, let's look at the other side
-            if (state->cdi_dispatch.cal_count>0x20) {
+            if (0&(state->cdi_dispatch.cal_count>0x20)) {
                 if (readout_mode == CAL_MODE_RAW0) {
                     calib_set_readout_mode(CAL_MODE_RAW3);
                     cal->readout_mode = CAL_MODE_RAW3;
