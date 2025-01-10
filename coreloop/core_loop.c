@@ -19,7 +19,9 @@
 bool soft_reset_flag;
 // tap counter increased in the interrupt
 volatile uint64_t tap_counter;
-
+// sensor averaging
+volatile uint32_t TVS_sensors_avg[4];
+uint32_t TVS_sensors[4];
 
 
 
@@ -67,6 +69,7 @@ void core_init_state(struct core_state* state){
     update_time(state);
     state->unique_packet_id = state->base.time_32;
     state->watchdog.FPGA_max_temp = 90;
+    state->cmd_counter = cdi_command_count();
 
     set_spectrometer(state);
     tap_counter = 0;
@@ -94,6 +97,7 @@ void core_loop(struct core_state* state)
     cdi_init();
 
     soft_reset_flag = false;
+    for (int i=0; i<4; i++) TVS_sensors[i] = 0;
     // now empty the CDI command buffer in case we are doing the reset.
     #ifndef NOTREAL
     uint8_t tmp;
@@ -143,6 +147,17 @@ void core_loop(struct core_state* state)
 uint8_t MSYS_EI5_IRQHandler(void)
 {
     tap_counter++;
+    uint16_t sensors[4];
+    spec_get_TVS(sensors);
+    for (int i=0; i<4; i++) TVS_sensors[i] += sensors[i];
+    if (tap_counter%128 == 0) {
+        TVS_sensors_avg[0] = (TVS_sensors[0] >> 6);
+        TVS_sensors_avg[1] = (TVS_sensors[1] >> 6);
+        TVS_sensors_avg[2] = (TVS_sensors[2] >> 6);
+        TVS_sensors_avg[3] = (TVS_sensors[3] >> 4);            
+        for (int i=0; i<4; i++) TVS_sensors[i] = 0;
+    }
+
     TMR_clear_int(&g_core_timer_0);
     return (EXT_IRQ_KEEP_ENABLED);
 }

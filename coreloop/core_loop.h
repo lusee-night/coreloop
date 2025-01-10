@@ -34,7 +34,7 @@
 extern bool soft_reset_flag;
 // tap counter increased in the interrupt
 extern volatile uint64_t tap_counter;
-
+extern volatile uint32_t TVS_sensors_avg[4];
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{

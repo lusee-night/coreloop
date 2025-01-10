@@ -272,7 +272,6 @@ void transfer_to_cdi(struct core_state* state) {
     debug_print ("$");
     new_unique_packet_id(state);
     update_time(state);
-    spec_get_TVS(state->base.TVS_sensors);
     send_metadata_packet(state);
     state->timing.cdi_dispatch_counter = tap_counter + state->dispatch_delay; // 10*0.01s ~10 Hz
     state->cdi_dispatch.prod_count = 0; //
