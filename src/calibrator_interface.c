@@ -1,8 +1,11 @@
 #include "calibrator_interface.h"
+#include "LuSEE_IO.h"
+#include <stdlib.h>
 
 
 void calib_init() {
     // Placeholder implementation
+    CAL_BUF = malloc(128*1024);
 }
 
 void calib_enable(bool enable) {

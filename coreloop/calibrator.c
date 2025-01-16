@@ -180,7 +180,8 @@ void process_cal_mode_raw11(struct core_state* state) {
 
 
 void process_calibrator(struct core_state* state) {
-
+    if (!state->base.calibrator_enable) return;
+    
     bool new_data = cal_new_cal_ready();
     if (new_data) debug_print("C");
     int readout_mode = calib_get_readout_mode();

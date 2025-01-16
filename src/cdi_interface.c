@@ -73,6 +73,12 @@ void cdi_init(){
                 perror("Failed to create socket");
                 exit(1);
             }
+
+            int opt = 1;
+            if (setsockopt(sockfd_in, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+                perror("Failed to set socket options");
+                exit(1);
+            }
             // Set the socket to non-blocking mode
             
             int flags = fcntl(sockfd_in, F_GETFL, 0);
