@@ -296,7 +296,7 @@ void dispatch_calibrator_data(struct core_state* state) {
     if (d->cal_appId == AppID_Calibrator_MetaData) {
         // data already packed as we need it
         memcpy ((void *)(TLM_BUF), (void *)(CAL_BUF), d->cal_size);
-        cdi_dispatch(d->cal_appId, d->cal_size); // +12 for the header
+        cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId, d->cal_size); // +12 for the header
         d->cal_count=0xFE; //we're done (+1 will make it go to 0xFF)
         debug_print("c#");
     } else {
@@ -311,7 +311,7 @@ void dispatch_calibrator_data(struct core_state* state) {
             d->cal_count=0xFE; //we're done (+1 will make it go to 0xFF)
         }
         memcpy ((void *)(ptr), (void *)(CAL_BUF+start), d->cal_packet_size);
-        cdi_dispatch(d->cal_appId+state->cdi_dispatch.cal_count, d->cal_packet_size+12); // +12 for the header        
+        cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId+state->cdi_dispatch.cal_count, d->cal_packet_size+12); // +12 for the header        
         debug_print("c");
     } 
     

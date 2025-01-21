@@ -102,7 +102,11 @@ struct core_state_base {
     uint8_t weight_previous, weight_current;
 };
 
-
+struct cdi_stats {
+    uint32_t cdi_total_command_count;
+    uint32_t cdi_packets_sent;
+    uint64_t cdi_bytes_sent;
+};
 
 struct delayed_cdi_sending {
     uint32_t appId;
@@ -129,6 +133,7 @@ struct watchdog_config {
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
     struct core_state_base base;
+    struct cdi_stats cdi_stats;
     struct calibrator_state cal;
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
@@ -180,7 +185,7 @@ struct heartbeat {
     uint32_t time_32;
     uint16_t time_16;
     uint16_t TVS_sensors[4];
-    uint32_t cdi_total_command_count;
+    struct cdi_stats cdi_stats;
     uint32_t errors;
     char magic[6];
 };
@@ -282,6 +287,9 @@ bool process_housekeeping(struct core_state*);
 
 // create end-of-sequence packet
 bool process_eos(struct core_state*); 
+
+// cdi dispatch with counting
+void cdi_dispatch_uC (struct cdi_stats* cdi_stats, uint16_t appID, uint32_t length);
 
 //delayed dispatch;
 bool delayed_cdi_dispatch_done (struct core_state*);

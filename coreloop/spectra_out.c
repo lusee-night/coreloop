@@ -10,13 +10,21 @@
 #include <string.h>
 
 
+
+
+void cdi_dispatch_uC (struct cdi_stats* cdi_stats, uint16_t appID, uint32_t length) {
+    cdi_stats->cdi_packets_sent++;
+    cdi_stats->cdi_bytes_sent += length;
+    cdi_dispatch(appID, length);
+}
+
 void send_metadata_packet(struct core_state* state) {
     struct meta_data *meta = (struct meta_data *)TLM_BUF;
     wait_for_cdi_ready();
     meta->version = VERSION_ID;
     meta->unique_packet_id = state->unique_packet_id;
     meta->base = state->base;
-    cdi_dispatch(AppID_MetaData, sizeof(struct meta_data));
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_MetaData, sizeof(struct meta_data));
     reset_errormasks(state);
 }
 
@@ -78,7 +86,7 @@ void dispatch_32bit_data(struct core_state* state) {
     // against this. Instead, we will zero it in df_transfer
     //memset(ddr_ptr, 0, state->state->cdi_dispatch.Nfreq * sizeof(uint32_t));
     *crc_ptr = CRC(cdi_ptr, data_size);
-    cdi_dispatch(state->cdi_dispatch.appId, packet_size);
+    cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
 
 void dispatch_16bit_10_plus_6_data(struct core_state* state) {
@@ -118,7 +126,7 @@ void dispatch_16bit_10_plus_6_data(struct core_state* state) {
     uint32_t crc = CRC(data_start_ptr, data_size);
     memcpy(crc_ptr, &crc, sizeof(crc));
 
-    cdi_dispatch(state->cdi_dispatch.appId, packet_size);
+    cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
 
 void dispatch_16bit_updates_data() {
@@ -175,7 +183,7 @@ void dispatch_16bit_4_to_5_data(struct core_state* state) {
     uint32_t crc = CRC(data_start_ptr, data_size);
     memcpy(crc_ptr, &crc, sizeof(crc));
 
-    cdi_dispatch(state->cdi_dispatch.appId, packet_size);
+    cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
 
 // send NSPECTRA packets
@@ -235,7 +243,7 @@ void dispatch_tr_data(struct core_state* state) {
     uint32_t crc_value = CRC(crc_input, data_size);
     memcpy(crc_ptr, &crc_value, sizeof crc_value);
 
-    cdi_dispatch(state->cdi_dispatch.tr_appId, packet_size);
+    cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.tr_appId, packet_size);
 }
 
 
@@ -292,7 +300,7 @@ bool delayed_cdi_dispatch_done (struct core_state* state) {
     return (state->cdi_dispatch.prod_count >= NSPECTRA && state->cdi_dispatch.tr_count >= NSPECTRA && state->cdi_dispatch.cal_count >= NCALPACKETS);
 }
 
-bool process_delayed_cdi_dispatch(struct core_state* state) {
+bool process_delayed_cdi_dispatch (struct core_state* state) {
 
     // if we are waiting, let's prevent anyone else to send stuff untill we are done
     if (state->timing.cdi_dispatch_counter > tap_counter) return true;

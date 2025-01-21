@@ -257,7 +257,7 @@ void spec_request_waveform(uint8_t ch, int dly) {
                 TLM_BUF_INT16[i] = var >= 0 ? var : UINT14_MAX + var;
             }
         }
-        cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
+        cdi_dispatch (AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
     }
 }
 

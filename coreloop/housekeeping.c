@@ -24,7 +24,7 @@ void send_hello_packet(struct core_state* state) {
     payload->unique_packet_id = state->unique_packet_id;
     payload->time_32 = state->base.time_32;
     payload->time_16 = state->base.time_16;
-    cdi_dispatch(AppID_uC_Start, sizeof(struct startup_hello));
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Start, sizeof(struct startup_hello));
     debug_print("done\n")
 }
 
@@ -41,7 +41,7 @@ bool process_hearbeat(struct core_state* state) {
     payload->TVS_sensors[1] = state->base.TVS_sensors[1];
     payload->TVS_sensors[2] = state->base.TVS_sensors[2];
     payload->TVS_sensors[3] = state->base.TVS_sensors[3];
-    payload->cdi_total_command_count = cdi_total_command_count();
+    payload->cdi_stats = state->cdi_stats;
     payload->errors = state->base.errors;
     payload->magic[0] = 'B';
     payload->magic[1] = 'R';
@@ -49,7 +49,7 @@ bool process_hearbeat(struct core_state* state) {
     payload->magic[3] = 'M';
     payload->magic[4] = 'R';
     payload->magic[5] = 'L';
-    cdi_dispatch(AppID_uC_Heartbeat, sizeof(struct heartbeat));
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Heartbeat, sizeof(struct heartbeat));
     state->timing.heartbeat_counter = tap_counter + HEARTBEAT_DELAY;
     state->heartbeat_packet_count++;
     return true;
@@ -73,7 +73,7 @@ bool process_housekeeping(struct core_state* state) {
             debug_print ("[K0]");
             struct housekeeping_data_0 *hk0 = (struct housekeeping_data_0 *)TLM_BUF;
             hk0->core_state = *state;
-            cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_0));
+            cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Housekeeping, sizeof(struct housekeeping_data_0));
             break;
 
         case 1:
@@ -83,7 +83,7 @@ bool process_housekeeping(struct core_state* state) {
                 hk1->ADC_stat[i] = state->base.ADC_stat[i];
                 hk1->actual_gain[i] = state->base.actual_gain[i];
             }
-            cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_1));
+            cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Housekeeping, sizeof(struct housekeeping_data_1));
             break;
     }
     debug_print("E:");
@@ -107,6 +107,6 @@ bool process_eos(struct core_state* state) {
     new_unique_packet_id(state);
     base->unique_packet_id = state->unique_packet_id;
     base->eos_arg = state->request_eos;
-    cdi_dispatch(AppID_End_Of_Sequence, sizeof(struct end_of_sequence));
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_End_Of_Sequence, sizeof(struct end_of_sequence));
     state->request_eos = 0;
 }

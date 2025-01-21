@@ -70,6 +70,9 @@ void core_init_state(struct core_state* state){
     state->unique_packet_id = state->base.time_32;
     state->watchdog.FPGA_max_temp = 90;
     state->cmd_counter = cdi_command_count();
+    state->cdi_stats.cdi_packets_sent = 0;
+    state->cdi_stats.cdi_bytes_sent = 0;
+
 
     set_spectrometer(state);
     tap_counter = 0;
@@ -180,6 +183,7 @@ void update_time(struct core_state* state) {
     state->base.time_16 = sec16;
     state->base.rand_state += sec32;
     state->base.uC_time = tap_counter;
+    state->cdi_stats.cdi_total_command_count = cdi_total_command_count();
 }
 
 // return batch size for stage 1 averaging
