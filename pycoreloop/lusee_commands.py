@@ -23,23 +23,26 @@ CTRL_OUTLIER_BINS =  0xA2
 # Wait for 0.1s x argument (intercepted by commander)
 CTRL_WAIT =  0xE0 
 
+# Wait until you see EOS (intercepted by commander)
+CTRL_WAIT_EOS =  0xE1 
+
 
 
 # RFS Settings commands
-# wait mode - disable data taking
+# Stop data acquisition.
 RFS_SET_STOP =  0x00 
 
-# Start data acquisition. To start anything setup by 0x1x or 0x2x
+# Start data acquisition.
 RFS_SET_START =  0x01 
 
 # Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs  0x10 init and mark program begin
 RFS_SET_RESET =  0x02 
 
-# Stores current CMD loop from program begin
-RFS_SET_STORE =  0x03 
+# Sets the value of temperature alarm (in Celsius)
+RFS_SET_TEMP_ALARM =  0x03 
 
-# Recalls configuration from previous store
-RFS_SET_RECALL =  0x04 
+# Waits until ARG spectra are taken (stage 3)
+RFS_SET_WAIT_SPECTRA =  0x04 
 
 # Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;
 RFS_SET_HK_REQ =  0x05 
@@ -53,16 +56,16 @@ RFS_SET_RANGE_ADC =  0x07
 # Request ADC waform arg contains channel number
 RFS_SET_WAVEFORM =  0x08 
 
-# Wait arg number of ticks (10ms) before processing next CMD (careful with 64 buffer!)
+# Wait arg number of ticks (10ms) before processing next CMD
 RFS_SET_WAIT_TICKS =  0x09 
 
-# Wait arg number of seconds before processing next CMD (careful with 64 buffer!)
+# Wait arg number of seconds before processing next CMD
 RFS_SET_WAIT_SECS =  0x0A 
 
-# Wait arg number of mins before processing next CMD (careful with 64 buffer!)
+# Wait arg number of mins before processing next CMD
 RFS_SET_WAIT_MINS =  0x0B 
 
-# Wait arg number of mins before processing next CMD (careful with 64 buffer!)
+# Wait arg number of mins before processing next CMD
 RFS_SET_WAIT_HRS =  0x0C 
 
 # Debug command (used only in debugging)
@@ -98,14 +101,23 @@ RFS_SET_WR_VAL_2 =  0x17
 # Val bits 24-32. This triggers the actual register write
 RFS_SET_WR_VAL_3 =  0x18 
 
-# Value
-RFS_SET_TEMP_ALARM =  0x19 
+# RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
+RFS_SEQ_START =  0x20 
 
-# Load sequencer mode from flash
-RFS_SET_LOAD_FL =  0x20 
+# RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
+RFS_SEQ_END =  0x21 
 
-# Store sequencer mode into flash
-RFS_SET_STORE_FL =  0x21 
+# RFS_SPECIAL only! Breaks execution of the sequence.
+RFS_SET_SEQ_BREAK =  0x22 
+
+# Marks beginning of a loop with ARG1 (see below)
+RFS_SET_LOOP_START =  0x22 
+
+# Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
+RFS_SET_LOOP_END =  0x23 
+
+# Send the sequence over command once all buffers are empty.
+RFS_SET_SEQ_OVER =  0x24 
 
 # set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 RFS_SET_GAIN_ANA_SET =  0x30 

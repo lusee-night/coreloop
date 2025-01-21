@@ -165,13 +165,6 @@ void spec_not_implemented() {
 // RFS_SET_RESET  Reset default configuration (system configuration as after boot)
 void spec_set_reset() {};
 
-// RFS_SET_STORE Stores current configuration
-void spec_store() {spec_not_implemented();};
-
-// RFS_SET_RECALL  Recalls configuration from previous store 
-void spec_recall() {spec_not_implemented();};
-
-
 // set gain of channel ch to gain
 void spec_set_gain(uint8_t ch, uint8_t gain) {
     printf("Setting gain of channel %d to %d\n", ch, gain);

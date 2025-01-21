@@ -158,6 +158,10 @@ uint32_t cdi_command_count() {
     return cdi_command_counter;
 }
 
+uint32_t cdi_total_command_count() { 
+    return cdi_command_count();
+}
+
 bool cdi_ready() {return true;}
 void wait_for_cdi_ready() {}
 

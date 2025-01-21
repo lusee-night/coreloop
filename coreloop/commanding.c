@@ -85,6 +85,7 @@ bool process_cdi(struct core_state* state)
 
 
     if (state->timing.cdi_wait_counter>tap_counter) return false; //not taking any commands while in the CDI wait state
+    if (state->cdi_wait_spectra>0) return false; // not taking any command while waitig for spectra.
     if (state->cmd_start == state->cmd_end) return false; // no new commands
  
     // finally process the command in the line
@@ -122,12 +123,15 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_RESET:
             cmd_soft_reset(arg_low, state);
             return true;
-        case RFS_SET_STORE:
-            spec_store();
+
+        case RFS_SET_TEMP_ALARM:
+            state->watchdog.FPGA_max_temp = arg_low;
             break;
-        case RFS_SET_RECALL:
-            spec_recall();
+
+        case RFS_SET_WAIT_SPECTRA:
+            state->cdi_wait_spectra = arg_low;
             break;
+
         case RFS_SET_HK_REQ:
             if ((arg_low < 2) || (arg_low == 99)) {
                 state->housekeeping_request = 1+arg_low;
@@ -218,18 +222,8 @@ bool process_cdi(struct core_state* state)
             spec_reg_write(state->reg_address, state->reg_value);
             break;
 
-        case RFS_SET_TEMP_ALARM:
-            state->watchdog.FPGA_max_temp = arg_low;
-            break;
-
-        case RFS_SET_LOAD_FL:
-            // load the sequencer program # arg_low (0-255) into state->program
-            debug_print("Recevied RFS_SET_LOAD_FL.\n\r");
-            cdi_not_implemented("RFS_SET_LOAD_FL");
-            break;
-        case RFS_SET_STORE_FL:
-            // store the sequencer program # arg_low (0-255) from state->program into flash
-            cdi_not_implemented("RFS_SET_STORE_FL");
+        case RFS_SET_SEQ_OVER: 
+            state->request_eos = arg_low;
             break;
 
         case RFS_SET_GAIN_ANA_SET:

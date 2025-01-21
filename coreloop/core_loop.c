@@ -77,7 +77,9 @@ void core_init_state(struct core_state* state){
     state->timing.heartbeat_counter = HEARTBEAT_DELAY;
     state->timing.resettle_counter = 0;
     state->timing.cdi_wait_counter = 0;
+    state->cdi_wait_spectra = 0;
     state->request_waveform = 0 ;
+    state->request_eos = 0;
     state->range_adc = 0;
 }
 
@@ -125,7 +127,8 @@ void core_loop(struct core_state* state)
         process_gain_range(state);
         // we always process just one CDI interfacing things
         if (cdi_ready()) {
-            process_hearbeat(state) | process_delayed_cdi_dispatch(state) | process_housekeeping(state) | process_waveform(state);
+             ( process_hearbeat(state) | process_delayed_cdi_dispatch(state) |  \
+               process_housekeeping(state) | process_waveform(state) | process_eos(state) );
         }
 
 #ifdef NOTREAL

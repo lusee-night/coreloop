@@ -1,6 +1,13 @@
 
 # CHANGELOG
 
+## Version 2r03
+ * Extended the heartbeat packet to include additional information
+ * Implemented wait for n-spectra command
+ * Implemented final packet (to be sent after all buffers empty)
+ * Changed aliveness for both of those above.
+ * Version to be used during TVAC
+
 ## Version 2r02
  * Added calibrator support V2 (automatic bitslicing, SNR adjustment, mode switching)
  * Averaging temperatures over 128 interrupts for more accuracy. Changing the scalings to extract some more dynamic range.

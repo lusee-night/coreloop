@@ -288,12 +288,16 @@ void transfer_to_cdi(struct core_state* state) {
     state->cdi_dispatch.packet_id = state->unique_packet_id;
 }
 
+bool delayed_cdi_dispatch_done (struct core_state* state) {
+    return (state->cdi_dispatch.prod_count >= NSPECTRA && state->cdi_dispatch.tr_count >= NSPECTRA && state->cdi_dispatch.cal_count >= NCALPACKETS);
+}
+
 bool process_delayed_cdi_dispatch(struct core_state* state) {
 
     if (state->timing.cdi_dispatch_counter > tap_counter) return false;
     // we always send 16 products + some time resolved
     // we sent all we had, return to the core loop and let spectra accumulate
-    if (state->cdi_dispatch.prod_count >= NSPECTRA && state->cdi_dispatch.tr_count >= NSPECTRA && state->cdi_dispatch.cal_count >= NCALPACKETS) {
+    if (delayed_cdi_dispatch_done(state)) {
         // we already sent all spectra, averaged and time resolved, nothing to do
         return false;
     }

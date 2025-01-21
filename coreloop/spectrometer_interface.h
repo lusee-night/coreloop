@@ -67,12 +67,6 @@ uint32_t spec_get_version(int s);
 // RFS_SET_RESET  Reset default configuration (system configuration as after boot)
 void spec_set_reset();
 
-// RFS_SET_STORE Stores current configuration
-void spec_store();
-
-// RFS_SET_RECALL  Recalls configuration from previous store 
-void spec_recall();
-
 // make the CDI interface generate raw waveform (together with delay, set to zero for something sensible)
 void spec_request_waveform(uint8_t ch, int dly);
 

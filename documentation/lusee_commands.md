@@ -6,20 +6,20 @@
 
 | 0x0M | Name                |  Description                                       |
 |------|---------------------|----------------------------------------------------|                             
-| 0x00 | RFS_SET_STOP        | wait mode - disable data taking                         |                              | 
-| 0x01 | RFS_SET_START       | Start data acquisition. To start anything setup by 0x1x or 0x2x                        | 
-| 0x02 | RFS_SET_RESET       | Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs  0x10 init and mark program begin                           |
-| 0x03 | RFS_SET_STORE       | Stores current CMD loop from program begin                                                         |
-| 0x04 | RFS_SET_RECALL      | Recalls configuration from previous store                                              |
+| 0x00 | RFS_SET_STOP        | Stop data acquisition.                             |                               
+| 0x01 | RFS_SET_START       | Start data acquisition.                            | 
+| 0x02 | RFS_SET_RESET       | Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs  0x10 init and mark program begin                                                                                      |
+| 0x03 | RFS_SET_TEMP_ALARM  | Sets the value of temperature alarm (in Celsius)                                       |
+| 0x04 | RFS_SET_WAIT_SPECTRA | Waits until ARG spectra are taken (stage 3)                                           | 
 | 0x05 | RFS_SET_HK_REQ      | Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;        |
 | 0x06 | RFS_SET_DISABLE_ADC | Set ADC mode: optionally disable ADCs (bits 0-3 in arg)                                |
 | 0x07 | RFS_SET_RANGE_ADC   | Autorange ADC and then set an ADC packet                                               |
 | 0x08 | RFS_SET_WAVEFORM    | Request ADC waform arg contains channel number                                         |
-| 0x09 | RFS_SET_WAIT_TICKS  | Wait arg number of ticks (10ms) before processing next CMD (careful with 64 buffer!)   |
-| 0x0A | RFS_SET_WAIT_SECS   | Wait arg number of seconds before processing next CMD (careful with 64 buffer!)        |
-| 0x0B | RFS_SET_WAIT_MINS   | Wait arg number of mins before processing next CMD (careful with 64 buffer!)        |
-| 0x0C | RFS_SET_WAIT_HRS    | Wait arg number of mins before processing next CMD (careful with 64 buffer!)        |
-| 0x0D | RFS_SET_DEBUG       | Debug command (used only in debugging)
+| 0x09 | RFS_SET_WAIT_TICKS  | Wait arg number of ticks (10ms) before processing next CMD                             |
+| 0x0A | RFS_SET_WAIT_SECS   | Wait arg number of seconds before processing next CMD                                  |
+| 0x0B | RFS_SET_WAIT_MINS   | Wait arg number of mins before processing next CMD                                     |
+| 0x0C | RFS_SET_WAIT_HRS    | Wait arg number of mins before processing next CMD                                     |
+| 0x0D | RFS_SET_DEBUG       | Debug command (used only in debugging)                                                 |
 | 0x0E | RFS_SET_HEARTBEAT   | Enable (arg>1) and disable (arg=0) heartbeat.                                          |
 | 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue               |
 
@@ -36,18 +36,18 @@
 | 0x16 | RFS_SET_WR_VAL_1   | Val bits 8-15
 | 0x17 | RFS_SET_WR_VAL_2   | Val bits 16-23
 | 0x18 | RFS_SET_WR_VAL_3   | Val bits 24-32. This triggers the actual register write
-| 0x19 | RFS_SET_TEMP_ALARM | Value |
 
 
+### 0x2X Program flow control
 
-
-
-### 0x2X Stored sequencer modes
-
-| 0x2M | Name               |  Description                                       |
-|------|--------------------|----------------------------------------------------|                             
-| 0x20 | RFS_SET_LOAD_FL    | Load sequencer mode from flash                     |
-| 0x21 | RFS_SET_STORE_FL   | Store sequencer mode into flash                    |
+| 0x2M | Name                       |  Description                                       |
+|------|----------------------------|----------------------------------------------------|                             
+| 0x20 | RFS_SEQ_START              | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
+| 0x21 | RFS_SEQ_END                | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
+| 0x22 | RFS_SEQ_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
+| 0x22 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 (see below)
+| 0x23 | RFS_SET_LOOP_END           | Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
+| 0x24 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. |
 
 
 ### 0x3X Gain Settings and Bit slicing

@@ -17,8 +17,8 @@ AppID_Registers_RB = 0x0205
 # uC generater housekeeping; Priority:  High     
 AppID_uC_Housekeeping = 0x0206
 
-# Calibrator detected with meta data; Priority:  High     
-AppID_Calibrator_Detect = 0x0207
+# End of sequence; Priority:  High     
+AppID_End_Of_Sequence = 0x0207
 
 # Data from the bootloader; Priority:  High     
 AppID_uC_Bootloader = 0x0208
@@ -28,9 +28,6 @@ AppID_uC_Start = 0x0209
 
 # Regular hearbeat packet; Priority:  NONE     
 AppID_uC_Heartbeat = 0x020A
-
-# For sequencer with a limited number of steps; Priority:  High     
-AppID_uC_Sequencer_complete = 0x020B
 
 # x = 0..F for 16 correlations; Priority:  High     
 AppID_MetaData = 0x020F

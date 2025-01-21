@@ -13,3 +13,4 @@ Commands above 0xA0 are parsed internally by the test framework and not describe
 | 0xA1 | CTRL_OUTLIER_AMP    | Generate outliers of this amplitude in units of 1/256              |
 | 0xA2 | CTRL_OUTLIER_BINS   | Generate outliers of this many (sequential) bins                   |
 | 0xE0 | CTRL_WAIT           | Wait for 0.1s x argument (intercepted by commander)                | 
+| 0xE1 | CTRL_WAIT_EOS       | Wait until you see EOS (intercepted by commander)                  | 

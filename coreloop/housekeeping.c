@@ -41,6 +41,8 @@ bool process_hearbeat(struct core_state* state) {
     payload->TVS_sensors[1] = state->base.TVS_sensors[1];
     payload->TVS_sensors[2] = state->base.TVS_sensors[2];
     payload->TVS_sensors[3] = state->base.TVS_sensors[3];
+    payload->cdi_total_command_count = cdi_total_command_count();
+    payload->errors = state->base.errors;
     payload->magic[0] = 'B';
     payload->magic[1] = 'R';
     payload->magic[2] = 'N';
@@ -61,6 +63,7 @@ bool process_housekeeping(struct core_state* state) {
     update_time(state);
     wait_for_cdi_ready();
     base->version = VERSION_ID;
+    new_unique_packet_id(state);
     base->unique_packet_id = state->unique_packet_id;
     base->errors = state->base.errors;
     base->housekeeping_type = state->housekeeping_request;
@@ -92,3 +95,18 @@ bool process_housekeeping(struct core_state* state) {
     return true;
 }
 
+bool process_eos(struct core_state* state) {
+    if (state->request_eos == 0) return false; 
+    // now we need to make sure absolutely everything is done
+    if (!delayed_cdi_dispatch_done(state)) return false;
+    // these two shouldn't really matter, since they get executed in one go
+    //  keeping them for sanity (and or future);
+    if (state->housekeeping_request) return false;
+    if (state->request_waveform) return false;
+    struct end_of_sequence *base = (struct end_of_sequence *)TLM_BUF;
+    new_unique_packet_id(state);
+    base->unique_packet_id = state->unique_packet_id;
+    base->eos_arg = state->request_eos;
+    cdi_dispatch(AppID_End_Of_Sequence, sizeof(struct end_of_sequence));
+    state->request_eos = 0;
+}

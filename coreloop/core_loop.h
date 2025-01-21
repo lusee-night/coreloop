@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000202
+#define VERSION_ID 0x00000203
 
 
 #include <inttypes.h>
@@ -134,12 +134,13 @@ struct core_state {
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
     struct watchdog_config watchdog;
+    uint16_t cdi_wait_spectra;
     uint16_t avg_counter;
     uint32_t unique_packet_id;
     uint8_t leading_zeros_min[NSPECTRA];
     uint8_t leading_zeros_max[NSPECTRA];
     uint8_t housekeeping_request;
-    uint8_t range_adc, resettle, request_waveform; 
+    uint8_t range_adc, resettle, request_waveform, request_eos; 
     bool tick_tock;
     bool drop_df;
     uint32_t heartbeat_packet_count;
@@ -158,6 +159,11 @@ struct saved_core_state {
     uint32_t CRC;
 };
 
+struct end_of_sequence {
+    uint32_t unique_packet_id;
+    uint32_t eos_arg;
+};
+
 struct startup_hello {
     uint32_t SW_version;
     uint32_t FW_Version;
@@ -174,6 +180,8 @@ struct heartbeat {
     uint32_t time_32;
     uint16_t time_16;
     uint16_t TVS_sensors[4];
+    uint32_t cdi_total_command_count;
+    uint32_t errors;
     char magic[6];
 };
 
@@ -272,6 +280,11 @@ void send_hello_packet(struct core_state* state);
 bool process_hearbeat(struct core_state*);
 bool process_housekeeping(struct core_state*);
 
+// create end-of-sequence packet
+bool process_eos(struct core_state*); 
+
+//delayed dispatch;
+bool delayed_cdi_dispatch_done (struct core_state*);
 
 // calibrator functions
 void calibrator_default_state (struct calibrator_state* cal);

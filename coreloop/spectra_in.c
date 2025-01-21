@@ -172,6 +172,7 @@ void process_spectrometer(struct core_state* state) {
                 // For each channel, set the APID, send it to the SRAM
                 // Then check to see if this software or the client will control the CDI writes
                 transfer_to_cdi(state);
+                if (state->cdi_wait_spectra>0) state->cdi_wait_spectra--;
             }
 
             if (state->avg_counter > get_Navg2(state)) debug_print("ERROR: avg_counter exceeded get_Navg2\n");

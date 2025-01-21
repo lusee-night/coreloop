@@ -7,11 +7,10 @@
 |    01 | AppID_Reset_Request         | High     | RFS watchdog is requesting a reset + metadata
 |    05 | AppID_Registers_RB          | High     | Dumps all register values from the RFS into packet
 |    06 | AppID_uC_Housekeeping       | High     | uC generater housekeeping
-|    07 | AppID_Calibrator_Detect     | High     | Calibrator detected with meta data
+|    07 | AppID_End_Of_Sequence         | High     | End of sequence
 |    08 | AppID_uC_Bootloader         | High     | Data from the bootloader
 |    09 | AppID_uC_Start              | High     | Flight SW has booted
 |    0A | AppID_uC_Heartbeat          | NONE     | Regular hearbeat packet
-|    0B | AppID_uC_Sequencer_complete | High     | For sequencer with a limited number of steps
 |    0F | AppID_MetaData              | High     | x = 0..F for 16 correlations
 |    1x | AppID_SpectraHigh           | High     | Main correlation products, high priorty
 |    2x | AppID_SpectraMed            | Med      | Main correlation products, medium priority
