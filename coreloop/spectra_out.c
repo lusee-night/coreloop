@@ -273,7 +273,6 @@ void transfer_to_cdi(struct core_state* state) {
     new_unique_packet_id(state);
     update_time(state);
     send_metadata_packet(state);
-    state->timing.cdi_dispatch_counter = tap_counter + state->dispatch_delay; // 10*0.01s ~10 Hz
     state->cdi_dispatch.prod_count = 0; //
     if (state->base.tr_start<state->base.tr_stop) {
         state->cdi_dispatch.tr_count = 0; // dispatch the TR spectra
@@ -286,6 +285,7 @@ void transfer_to_cdi(struct core_state* state) {
     state->cdi_dispatch.tr_appId = get_next_tr_baseAppID(state);
     state->cdi_dispatch.format = state->base.format;
     state->cdi_dispatch.packet_id = state->unique_packet_id;
+    state->timing.cdi_dispatch_counter = tap_counter + state->dispatch_delay;
 }
 
 bool delayed_cdi_dispatch_done (struct core_state* state) {
@@ -294,14 +294,16 @@ bool delayed_cdi_dispatch_done (struct core_state* state) {
 
 bool process_delayed_cdi_dispatch(struct core_state* state) {
 
-    if (state->timing.cdi_dispatch_counter > tap_counter) return false;
+    // if we are waiting, let's prevent anyone else to send stuff untill we are done
+    if (state->timing.cdi_dispatch_counter > tap_counter) return true;
+
     // we always send 16 products + some time resolved
     // we sent all we had, return to the core loop and let spectra accumulate
     if (delayed_cdi_dispatch_done(state)) {
         // we already sent all spectra, averaged and time resolved, nothing to do
         return false;
     }
-
+        
     if (state->cdi_dispatch.prod_count < NSPECTRA) {
         if (state->base.corr_products_mask & (1<<state->cdi_dispatch.prod_count)) {
             debug_print(".");

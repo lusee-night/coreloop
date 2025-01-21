@@ -70,14 +70,14 @@ bool process_housekeeping(struct core_state* state) {
 
     switch (state->housekeeping_request) {
         case 0:
-            debug_print ("Sending housekeeping type 0\n\r");
+            debug_print ("[K0]");
             struct housekeeping_data_0 *hk0 = (struct housekeeping_data_0 *)TLM_BUF;
             hk0->core_state = *state;
             cdi_dispatch(AppID_uC_Housekeeping, sizeof(struct housekeeping_data_0));
             break;
 
         case 1:
-            debug_print ("Sending housekeeping type 1\n\r");
+            debug_print ("[K1]");
             struct housekeeping_data_1 *hk1 = (struct housekeeping_data_1 *)TLM_BUF;
             for (int i=0; i<NINPUT; i++) {
                 hk1->ADC_stat[i] = state->base.ADC_stat[i];

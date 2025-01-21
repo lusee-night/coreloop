@@ -126,9 +126,13 @@ void core_loop(struct core_state* state)
         process_calibrator(state);
         process_gain_range(state);
         // we always process just one CDI interfacing things
+        // compiler 
         if (cdi_ready()) {
-             ( process_hearbeat(state) | process_delayed_cdi_dispatch(state) |  \
-               process_housekeeping(state) | process_waveform(state) | process_eos(state) );
+            if (process_hearbeat(state)) {}
+            else if (process_delayed_cdi_dispatch(state)) {}
+            else if (process_housekeeping(state)) {}
+            else if (process_waveform(state)) {}
+            else process_eos(state);
         }
 
 #ifdef NOTREAL
