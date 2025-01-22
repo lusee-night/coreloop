@@ -2,7 +2,7 @@
 # CHANGELOG
 
 ## Version 2r03
- * Extended the heartbeat packet to include additional information
+ * Extended the heartbeat packet to include additional information, including cdi command received, error array and cdi packets/bytes sent.
  * Implemented wait for n-spectra command
  * Implemented final packet (to be sent after all buffers empty)
  * Changed aliveness for both of those above.

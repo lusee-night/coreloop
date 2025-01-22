@@ -89,7 +89,17 @@ void core_init_state(struct core_state* state){
 bool process_waveform(struct core_state* state) {
     if (!state->request_waveform) return false;
     wait_for_cdi_ready();
-    spec_request_waveform(state->request_waveform & 7, 16+state->dispatch_delay*4);
+    uint32_t request = state->request_waveform & 7;
+    spec_request_waveform(request, 16+state->dispatch_delay*4);
+    if (request==4) {
+        state->cdi_stats.cdi_packets_sent+=4;
+        state->cdi_stats.cdi_bytes_sent+=4*32768;
+    } else {
+        state->cdi_stats.cdi_packets_sent++;
+        state->cdi_stats.cdi_bytes_sent+=32768;
+    }
+    
+    state->cdi_stats.cdi_packets_sent++;
     state->request_waveform = 0;
     return true;
 }
