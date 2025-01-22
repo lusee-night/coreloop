@@ -5,6 +5,8 @@
 #include <inttypes.h>
 #include <time.h>
 
+#include "high_prec_avg.h"
+
 #define DDR3_SIZE (1024*1024*(1024+512)) // 1.5GB
 
 #define DEBUG 1
@@ -42,9 +44,9 @@ extern const size_t TR_SPEC_DATA_SIZE;
 
 void DDR3_init();
 
-static inline void* spectra_write_buffer(bool tick_tock)    { return tick_tock ? SPEC_TICK    : SPEC_TOCK; }
-static inline void* spectra_read_buffer(bool tick_tock)     { return tick_tock ? SPEC_TOCK    : SPEC_TICK; };
-static inline void* tr_spectra_write_buffer(bool tick_tock) { return tick_tock ? TR_SPEC_TICK : TR_SPEC_TOCK; }
-static inline void* tr_spectra_read_buffer(bool tick_tock)  { return tick_tock ? TR_SPEC_TOCK : TR_SPEC_TICK; };
+static inline void* spectra_write_buffer(bool tick_tock)       { return tick_tock ? SPEC_TICK       : SPEC_TOCK; }
+static inline void* spectra_read_buffer(bool tick_tock)        { return tick_tock ? SPEC_TOCK       : SPEC_TICK; };
+static inline void* tr_spectra_write_buffer(bool tick_tock)    { return tick_tock ? TR_SPEC_TICK    : TR_SPEC_TOCK; }
+static inline void* tr_spectra_read_buffer(bool tick_tock)     { return tick_tock ? TR_SPEC_TOCK    : TR_SPEC_TICK; };
 
 #endif

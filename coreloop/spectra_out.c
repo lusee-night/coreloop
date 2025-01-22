@@ -3,6 +3,7 @@
 #include "cdi_interface.h"
 #include "lusee_appIds.h"
 #include "core_loop.h"
+#include "high_prec_avg.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include "flash_interface.h"
@@ -42,8 +43,9 @@ void write_packet_id(uint32_t packet_id, char** data_ptr, char** crc_ptr)
 
 void dispatch_32bit_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const int32_t *ddr_ptr = spectra_read_buffer(tick_tock);
-    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state.Nfreq; // pointer to current block of data.
+    const struct SpectraIn *ddr_ptr = spectra_read_buffer(tick_tock);
+//    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state.Nfreq; // pointer to current block of data.
+    int offset = state->cdi_dispatch.prod_count * NCHANNELS;
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
     int32_t *crc_ptr;
 
@@ -54,25 +56,9 @@ void dispatch_32bit_data(struct core_state* state) {
     uint32_t data_size = state->cdi_dispatch.Nfreq*sizeof(int32_t);
     uint32_t packet_size = data_size+2*sizeof(int32_t);
     wait_for_cdi_ready();
-    switch (state->cdi_dispatch.Navgf) {
-        case 1:
-            memcpy(cdi_ptr, ddr_ptr, state->cdi_dispatch.Nfreq * sizeof(uint32_t));
-            break;
-        case 2:
-            for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
-            }
-            break;
-        case 3:
-            for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
-            }
-            break;
-        case 4:
-            for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
-            }
-            break;
+
+    for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
+        cdi_ptr[i] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift);
     }
 
     // we don't want to do this ,since the incoming data are still compared
@@ -84,8 +70,8 @@ void dispatch_32bit_data(struct core_state* state) {
 
 void dispatch_16bit_10_plus_6_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const int32_t *ddr_ptr = spectra_read_buffer(tick_tock);
-    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state->Nfreq; // pointer to current block of data.
+    const struct SpectraIn* ddr_ptr = spectra_read_buffer(tick_tock);
+    int offset = state->cdi_dispatch.prod_count * NCHANNELS;
 
     char* crc_ptr;
     char* data_ptr;
@@ -101,15 +87,7 @@ void dispatch_16bit_10_plus_6_data(struct core_state* state) {
     int32_t val_in;
 
     for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-        if (state->cdi_dispatch.Navgf == 1) {
-            val_in = ddr_ptr[i];
-        } else if (state->cdi_dispatch.Navgf == 2) {
-            val_in = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
-        } else if (state->cdi_dispatch.Navgf == 3) {
-            val_in = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
-        } else if (state->cdi_dispatch.Navgf == 4) {
-            val_in = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
-        }
+        val_in = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift);
         val_out = encode_10plus6(val_in);
         memcpy(data_ptr, &val_out, sizeof val_out);
         data_ptr += sizeof val_out;
@@ -136,8 +114,8 @@ void dispatch_16bit_shared_lz_data() {
 
 void dispatch_16bit_4_to_5_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const int32_t *ddr_ptr = spectra_read_buffer(tick_tock);
-    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS;
+    const struct SpectraIn* ddr_ptr = spectra_read_buffer(tick_tock);
+    int offset = state->cdi_dispatch.prod_count * NCHANNELS;
 
     char* crc_ptr;
     char* data_ptr;
@@ -161,15 +139,7 @@ void dispatch_16bit_4_to_5_data(struct core_state* state) {
             memcpy(data_ptr, vals_out, sizeof vals_out);
             data_ptr += sizeof vals_out;
         }
-        if (state->cdi_dispatch.Navgf == 1) {
-            vals_in[i % 4] = ddr_ptr[i];
-        } else if (state->cdi_dispatch.Navgf == 2) {
-            vals_in[i % 4] = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
-        } else if (state->cdi_dispatch.Navgf == 3) {
-            vals_in[i % 4] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
-        } else if (state->cdi_dispatch.Navgf == 4) {
-            vals_in[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
-        }
+        vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift);
     }
 
     // compute CRC
