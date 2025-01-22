@@ -1,20 +1,68 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "lusee_commands.h"
 #include "spectrometer_interface.h"
 #include "lusee_appIds.h"
 #include "core_loop.h"
+#include "high_prec_avg.h"
 #include "flash_interface.h"
 #include "LuSEE_IO.h"
 
+// this function is not actually used, keeping just in case
+//static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
+//    int32_t zeros = __builtin_clz(val);
+//    *min = MIN(*min, zeros);
+//    *max = MAX(*max, zeros);
+//    return val;
+//}
 
-static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
-    int32_t zeros = __builtin_clz(val);
-    *min = MIN(*min, zeros);
-    *max = MAX(*max, zeros);
-    return val;
-}
+//
+//
+//
+///* Implementation using 40-bit counters */
+//void compute_40bit_averages(int k, int32_t* results) {
+//    struct StreamCounters sc;
+//    int i, stream_idx;
+//
+//    /* Initialize all to 0 */
+//    for(i = 0; i < NUM_STREAMS; ++i) {
+//        sc.low[i] = 0;
+//    }
+//    for(i = 0; i < 512; ++i) {
+//        sc.high[i] = 0;
+//    }
+//
+//    for(i = 0; i < (1 << k); ++i) {
+//        for(stream_idx = 0; stream_idx < NUM_STREAMS; ++stream_idx) {
+//            int32_t value;
+//            int64_t temp_sum;
+//
+//            generate_stream_value(stream_idx, i, &value);
+//
+//            /* Combine current counter */
+//            temp_sum = ((int64_t)get_high_bits(&sc, stream_idx) << 32) |
+//                      (uint32_t)sc.low[stream_idx];
+//
+//            /* Add new value with precision reduction */
+//            temp_sum += (value >> 4);
+//
+//            /* Store back */
+//            sc.low[stream_idx] = (int32_t)temp_sum;
+//            set_high_bits(&sc, stream_idx, (int8_t)(temp_sum >> 32));
+//        }
+//    }
+//
+//    /* Compute final averages */
+//    for(stream_idx = 0; stream_idx < NUM_STREAMS; ++stream_idx) {
+//        int64_t final_sum = ((int64_t)get_high_bits(&sc, stream_idx) << 32) |
+//                           (uint32_t)sc.low[stream_idx];
+//        results[stream_idx] = (int32_t)((final_sum << 4) >> k);
+//    }
+//}
+
+/// end of tmp
 
 bool transfer_time_resolved_from_df(struct core_state* state);
 
@@ -24,28 +72,30 @@ bool transfer_from_df(struct core_state* state)
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)SPEC_BUF;
-    int32_t *ddr_ptr = spectra_write_buffer(tick_tock);
-    const int32_t *ddr_ptr_previous = spectra_read_buffer(tick_tock);
+    struct SpectraIn* ddr_ptr = spectra_write_buffer(tick_tock);
+    const struct SpectraIn* ddr_ptr_previous = spectra_read_buffer(tick_tock);
     uint16_t mask = 1;
     bool accept = true;
     //debug_print("Processing spectra...\n\r");
-    if ((state->seq.reject_ratio>0) & (state->base.weight_previous>(get_Navg2(state)/2))) {
+    if ((state->seq.reject_ratio > 0) & (state->base.weight_previous > get_Navg2(state) / 2)) {
         //debug_print("Check for outlier....")
         uint32_t bad = 0;
-        for (uint16_t sp = 0; sp< NSPECTRA_AUTO; sp++) {
+        for (uint16_t sp = 0; sp < NSPECTRA_AUTO; sp++) {
+            int offset = sp * NSPECTRA;
             if (state->base.corr_products_mask & (mask)) {
-                for (uint16_t i = 0; i < NCHANNELS; i++) {
+                for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
+                    int64_t prev_val_big = (get_packed_value(ddr_ptr_previous, total_idx) >> (state->seq.Navg2_shift - STAGE_2_LOST_BITS));
+                    prev_val_big /= state->base.weight_previous;
+                    int32_t previous_val = (int32_t)(prev_val_big & 0xFFFFFFFF);
                     int32_t val = *df_ptr;
-                    int32_t previous_val = *ddr_ptr_previous/state->base.weight_previous;
                     if (abs(val-previous_val)>(previous_val/state->seq.reject_ratio)) {
                         bad++;
                     }
                     df_ptr++;
-                    ddr_ptr_previous++;
                 }
-            } else {df_ptr+=NCHANNELS; ddr_ptr_previous+=NCHANNELS;}
+            } else {df_ptr+=NCHANNELS;}
             mask <<= 1;
-        }   
+        }
         if (bad > state->seq.reject_maxbad)  accept = false;
         // reinitialize the pointers
         df_ptr = (int32_t *)SPEC_BUF;
@@ -56,37 +106,24 @@ bool transfer_from_df(struct core_state* state)
     if (accept) {
         state->base.weight_current++;
         for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
-
+            int offset = sp * NCHANNELS;
             //debug_print_dec(sp); debug_print("\n\r");
-            leading_zeros_min[sp] = 32;
-            leading_zeros_max[sp] = 0;
             if (state->base.corr_products_mask & (mask)) {
-                if (sp < NSPECTRA_AUTO) {
-                    
-                    for (uint16_t i = 0; i < NCHANNELS; i++) {
-                        int32_t data =  (get_with_zeros(*df_ptr, &leading_zeros_min[sp], &leading_zeros_max[sp]) >> state->seq.Navg2_shift);
-                        if (avg_counter) {
-                            *ddr_ptr += data;
-                        } else {
-                            *ddr_ptr = data;
-                        }
-                        df_ptr++;
-                        ddr_ptr++;
+                for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
+                    // we lose some bits anyway
+                    int32_t value = *df_ptr >> STAGE_2_LOST_BITS;
+                    if (avg_counter)
+                        add_to_buffer(ddr_ptr, total_idx, value);
+                    else {
+                        // set low bits to value, set high bits to zero in one go for this spectrum
+                        ddr_ptr->low[total_idx] = value;
+                        if (total_idx == offset)
+                            memset(ddr_ptr->low + offset / 4, 0, (NCHANNELS / 4) * sizeof(int32_t));
                     }
-                } else {
-                    for (uint16_t i = 0; i < NCHANNELS; i++) {
-                        int32_t data = (*df_ptr) >> state->seq.Navg2_shift;
-                        if (avg_counter) {
-                            *ddr_ptr += data;
-                        } else {
-                            *ddr_ptr = data;
-                        }
-                        df_ptr++;
-                        ddr_ptr++;
-                    }
+                    df_ptr++;
                 }
             } else {
-                df_ptr+=NCHANNELS; ddr_ptr+=NCHANNELS;
+                df_ptr+=NCHANNELS;
             }
             mask <<= 1;
         }
@@ -140,7 +177,7 @@ void process_spectrometer(struct core_state* state) {
     // Check if we have a new spectrum packet from the FPGA
     if (spec_new_spectrum_ready()) {
         debug_print ("*");
-        
+
 
         if (drop_df) {  // we were asked to drop a frame
             drop_df = false;
@@ -164,7 +201,7 @@ void process_spectrometer(struct core_state* state) {
             // Check if we have reached filled up Stage 2 averaging
             // and if so, push things out to CDI
             if (avg_counter == get_Navg2(state)) {
-                avg_counter = 0;                
+                avg_counter = 0;
                 tick_tock = !tick_tock;
                 state->base.weight_previous = state->base.weight_current;
                 state->base.weight_current = 0;

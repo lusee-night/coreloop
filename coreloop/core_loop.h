@@ -316,4 +316,6 @@ void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out);
 // CRC
 uint32_t CRC(const void* data, size_t size);
 
+
+
 #endif // CORE_LOOP_H
