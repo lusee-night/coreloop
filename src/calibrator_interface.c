@@ -5,7 +5,7 @@
 
 void calib_init() {
     // Placeholder implementation
-    CAL_BUF = malloc(128*1024);
+    CAL_DF = malloc(128*1024);
 }
 
 void calib_enable(bool enable) {

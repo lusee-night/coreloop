@@ -54,7 +54,7 @@ void set_calibrator(struct calibrator_state* cal) {
     calib_set_delta_drift_corA(cal->delta_drift_corA);
     calib_set_delta_drift_corB(cal->delta_drift_corB);
     calib_set_PFB_index(cal->pfb_index);
-    memset((void *) CAL_BUF, 0, CAL_MODE0_DATASIZE);
+    memset((void *) CAL_DF, 0, CAL_MODE0_DATASIZE);
     if (cal->mode <=4) {
         calib_set_readout_mode (cal->mode);
     } else if (cal->mode == CAL_MODE_ZOOM) {
@@ -116,7 +116,7 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     out->state = state->cal;
     out->SNR_max = 0;
     out->SNR_min = 0;
-    uint32_t* have_lock = (uint32_t *)(CAL_BUF + 0*CAL_MODE3_CHUNKSIZE);
+    uint32_t* have_lock = (uint32_t *)(CAL_DF + 0*CAL_MODE3_CHUNKSIZE);
     out->have_lock[0] = out->have_lock[1] = out->have_lock[2] = out->have_lock[3] = 0;
     for (int i=0; i<1024; i++) {
         if (*have_lock & 1) out->have_lock[0]++;
@@ -126,8 +126,8 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
         have_lock++;
     }
     // drift is chunk
-    memcpy ((void*) &out->drift, (void *)CAL_BUF + 1*CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
-    int32_t* SNR = (int32_t *)(CAL_BUF + 20*CAL_MODE3_CHUNKSIZE);
+    memcpy ((void*) &out->drift, (void *)CAL_DF + 1*CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
+    int32_t* SNR = (int32_t *)(CAL_DF + 20*CAL_MODE3_CHUNKSIZE);
     out->SNR_max = 0;
     out->SNR_min = 0xFFFFFF;
     for (int i=0; i<4*1024; i++) {
@@ -145,7 +145,7 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
 }
 
 void process_cal_mode00(struct core_state* state) {
-    memcpy ((void *) CAL_DATA, (void *) CAL_BUF,  CAL_MODE0_DATASIZE);
+    memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE0_DATASIZE);
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     new_unique_packet_id(state);
@@ -157,7 +157,7 @@ void process_cal_mode00(struct core_state* state) {
 
 
 void process_cal_mode01(struct core_state* state) {
-    memcpy ((void *) CAL_DATA, (void *) CAL_BUF,  CAL_MODE1_DATASIZE);
+    memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE1_DATASIZE);
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     new_unique_packet_id(state);
@@ -168,7 +168,7 @@ void process_cal_mode01(struct core_state* state) {
 }
 
 void process_cal_mode_raw11(struct core_state* state) {
-    memcpy ( (void *) CAL_DATA, (void *) CAL_BUF,  CAL_MODE3_DATASIZE);
+    memcpy ( (void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE3_DATASIZE);
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     new_unique_packet_id(state);
@@ -295,7 +295,7 @@ void dispatch_calibrator_data(struct core_state* state) {
     wait_for_cdi_ready();
     if (d->cal_appId == AppID_Calibrator_MetaData) {
         // data already packed as we need it
-        memcpy ((void *)(TLM_BUF), (void *)(CAL_BUF), d->cal_size);
+        memcpy ((void *)(TLM_BUF), (void *)(CAL_DATA), d->cal_size);
         cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId, d->cal_size); // +12 for the header
         d->cal_count=0xFE; //we're done (+1 will make it go to 0xFF)
         debug_print("c#");
@@ -306,12 +306,13 @@ void dispatch_calibrator_data(struct core_state* state) {
         *ptr = state->base.time_16; ptr++;
         
         uint32_t start = (state->cdi_dispatch.cal_count-1)*d->cal_packet_size;
+        uint32_t appid = d->cal_appId+state->cdi_dispatch.cal_count;
         if (start+d->cal_packet_size >= d->cal_size) {
             d->cal_packet_size = d->cal_size-start;
             d->cal_count=0xFE; //we're done (+1 will make it go to 0xFF)
         }
-        memcpy ((void *)(ptr), (void *)(CAL_BUF+start), d->cal_packet_size);
-        cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId+state->cdi_dispatch.cal_count, d->cal_packet_size+12); // +12 for the header        
+        memcpy ((void *)(ptr), (void *)(CAL_DATA+start), d->cal_packet_size);
+        cdi_dispatch_uC(&(state->cdi_stats), appid, d->cal_packet_size+12); // +12 for the header        
         debug_print("c");
     } 
     

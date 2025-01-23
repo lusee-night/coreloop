@@ -47,13 +47,11 @@ bool process_cdi(struct core_state* state)
     } else {
         // process incoming commands 
         state->cmd_counter++;
-        debug_print ("\r\nGot new CDI command: cmd = ");
+        debug_print ("[>>");
         debug_print_hex(cmd);
-        debug_print(", arg_hi = ");
         debug_print_hex(arg_high);
-        debug_print(", arg_lo = ");
         debug_print_hex(arg_low);
-        debug_print("  ");
+        debug_print("]");
 
         if (cmd == RFS_SPECIAL) {
             if (arg_high == RFS_SET_RESET) {
@@ -92,13 +90,11 @@ bool process_cdi(struct core_state* state)
     state->cmd_start = (state->cmd_start + 1) % CMD_BUFFER_SIZE;
     arg_low = state->cmd_arg_low[state->cmd_start];
     arg_high = state->cmd_arg_high[state->cmd_start];
-    debug_print ("\r\nProcessing CDI command: cmd = ");
+    debug_print ("[>*");
     debug_print_hex(cmd);
-    debug_print(", arg_hi = ");
     debug_print_hex(arg_high);
-    debug_print(", arg_lo = ");
     debug_print_hex(arg_low);
-    debug_print("\r\n");
+    debug_print("]");
 
     switch (arg_high) {
         case RFS_SET_START:

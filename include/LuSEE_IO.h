@@ -36,7 +36,7 @@ extern void* TR_SPEC_TICK;
 extern void* TR_SPEC_TOCK;
 extern void* TLM_BUF;
 extern void* SPEC_BUF;
-extern void* CAL_BUF;
+extern void* CAL_DF;
 extern void* CAL_DATA;
 
 extern const size_t SPEC_DATA_SIZE;

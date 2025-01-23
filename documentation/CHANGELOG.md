@@ -6,7 +6,8 @@
  * Implemented wait for n-spectra command
  * Implemented final packet (to be sent after all buffers empty)
  * Changed aliveness for both of those above.
- * Version to be used during TVAC
+ * Fixed calibration output (also changed point from CAL_BUF to CAL_DF)
+ * Version candidate to be used during TVAC
 
 ## Version 2r02
  * Added calibrator support V2 (automatic bitslicing, SNR adjustment, mode switching)

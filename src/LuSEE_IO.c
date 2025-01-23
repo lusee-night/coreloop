@@ -6,7 +6,7 @@ struct timespec time_start, time_now;
 
 void* DDR3_BASE_ADDR;
 void *SPEC_TICK, *SPEC_TOCK, *TR_SPEC_TICK, *TR_SPEC_TOCK;
-void *CAL_BUF, *CAL_DATA;
+void *CAL_DF, *CAL_DATA;
 int g_core_timer_0;
 
 const size_t SPEC_DATA_SIZE = 2048*16*sizeof(uint32_t);
