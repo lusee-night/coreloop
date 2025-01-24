@@ -84,7 +84,7 @@ bool transfer_from_df(struct core_state* state)
             int offset = sp * NSPECTRA;
             if (state->base.corr_products_mask & (mask)) {
                 for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                    int64_t prev_val_big = (get_packed_value(ddr_ptr_previous, total_idx) >> (state->seq.Navg2_shift - STAGE_2_LOST_BITS));
+                    int64_t prev_val_big = (get_packed_value(ddr_ptr_previous, total_idx) >> state->seq.Navg2_shift);
                     prev_val_big /= state->base.weight_previous;
                     int32_t previous_val = (int32_t)(prev_val_big & 0xFFFFFFFF);
                     int32_t val = *df_ptr;
@@ -102,28 +102,34 @@ bool transfer_from_df(struct core_state* state)
         mask = 1;
     }
 
+    const int shift_by = state->seq.Navg2_shift;
+//    assert(shift_by <= 7);
+
     // do not copy data, if not accepted
     if (accept) {
         state->base.weight_current++;
         for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
             int offset = sp * NCHANNELS;
             //debug_print_dec(sp); debug_print("\n\r");
-            if (state->base.corr_products_mask & (mask)) {
+            if (state->base.corr_products_mask & mask) {
                 for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                    // we lose some bits anyway
-                    int32_t value = *df_ptr >> STAGE_2_LOST_BITS;
-                    if (avg_counter)
-                        add_to_buffer(ddr_ptr, total_idx, value);
-                    else {
+                    if (avg_counter) {
+                        int32_t new_low_bits;
+                        bool overflow = __builtin_sadd_overflow(ddr_ptr->low[total_idx], *df_ptr, &new_low_bits);
+                        ddr_ptr->low[total_idx] = new_low_bits;
+                        if (overflow) {
+                            ddr_ptr->high[total_idx >> 2] += (1 << ((total_idx %4) * 8));
+                        }
+                    } else {
                         // set low bits to value, set high bits to zero in one go for this spectrum
-                        ddr_ptr->low[total_idx] = value;
+                        ddr_ptr->low[total_idx] = *df_ptr;
                         if (total_idx == offset)
-                            memset(ddr_ptr->low + offset / 4, 0, (NCHANNELS / 4) * sizeof(int32_t));
+                            memset(ddr_ptr->high + offset / 4, 0, (NCHANNELS / 4) * sizeof(int32_t));
                     }
                     df_ptr++;
                 }
             } else {
-                df_ptr+=NCHANNELS;
+                df_ptr += NCHANNELS;
             }
             mask <<= 1;
         }
