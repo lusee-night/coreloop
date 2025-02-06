@@ -350,8 +350,6 @@ bool process_delayed_cdi_dispatch (struct core_state* state) {
     } else if (state->cdi_dispatch.cal_count < NCALPACKETS) {
         dispatch_calibrator_data(state);
         state->cdi_dispatch.cal_count++;
-        debug_print("XX");
-        debug_print_dec(state->cdi_dispatch.cal_count);
     }
 
     state->timing.cdi_dispatch_counter = tap_counter + state->dispatch_delay;

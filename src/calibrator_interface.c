@@ -104,7 +104,8 @@ void calib_set_slicers (uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t 
 
 
 
-uint32_t calib_get_slicer_errors() {}
+uint32_t calib_get_slicer_errors() {return 0;}
 
+uint32_t calib_get_errors() {return 0;}
 
 int calib_get_readout_mode() {}

@@ -41,13 +41,12 @@ struct calibrator_state {
     uint32_t SNRon, SNRoff;
     uint32_t Nsettle, delta_drift_corA, delta_drift_corB; 
     uint16_t pfb_index; // for PFB and spectral zoom mode
-
     // for saving weights
     uint16_t weight_ndx; // weight index when storing weights
-
     uint8_t powertop_slice;
     uint8_t sum1_slice, sum2_slice;
     uint8_t prod1_slice, prod2_slice;
+    uint32_t errors;
 };
 
 

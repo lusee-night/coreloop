@@ -18,8 +18,53 @@
 #define SLICER_ERR_SD3   32
 #define SLICER_ERR_PTOP  64
 #define SLICER_ERR_PBOT  128
-#define SLICER_ERR_PROD1  256
-#define SLICER_ERR_PROD2  512
+#define SLICER_ERR_PR_FDX 256      
+#define SLICER_ERR_PR_SDX 512      
+#define SLICER_ERR_PR_TOP 1024      
+#define SLICER_ERR_PR_BOT 2048 
+#define SLICER_ERR_PR_FD  4096    
+#define SLICER_ERR_PR_SD  8192
+#define SLICER_ERR_PROD1  16384
+#define SLICER_ERR_PROD2  32768
+
+#define CAL_ERR_PHASER_0  1
+#define CAL_ERR_PHASER_1  2
+#define CAL_ERR_PHASER_2  4
+#define CAL_ERR_PHASER_3  8
+#define CAL_ERR_PHASER_4  16
+#define CAL_ERR_PHASER_5  32
+#define CAL_ERR_PHASER_6  64
+#define CAL_ERR_PHASER_7  128
+#define CAL_ERR_AVG_0  256
+#define CAL_ERR_AVG_9  512
+#define CAL_ERR_AVG_10  1024
+#define CAL_ERR_AVG_11 2048
+#define CAL_ERR_AVG_12  4096
+#define CAL_ERR_AVG_13 8192
+#define CAL_ERR_AVG_14 16384
+#define CAL_ERR_AVG_15 32768
+#define CAL_ERR_PROCESS_0 (1<<16)
+#define CAL_ERR_PROCESS_1 (1<<17)
+#define CAL_ERR_PROCESS_2 (1<<18)
+#define CAL_ERR_PROCESS_3 (1<<19)
+#define CAL_ERR_PROCESS_4 (1<<20)
+#define CAL_ERR_PROCESS_5 (1<<21)
+#define CAL_ERR_PROCESS_24 (1<<22)
+#define CAL_ERR_PROCESS_25 (1<<23)
+#define CAL_ERR_PROCESS_26 (1<<24) 
+#define CAL_ERR_PROCESS_27 (1<<25)
+#define CAL_ERR_PROCESS_28 (1<<26)
+#define CAL_ERR_PROCESS_29 (1<<27)
+#define CAL_ERR_STAG3_12 (1<<28)
+#define CAL_ERR_STAG3_13 (1<<29)
+#define CAL_ERR_STAG3_14 (1<<30)
+
+
+
+
+
+
+
 
 
 // put calibration into a default state
@@ -39,6 +84,9 @@ void calib_set_slicers (uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t 
 
 
 uint32_t calib_get_slicer_errors();
+
+uint32_t calib_get_errors();
+
 
 
 // sets the readout mode

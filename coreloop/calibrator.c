@@ -21,7 +21,7 @@
 #define CAL_MODE3_PACKETSIZE (3*1024*sizeof(uint32_t)) 
 #define CAL_MODE3_APPID_OFFSET 11
 uint32_t register_scratch[CAL_NREGS];
-int32_t hk;
+int32_t hk=0;
 
 void calibrator_default_state (struct calibrator_state* cal) {
 
@@ -35,8 +35,8 @@ void calibrator_default_state (struct calibrator_state* cal) {
     cal->SNRon = 5;
     cal->SNRoff = 3;
     cal->Nsettle = 5;
-    cal->delta_drift_corA = 5;
-    cal->delta_drift_corB = 10;
+    cal->delta_drift_corA = 1;
+    cal->delta_drift_corB = 1;
     cal->pfb_index = 0;
     cal->weight_ndx = 0;
 }
@@ -87,28 +87,17 @@ void calibrator_set_SNR(struct calibrator_state* cal) {
 }
 
 void calibrator_slice_init(struct calibrator_state* cal) {
-    cal->powertop_slice = 14;
-    cal->sum1_slice = 14;
-    cal->sum2_slice = 14;
-    cal->prod1_slice = 14;
-    cal->prod2_slice = 14;
+    cal->powertop_slice = 5;
+    cal->sum1_slice = 5;
+    cal->sum2_slice = 5;
+    cal->prod1_slice = 5;
+    cal->prod2_slice = 5;
 }
 
 void calibrator_set_slices(struct calibrator_state* cal) {
-    calib_set_slicers(cal->powertop_slice, cal->powertop_slice+4, cal->sum1_slice, cal->sum2_slice, 0, cal->prod1_slice, cal->prod2_slice);
+    // second one was plus +4
+    calib_set_slicers(cal->powertop_slice, cal->powertop_slice+8, cal->sum1_slice, cal->sum2_slice, 0, cal->prod1_slice, cal->prod2_slice);
 }
-
-
-#define SLICER_ERR_SUM1 1
-#define SLICER_ERR_SUM2 2
-#define SLICER_ERR_FD   4
-#define SLICER_ERR_SD1   8
-#define SLICER_ERR_SD2   16
-#define SLICER_ERR_SD3   32
-#define SLICER_ERR_PTOP  64
-#define SLICER_ERR_PBOT  128
-#define SLICER_ERR_PROD1  256
-#define SLICER_ERR_PROD2  512
 
 
 struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
@@ -142,6 +131,8 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     }
 
     //cal_copy_error_regs (&(out->error_regs));
+    // nextmode //debug
+    set_readout_mode(&(state->cal), CAL_MODE_RAW0);
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
@@ -152,6 +143,9 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
 
 void process_cal_mode00(struct core_state* state) {
     memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE0_DATASIZE);
+    // nextmode //debug
+    set_readout_mode(&(state->cal),CAL_MODE_RAW3);
+
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     new_unique_packet_id(state);
@@ -175,6 +169,7 @@ void process_cal_mode01(struct core_state* state) {
 
 void process_cal_mode_raw11(struct core_state* state) {
     memcpy ( (void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE3_DATASIZE);
+    // nextmode //debug
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     new_unique_packet_id(state);
@@ -187,17 +182,26 @@ void process_cal_mode_raw11(struct core_state* state) {
 
 void process_calibrator(struct core_state* state) {
     if (!state->base.calibrator_enable) return;
-    
+    struct calibrator_state* cal = &(state->cal);
+
     bool new_data = cal_new_cal_ready();
     if (new_data) debug_print("C");
     int readout_mode = calib_get_readout_mode();
+    cal->errors = calib_get_errors();
+    if (cal->errors>0) {
+        debug_print("[ * CE ");
+        debug_print_dec(cal->errors);
+        debug_print("  * ]");
+    }
+
     uint32_t bit_slicer_flags = calib_get_slicer_errors();
+        
     if ((bit_slicer_flags>0) & (state->cal.mode >= CAL_MODE_BIT_SLICER_SETTLE)) {
         debug_print("B");
         debug_print_dec(bit_slicer_flags);
-        state->cal.mode = CAL_MODE_BIT_SLICER_SETTLE;
+        cal->mode = CAL_MODE_BIT_SLICER_SETTLE;
     }
-    struct calibrator_state* cal = &(state->cal);
+    
     if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
         if ((bit_slicer_flags == 0) & (new_data)) {
             // We have converged, time to move onto the next mode;
@@ -205,13 +209,16 @@ void process_calibrator(struct core_state* state) {
             debug_print("\r\n[ -> SNR]")
         } else {
             bool restart = true;
-            if (bit_slicer_flags & SLICER_ERR_SUM1) { cal->sum1_slice+=2;  debug_print("\r\n[SUM1++]");}
-            else if (bit_slicer_flags & SLICER_ERR_SUM2) { cal->sum2_slice+=2;  debug_print("\r\n[SUM2++]");}
+            if (bit_slicer_flags & SLICER_ERR_SUM1) { cal->sum1_slice+=1;  debug_print("\r\n[SUM1++]");}
+            else if (bit_slicer_flags & SLICER_ERR_SUM2) { cal->sum2_slice+=1;  debug_print("\r\n[SUM2++]");}
             else if (bit_slicer_flags & (SLICER_ERR_FD+SLICER_ERR_SD1+SLICER_ERR_SD2+SLICER_ERR_SD3)) { cal->sum1_slice++; cal->sum2_slice++; debug_print("\r\n[SUMX++]");}
+            else if (bit_slicer_flags & (SLICER_ERR_PR_FD+SLICER_ERR_PR_FDX+SLICER_ERR_PR_SD+SLICER_ERR_PR_SDX)) { cal->sum1_slice++; cal->sum2_slice++; debug_print("\r\n[PSUMX++]");}
             else if (bit_slicer_flags & SLICER_ERR_PTOP) { cal->powertop_slice+=1; debug_print("\r\n[PTOP++]");}
+            else if (bit_slicer_flags & SLICER_ERR_PR_TOP) { cal->powertop_slice+=0; restart=false; debug_print("\r\n[PrTOP++]");}
             else if (bit_slicer_flags & SLICER_ERR_PBOT) { cal->powertop_slice+=1; debug_print("\r\n[PBOT++]");}
-            else if (bit_slicer_flags & SLICER_ERR_PROD1) { cal->prod1_slice+=2; debug_print("\r\n[PROD1++]");}
-            else if (bit_slicer_flags & SLICER_ERR_PROD2) { cal->prod2_slice+=2; debug_print("\r\n[PROD2++]");}
+            else if (bit_slicer_flags & SLICER_ERR_PR_BOT) { cal->powertop_slice+=1; debug_print("\r\n[PrBOT++]");}
+            else if (bit_slicer_flags & SLICER_ERR_PROD1) { cal->prod1_slice+=1; debug_print("\r\n[PROD1++]");}
+            else if (bit_slicer_flags & SLICER_ERR_PROD2) { cal->prod2_slice+=1; debug_print("\r\n[PROD2++]");}
             else {restart = false;}
             if (restart) { calibrator_set_slices(cal); cal_reset(); }    
             // do not return, can go straight into settle. (check later)
@@ -226,14 +233,14 @@ void process_calibrator(struct core_state* state) {
             debug_print("[SNR:");
             debug_print_dec(out->SNR_min);
             debug_print("|");
-            debug_print_dec(out->SNR_max);
+            debug_print_dec(out->SNR_max );
             debug_print("]");
-            if ((out->SNR_max/out->SNR_min)>5)  {
+            if ((out->SNR_max/out->SNR_min)>=3)  {
                 int diff = out->SNR_max - out->SNR_min;
                 cal->SNRon = out->SNR_min + diff*3/4;
                 cal->SNRoff = out->SNR_min + diff/4;
                 calibrator_set_SNR(cal);                
-                cal->mode = CAL_MODE_RAW3;  // debug only!!!
+                cal->mode = CAL_MODE_RUN;  // debug only!!!
                 set_readout_mode(cal,CAL_MODE_RAW3); // should be zero after fix                
                 //cal->mode = CAL_MODE_RUN;
                 debug_print("\r\n[ -> RUN]")
@@ -255,15 +262,20 @@ void process_calibrator(struct core_state* state) {
                 process_cal_mode00(state);
                 //set_readout_mode(CAL_MODE_RAW3);
             } else {
-                struct calibrator_metadata* out = process_cal_mode11(state);
-                if (out->have_lock[0] + out->have_lock[1] + out->have_lock[2] + out->have_lock[3] == 0) {
-                    // we have lost lock, let's go back to SNR acquisition
-                    calib_set_SNR_lock_on(0xFFFFFF);
-                    cal->mode = CAL_MODE_SNR_SETTLE;
+                if (hk%2==0) {
+                    process_cal_mode_raw11(state);
                 } else {
-                    // we have lock, not let's take some real data
-                    //set_readout_mode(CAL_MODE_RAW0);
-                }                
+                    struct calibrator_metadata* out = process_cal_mode11(state);
+                    if (out->have_lock[0] + out->have_lock[1] + out->have_lock[2] + out->have_lock[3] == 0) {
+                        // we have lost lock, let's go back to SNR acquisition
+                        calib_set_SNR_lock_on(0xFFFFFF);
+                        cal->mode = CAL_MODE_SNR_SETTLE;
+                    } else {
+                        // we have lock, not let's take some real data
+                        //set_readout_mode(CAL_MODE_RAW0);
+                    }
+                }
+                hk++;                
             }
             
         } else {
@@ -316,11 +328,11 @@ void dispatch_calibrator_data(struct core_state* state) {
         *ptr = state->base.time_32; ptr++;
         *ptr = state->base.time_16; ptr++;
         
-        uint32_t start = (state->cdi_dispatch.cal_count-1)*d->cal_packet_size;
+        uint32_t start = (state->cdi_dispatch.cal_count)*d->cal_packet_size;
         uint32_t appid = d->cal_appId+state->cdi_dispatch.cal_count;
         if (start+d->cal_packet_size >= d->cal_size) {
             d->cal_packet_size = d->cal_size-start;
-            d->cal_count=0xFE; //we're done (+1 will make it go to 0xFF)
+            d->cal_count=0xFE; 
         }
         memcpy ((void *)(ptr), (void *)(CAL_DATA+start), d->cal_packet_size);
         cdi_dispatch_uC(&(state->cdi_stats), appid, d->cal_packet_size+12); // +12 for the header        
