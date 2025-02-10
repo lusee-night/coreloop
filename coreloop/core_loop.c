@@ -337,5 +337,19 @@ void trigger_ADC_stat() {
 
 
 
+uint32_t timer_time_32;
+uint16_t timer_time_16;
 
+void timer_start() {
+    spec_get_time(&timer_time_32, &timer_time_16);
+}
+
+uint32_t timer_stop () {
+    uint32_t time_32;
+    uint16_t time_16;
+    uint64_t t_start = ( ((uint64_t)(timer_time_16)<<32) | timer_time_32) >> 4; // last four bits are rollover
+    spec_get_time(&time_32, &time_16);
+    uint64_t t_stop = (((uint64_t)(time_16)<<32) | time_32) >> 4; // last four bits are rollover
+    return (t_stop - t_start);
+}
 
