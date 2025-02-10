@@ -43,7 +43,7 @@ void write_packet_id(uint32_t packet_id, char** data_ptr, char** crc_ptr)
 
 void dispatch_32bit_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const struct SpectraIn *ddr_ptr = spectra_read_buffer(tick_tock);
+    const void*ddr_ptr = spectra_read_buffer(tick_tock);
 //    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state.Nfreq; // pointer to current block of data.
     int offset = state->cdi_dispatch.prod_count * NCHANNELS;
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
@@ -58,7 +58,7 @@ void dispatch_32bit_data(struct core_state* state) {
     wait_for_cdi_ready();
 
     for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-        cdi_ptr[i] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift);
+        cdi_ptr[i] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift, state->seq.averaging_mode);
     }
 
     // we don't want to do this ,since the incoming data are still compared
@@ -70,7 +70,7 @@ void dispatch_32bit_data(struct core_state* state) {
 
 void dispatch_16bit_10_plus_6_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const struct SpectraIn* ddr_ptr = spectra_read_buffer(tick_tock);
+    const void* ddr_ptr = spectra_read_buffer(tick_tock);
     int offset = state->cdi_dispatch.prod_count * NCHANNELS;
 
     char* crc_ptr;
@@ -87,7 +87,7 @@ void dispatch_16bit_10_plus_6_data(struct core_state* state) {
     int32_t val_in;
 
     for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-        val_in = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift);
+        val_in = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift, state->seq.averaging_mode);
         val_out = encode_10plus6(val_in);
         memcpy(data_ptr, &val_out, sizeof val_out);
         data_ptr += sizeof val_out;
@@ -114,7 +114,7 @@ void dispatch_16bit_shared_lz_data() {
 
 void dispatch_16bit_4_to_5_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const struct SpectraIn* ddr_ptr = spectra_read_buffer(tick_tock);
+    const void* ddr_ptr = spectra_read_buffer(tick_tock);
     int offset = state->cdi_dispatch.prod_count * NCHANNELS;
 
     char* crc_ptr;
@@ -139,7 +139,7 @@ void dispatch_16bit_4_to_5_data(struct core_state* state) {
             memcpy(data_ptr, vals_out, sizeof vals_out);
             data_ptr += sizeof vals_out;
         }
-        vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift);
+        vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->seq.Navg2_shift, state->seq.averaging_mode);
     }
 
     // compute CRC
@@ -260,6 +260,7 @@ void transfer_to_cdi(struct core_state* state) {
     state->cdi_dispatch.packet_id = unique_packet_id;
 }
 
+__attribute__((flatten))
 bool process_delayed_cdi_dispatch(struct core_state* state) {
 
     if (cdi_dispatch_counter > tap_counter) return false;
