@@ -311,6 +311,13 @@ inline static void new_unique_packet_id(struct core_state* s) {s->unique_packet_
 void mini_wait (uint32_t ticks);
 
 
+// starts a timer
+void timer_start();
+// returns the number of timer ticks starting from timer_start()
+// each timer tick is 1/4096 of a second ~244us
+uint32_t timer_stop();
+
+
 // encode 32 bit value in 16 bits with 12 bits of data and 4 bits of mantissa
 uint16_t encode_12plus4(int32_t val);
  int32_t decode_12plus4(uint16_t val);
