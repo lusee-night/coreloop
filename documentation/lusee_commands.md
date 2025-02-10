@@ -124,33 +124,18 @@
 | 0x7F | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
 | 0x80 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
 | 0x81 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
-
+| 0x82 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
 
 ### 0x9X spectral zoom functionality 
 
+To enable spectral functionality, you need to enable calibrator with mode = CAL_MODE_ZOOM, set the spectral channel using RFS_SET_CAL_PFB_NDX and then set the 
+input ADC channel using 0x90 command below
+
 | 0x9M | Name                 |  Description                                       |
 |------|----------------------|----------------------------------------------------|                             
-| 0x90 | RFS_SET_ZOOM_EN      | enable zoom channel
-| 0x91 | RFS_SET_ZOOM_SET1    | set zoom 1 input channel 
-| 0x92 | RFS_SET_ZOOM_SET1_LO | set zoom 1 spectral channel low bits 
-| 0x93 | RFS_SET_ZOOM_SET1_HI | set zoom 1 spectral channel high bits
-| 0x94 | RFS_SET_ZOOM_SET2    | set zoom 2 input channel 
-| 0x95 | RFS_SET_ZOOM_SET2_LO | set zoom 2 spectral channel# low bits 
-| 0x96 | RFS_SET_ZOOM_SET2_HI | set zoom 2 spectral channel# high bits
-
-### 0x8X - 0xFX reserved for future use
+| 0x90 | RFS_SET_ZOOM_CH      | Set zoom channels to use. Bits 0-1 for CH1 and 1-2 for ch2. 
 
 
-### 0xAX sequencer settings
-
-| 0xAM | Name           |  Description                                       |
-|------|----------------|----------------------------------------------------|                             
-| 0xA0 | RFS_SET_SEQ_EN      | enable (DD>0), disable sequencer  (DD=0)
-| 0xA1 | RFS_SET_SEQ_REP     | set number of of cycle repetitions, 00 for infinite repetitions
-| 0xA2 | RFS_SET_SEQ_CYC     | set number of elements in a cycle, restart save counter
-| 0xA3 | RFS_SET_SEQ_STO     | store current configuration, as the next cycle. Store configuration includes settings under 0x30, 0x31, 0x32, 0x33, 0x40, 0x41, 0x50, 0x51, 0x52. DD means the number of integrations under this cycle
-
-Example: Say we want to have a 40s integration at full resoltion and two 20s integrations at half frequency resolution
 
 | Seqeunce | Command | Effect
 |----------|---------|----------

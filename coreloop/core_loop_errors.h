@@ -33,6 +33,8 @@
 #define FLASH_CRC_FAIL (1<<19)
 #define FPGA_TEMP_HIGH (1<<20)
 
+#define INTERNAL_ERROR (1<<31)
+
 
 
 

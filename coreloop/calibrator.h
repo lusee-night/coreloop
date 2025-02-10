@@ -43,10 +43,14 @@ struct calibrator_state {
     uint16_t pfb_index; // for PFB and spectral zoom mode
     // for saving weights
     uint16_t weight_ndx; // weight index when storing weights
+    bool auto_slice;
     uint8_t powertop_slice;
-    uint8_t sum1_slice, sum2_slice;
+    uint8_t delta_powerbot_slice;
+    uint8_t sum1_slice, sum2_slice, sd2_slice;
     uint8_t prod1_slice, prod2_slice;
     uint32_t errors;
+    uint32_t zoom_ch1, zoom_ch2;
+
 };
 
 
@@ -68,7 +72,7 @@ void set_calibrator(struct calibrator_state* cal);
 void calibrator_set_SNR(struct calibrator_state* cal);
 void calibrator_slice_init(struct calibrator_state* cal);
 void calibrator_set_slices(struct calibrator_state* cal);
-struct calibrator_metadata* process_cal_mode11(struct core_state* state);
+struct calibrator_metadata* process_cal_mode11(struct core_state* state, uint32_t next_mode);
 
 
 #endif

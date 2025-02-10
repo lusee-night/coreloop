@@ -476,6 +476,37 @@ bool process_cdi(struct core_state* state)
             state->cal.pfb_index = ((arg_low & 0x07) << 8) + (state->cal.pfb_index & 0x00FF);
             break;
 
+        case RFS_SET_CAL_BITSLICE: {
+            int reg = arg_low & (0b11100000) >> 5;
+            int val = arg_low & 0b00011111;
+            if (reg==0) {
+                state->cal.auto_slice = (val>0);
+            } else if (reg==1) {
+                state->cal.powertop_slice = val;
+            } else if (reg==2) {
+                state->cal.sum1_slice = val;
+            } else if (reg==3) {
+                state->cal.sum2_slice = val;
+            } else if (reg==4) {
+                state->cal.prod1_slice = val;
+            } else if (reg==5) {
+                state->cal.prod2_slice = val;
+            } else if (reg==6) {
+                state->cal.delta_powerbot_slice = val;
+            } else if (reg==7) {
+                state->cal.sd2_slice = val;
+            } else {
+                // we should never end up here.
+                state->base.errors |= INTERNAL_ERROR;
+            }
+            }
+            break;
+
+        case RFS_SET_ZOOM_CH:
+            state->cal.zoom_ch1 = arg_low & 0xb0011;
+            state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;
+            break;
+            
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
             state->base.errors |= CDI_COMMAND_UNKNOWN;

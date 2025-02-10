@@ -108,7 +108,7 @@ RFS_SEQ_START =  0x20
 RFS_SEQ_END =  0x21 
 
 # RFS_SPECIAL only! Breaks execution of the sequence.
-RFS_SET_SEQ_BREAK =  0x22 
+RFS_SEQ_BREAK =  0x22 
 
 # Marks beginning of a loop with ARG1 (see below)
 RFS_SET_LOOP_START =  0x22 
@@ -248,36 +248,9 @@ RFS_SET_CAL_PFB_NDX_LO =  0x80
 # set PFB NDX (3 MSB bits)
 RFS_SET_CAL_PFB_NDX_HI =  0x81 
 
-# enable zoom channel
-RFS_SET_ZOOM_EN =  0x90 
+# Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
+RFS_SET_CAL_BITSLICE =  0x82 
 
-# set zoom 1 input channel
-RFS_SET_ZOOM_SET1 =  0x91 
-
-# set zoom 1 spectral channel low bits
-RFS_SET_ZOOM_SET1_LO =  0x92 
-
-# set zoom 1 spectral channel high bits
-RFS_SET_ZOOM_SET1_HI =  0x93 
-
-# set zoom 2 input channel
-RFS_SET_ZOOM_SET2 =  0x94 
-
-# set zoom 2 spectral channel# low bits
-RFS_SET_ZOOM_SET2_LO =  0x95 
-
-# set zoom 2 spectral channel# high bits
-RFS_SET_ZOOM_SET2_HI =  0x96 
-
-# enable (DD>0), disable sequencer  (DD=0)
-RFS_SET_SEQ_EN =  0xA0 
-
-# set number of of cycle repetitions, 00 for infinite repetitions
-RFS_SET_SEQ_REP =  0xA1 
-
-# set number of elements in a cycle, restart save counter
-RFS_SET_SEQ_CYC =  0xA2 
-
-# store current configuration, as the next cycle. Store configuration includes settings under 0x30, 0x31, 0x32, 0x33, 0x40, 0x41, 0x50, 0x51, 0x52. DD means the number of integrations under this cycle
-RFS_SET_SEQ_STO =  0xA3 
+# Set zoom channels to use. Bits 0-1 for CH1 and 1-2 for ch2.
+RFS_SET_ZOOM_CH =  0x90 
 
