@@ -1,9 +1,9 @@
 #include "core_loop.h"
 
 
-bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {    
+bool restart_needed (struct sequencer_state *seq1, struct sequencer_state *seq2 ) {
     if (seq1->notch != seq2->notch) return true;
-    for (int i=0; i<NINPUT; i++) { 
+    for (int i=0; i<NINPUT; i++) {
         if (seq1->gain[i] != seq2->gain[i]) return true;
         if (seq1->route[i].plus != seq2->route[i].plus) return true;
         if (seq1->route[i].minus != seq2->route[i].minus) return true;
@@ -40,6 +40,7 @@ void default_seq (struct sequencer_state *seq)
     seq->Navg1_shift = 14;
     seq->Navg2_shift = 3;
     seq->Navgf = 1;
+    seq->averaging_mode = STAGE_2_AVG_INT32;
     for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i] = 0x1F;
     seq->notch = 0;
     seq->hi_frac = 0xFF;

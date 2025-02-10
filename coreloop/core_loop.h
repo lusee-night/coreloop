@@ -65,6 +65,12 @@ enum output_format {
     OUTPUT_16BIT_SHARED_LZ
 };
 
+enum averaging_mode {
+    STAGE_2_AVG_INT32,
+    STAGE_2_AVG_INT_40_BITS,
+    STAGE_2_AVG_FLOAT
+};
+
 struct route_state {
     uint8_t plus, minus;  // we route "plus" - "minus". if minus is FF, it is ground;
 };
@@ -86,6 +92,7 @@ struct sequencer_state {
     uint8_t reject_ratio; // how far we should be to reject stuff, zero to remove rejection
     uint8_t reject_maxbad; // how many need to be bad to reject.
     uint16_t tr_start, tr_stop, tr_avg_shift; // time resolved start, stop and averaging
+    uint8_t averaging_mode; // perform stage 2 averaging using int32, 40 bit encoding or float
 };
 
 
