@@ -5,7 +5,9 @@
 #include <memory.h>
 
 #include "core_loop.h"
+#include "spectrometer_interface.h"
 #include "LuSEE_IO.h"
+
 
 static inline int32_t safe_abs_val(int32_t val)
 {
