@@ -452,6 +452,14 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
+        case RFS_SET_STAGE_2_AVG_MODE:
+            if (arg_low != (uint8_t)STAGE_2_AVG_FLOAT) {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            } else {
+                state->seq.averaging_mode = arg_low;
+            }
+            break;
+
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
             state->base.errors |= CDI_COMMAND_UNKNOWN;
