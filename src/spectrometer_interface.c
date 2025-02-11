@@ -1,13 +1,13 @@
 #include "spectrometer_interface.h"
 #include "cdi_interface.h"
 #include "lusee_appIds.h"
-#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
 #include <time.h>
+#include <stdio.h>
 #include "LuSEE_IO.h"
 
 const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
@@ -123,11 +123,11 @@ bool spec_new_spectrum_ready() {
         df_flag = true;
         int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;    
         // TODO: Check if this is correct, the corresponding plots in uncrater are not correct
-        if (ADC_mode == ADC_RAMP) {            
-            for (int i = 0; i < NCHANNELS; i++) {
-                int32_t spec = (int)ramp_spectrum[i];
-                for (int j = 0; j < NSPECTRA; j++) {
-                    SPEC_BUF_INT32[j*NCHANNELS + i] = spec;
+        if (ADC_mode == ADC_RAMP) {
+            for (int channel_idx = 0; channel_idx < NCHANNELS; channel_idx++) {
+                int32_t spec = (int)ramp_spectrum[channel_idx];
+                for (int sp = 0; sp < NSPECTRA; sp++) {
+                    SPEC_BUF_INT32[sp*NCHANNELS + channel_idx] = spec;
                 }
             }
             return true;

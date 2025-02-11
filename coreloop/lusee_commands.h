@@ -212,7 +212,10 @@
 #define RFS_SET_SEQ_CYC  0xA2 
 
 // store current configuration, as the next cycle. Store configuration includes settings under 0x30, 0x31, 0x32, 0x33, 0x40, 0x41, 0x50, 0x51, 0x52. DD means the number of integrations under this cycle
-#define RFS_SET_SEQ_STO  0xA3 
+#define RFS_SET_SEQ_STO  0xA3
+
+// how averaging in tick/tock buffers is performed: 0: use int32, 1: use float, 2: use 40 bits
+#define RFS_SET_STAGE_2_AVG_MODE  0xA4
 
 
 

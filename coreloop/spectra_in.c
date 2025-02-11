@@ -64,6 +64,13 @@
 
 /// end of tmp
 
+static inline int32_t safe_abs_val(int32_t val)
+{
+    if (val >= 0) return val;
+    if (val == INT32_MIN) return INT32_MAX;
+    return -val;
+}
+
 bool transfer_time_resolved_from_df(struct core_state* state);
 
 int32_t get_buf();
@@ -121,7 +128,7 @@ is_bad(const int32_t* df_ptr, const void* ddr_ptr_previous, int total_idx, uint8
 }
 
 static inline void
-write_spectrum_value(const int32_t* df_ptr, void* _ddr_ptr, int total_idx, int offset, uint8_t Navg2_shift, uint8_t averaging_mode, int avg_counter)
+write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int offset, uint8_t Navg2_shift, uint8_t averaging_mode, int avg_counter)
 {
     if (averaging_mode == STAGE_2_AVG_INT32) {
 
@@ -129,37 +136,48 @@ write_spectrum_value(const int32_t* df_ptr, void* _ddr_ptr, int total_idx, int o
 
         // we divide immediately in this mode
         if (avg_counter == 0)
-            ddr_ptr[total_idx] = df_ptr[total_idx] >> Navg2_shift;
+            ddr_ptr[total_idx] = (value >> Navg2_shift);
         else
-            ddr_ptr[total_idx] += df_ptr[total_idx] >> Navg2_shift;
+            ddr_ptr[total_idx] += (value >> Navg2_shift);
 
     } else if (averaging_mode == STAGE_2_AVG_FLOAT) {
 
         float* ddr_ptr = (float*)(_ddr_ptr);
 
         if (avg_counter == 0)
-            ddr_ptr[total_idx] = (float)(df_ptr[total_idx]);
+            ddr_ptr[total_idx] = (float)(value);
         else
-            ddr_ptr[total_idx] += (float)(df_ptr[total_idx]);
+            ddr_ptr[total_idx] += (float)(value);
 
     } else if (averaging_mode == STAGE_2_AVG_INT_40_BITS) {
 
         struct SpectraIn* ddr_ptr = (struct SpectraIn*)(_ddr_ptr);
 
+        bool is_negative = value < 0;
+        uint32_t uvalue = safe_abs_val(value);
+
         if (avg_counter) {
-            int32_t new_low_bits;
-            // TODO: what if current value df_ptr is negative, but
-            bool overflow = __builtin_sadd_overflow(ddr_ptr->low[total_idx], *df_ptr, &new_low_bits);
-            ddr_ptr->low[total_idx] = new_low_bits;
+            uint32_t new_low_bits;
+            bool overflow = __builtin_uadd_overflow(ddr_ptr->low[total_idx], uvalue, &new_low_bits);
+
             if (overflow) {
                 ddr_ptr->high[total_idx >> 2] += (1 << ((total_idx %4) * 8));
             }
+
+            ddr_ptr->low[total_idx] = new_low_bits;
         } else {
             // set low bits to value, set high bits to zero in one go for this spectrum
-            ddr_ptr->low[total_idx] = *df_ptr;
+            ddr_ptr->low[total_idx] = uvalue;
             if (total_idx == offset)
                 memset(ddr_ptr->high + offset / 4, 0, (NCHANNELS / 4) * sizeof(int32_t));
         }
+
+        // highest of 8 extra bits: sign
+        // NB: must be after memset, don't move up
+        if (is_negative) {
+            ddr_ptr->high[total_idx >> 2] |= (1 << (7 + (total_idx %4) * 8));
+        }
+
     }
 }
 
@@ -210,11 +228,8 @@ bool transfer_from_df(struct core_state* state)
             //debug_print_dec(sp); debug_print("\n\r");
             if (state->base.corr_products_mask & mask) {
                 for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                    write_spectrum_value(df_ptr, ddr_ptr, total_idx, offset, state->seq.Navg2_shift, state->seq.averaging_mode, avg_counter);
-                    df_ptr++;
+                    write_spectrum_value(df_ptr[total_idx], ddr_ptr, total_idx, offset, state->seq.Navg2_shift, state->seq.averaging_mode, avg_counter);
                 }
-            } else {
-                df_ptr += NCHANNELS;
             }
             mask <<= 1;
         }

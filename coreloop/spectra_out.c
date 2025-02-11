@@ -43,7 +43,7 @@ void write_packet_id(uint32_t packet_id, char** data_ptr, char** crc_ptr)
 
 void dispatch_32bit_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const void*ddr_ptr = spectra_read_buffer(tick_tock);
+    const void *ddr_ptr = spectra_read_buffer(tick_tock);
 //    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state.Nfreq; // pointer to current block of data.
     int offset = state->cdi_dispatch.prod_count * NCHANNELS;
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
@@ -105,6 +105,7 @@ void dispatch_16bit_updates_data() {
 }
 
 void dispatch_16bit_float1_data() {
+
     cdi_not_implemented("16bit w float1 data format");
 }
 
