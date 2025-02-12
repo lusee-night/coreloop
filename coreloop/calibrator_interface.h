@@ -143,6 +143,9 @@ void calib_antenna_mask (int mask);
 // setting weights to zero
 void calib_zero_weights(); 
 
+// setting weights to unit
+void calib_unit_weights();
+
 // set set weight(0-510)
 void calib_set_weight (int index, uint8_t value);
 

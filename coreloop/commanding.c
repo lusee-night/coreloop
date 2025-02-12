@@ -477,7 +477,7 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_CAL_BITSLICE: {
-            int reg = arg_low & (0b11100000) >> 5;
+            int reg = arg_low >> 5;
             int val = arg_low & 0b00011111;
             if (reg==0) {
                 state->cal.auto_slice = (val>0);
