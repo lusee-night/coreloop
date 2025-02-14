@@ -10,7 +10,8 @@ void set_spectrometer(struct core_state* state)
     }
     spec_set_bitslice(state->base.actual_bitslice);
     spec_set_avg1 (state->base.Navg1_shift);
-    spec_notch_enable(state->base.notch);
+    spec_notch_enable( state->base.notch & 0b111 );
+    spec_notch_disable_subtraction( state->base.notch & 0b1000 );
     set_calibrator (&(state->cal));
 }
 

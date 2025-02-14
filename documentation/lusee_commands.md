@@ -78,7 +78,7 @@
 |------|----------------|----------------------------------------------------|                             
 | 0x50 | RFS_SET_AVG_SET       | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
 | 0x51 | RFS_SET_AVG_FREQ      | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
-| 0x52 | RFS_SET_AVG_NOTCH     | set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256 
+| 0x52 | RFS_SET_AVG_NOTCH     | set notch averaging, 0 = disabled, 2=x4, 4=x16, 6=x64, needs to be even.  Add 16 if you want to disable subtraction (but want to run calibrator)
 | 0x53 | RFS_SET_AVG_SET_HI    | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
 | 0x54 | RFS_SET_AVG_SET_MID   | set medium priority fraction, low priority is 1-high-medium
 | 0x55 | RFS_SET_OUTPUT_FORMAT | set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets

@@ -313,3 +313,4 @@ void spec_set_fw_cdi_delay(uint32_t delay) {}
 
  void spec_reg_write(uint16_t reg, uint32_t value) {}
  
+ void spec_notch_disable_subtraction(bool disable) {}

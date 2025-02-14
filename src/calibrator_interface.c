@@ -83,7 +83,7 @@ void calib_zero_weights() {
     // Placeholder implementation
 }
 
-void calib_set_weight(int index, uint8_t value) {
+void calib_set_weight(int index, uint16_t value) {
     // Placeholder implementation
 }
 

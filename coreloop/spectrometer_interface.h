@@ -90,6 +90,10 @@ void spec_get_TVS(uint16_t *TVS);
 // 0 = disable, 1 = x4, 2 = x16, 3=x64, 4=x256
 void spec_notch_enable (uint8_t arg);
 
+// disable notch subtraction. This is useful if you want calibrator to run (for which you need the notch engine to run)
+// but you don't really want notch- subtracted spectra;
+void spec_notch_disable_subtraction(bool disable);
+
 // get overflow bitmasks for wf, 16 correlation channels and their notch counter-parts (MSB)
 void spec_get_digital_overflow (uint16_t* corr_owf, uint16_t *notch_owf);
 

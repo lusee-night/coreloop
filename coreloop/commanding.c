@@ -460,6 +460,10 @@ bool process_cdi(struct core_state* state)
             break;
         
         case RFS_SET_CAL_WEIGHT_VAL:
+            // this prevents some resolution loss, but mostly compulsive obsessive disorder
+            //if (arg_low == 0xFF)
+            //    calib_set_weight(state->cal.weight_ndx, 0x100);
+            //else
             calib_set_weight(state->cal.weight_ndx, arg_low);
             state->cal.weight_ndx++;
             break;

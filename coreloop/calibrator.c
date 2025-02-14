@@ -34,8 +34,8 @@ void calibrator_default_state (struct calibrator_state* cal) {
     cal->SNRon = 5;
     cal->SNRoff = 3;
     cal->Nsettle = 5;
-    cal->delta_drift_corA = 0;
-    cal->delta_drift_corB = 0;
+    cal->delta_drift_corA = 1;
+    cal->delta_drift_corB = 1;
     cal->pfb_index = 0;
     cal->weight_ndx = 0;
     // the following slices are not touched by auto slicer
