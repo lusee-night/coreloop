@@ -142,6 +142,9 @@
 // set the output correlation mask products 8-15
 #define RFS_SET_PRODMASK_HIGH  0x57 
 
+// set averaging mode, Valid values are 0 (use int32, divide immediately), 1 (use 40 bits, postpone division) and 2 (use floats)
+#define RFS_SET_AVG_MODE  0x58 
+
 // Set fraction to reject, 0 to disable rejections
 #define RFS_SET_REJ_SET  0x60 
 
@@ -212,10 +215,7 @@
 #define RFS_SET_SEQ_CYC  0xA2 
 
 // store current configuration, as the next cycle. Store configuration includes settings under 0x30, 0x31, 0x32, 0x33, 0x40, 0x41, 0x50, 0x51, 0x52. DD means the number of integrations under this cycle
-#define RFS_SET_SEQ_STO  0xA3
-
-// how averaging in tick/tock buffers is performed: 0: use int32, 1: use float, 2: use 40 bits
-#define RFS_SET_STAGE_2_AVG_MODE  0xA4
+#define RFS_SET_SEQ_STO  0xA3 
 
 
 

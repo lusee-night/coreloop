@@ -187,6 +187,7 @@ write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int off
 __attribute__((flatten))
 bool transfer_from_df(struct core_state* state)
 {
+    timer_start();
 // Want to now transfer all 16 pks worth of data to DDR memory
     int32_t *df_ptr = (int32_t *)SPEC_BUF;
     void* ddr_ptr = spectra_write_buffer(tick_tock);
@@ -234,6 +235,11 @@ bool transfer_from_df(struct core_state* state)
             mask <<= 1;
         }
     }
+
+    uint32_t elapsed = timer_stop();
+    debug_print("avg2: ");
+    debug_print_dec(elapsed);
+    debug_print("\n ");
 
     transfer_time_resolved_from_df(state);
     avg_counter++;

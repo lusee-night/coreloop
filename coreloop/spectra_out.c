@@ -275,6 +275,7 @@ bool process_delayed_cdi_dispatch(struct core_state* state) {
     if (state->cdi_dispatch.prod_count < NSPECTRA) {
         if (state->base.corr_products_mask & (1<<state->cdi_dispatch.prod_count)) {
             debug_print(".");
+            timer_start();
             switch (state->cdi_dispatch.format) {
                 case OUTPUT_32BIT:
                     dispatch_32bit_data(state);
@@ -299,6 +300,10 @@ bool process_delayed_cdi_dispatch(struct core_state* state) {
                     break;
             }
         }
+        uint32_t elapsed = timer_stop();
+        debug_print("disp: ");
+        debug_print_dec(elapsed);
+        debug_print("\n ");
         state->cdi_dispatch.appId++;
         state->cdi_dispatch.prod_count++;
     } else if (state->cdi_dispatch.tr_count < NSPECTRA) {
