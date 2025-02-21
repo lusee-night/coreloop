@@ -110,7 +110,7 @@
 | 0x71 | RFS_SET_CAL_AVG           | bits 0-1 Nac, bits 2-5 Nac2 
 | 0x72 | RFS_SET_CAL_NINDEX        | Set the notch index (2 by default for 50+100xn kHz)
 | 0x73 | RFS_SET_CAL_DRIFT_GUARD   | Set drift guard in units of 0.1 ppm
-| 0x74 | RFS_SET_CAL_DRIFT_STEP    | Sets drift stepping in units of 0.01ppm
+| 0x74 | RFS_SET_CAL_DRIFT_STEP    | Sets drift stepping in units of 0.001ppm
 | 0x75 | RFS_SET_CAL_ANT_EN        | bits 0-3 = antenna mask
 | 0x76 | RFS_SET_CAL_SNR_ON        | SNR required to get a lock
 | 0x77 | RFS_SET_CAL_SNR_ON_HIGH   | SNR required to get a lock
