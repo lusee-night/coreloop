@@ -11,7 +11,7 @@
 
 
 void send_hello_packet(struct core_state* state) {
-    debug_print ("Sending hello packet.\n\r")
+    
     struct startup_hello *payload = (struct startup_hello*) (TLM_BUF);
     new_unique_packet_id(state);
     update_time(state);
@@ -25,7 +25,6 @@ void send_hello_packet(struct core_state* state) {
     payload->time_32 = state->base.time_32;
     payload->time_16 = state->base.time_16;
     cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Start, sizeof(struct startup_hello));
-    debug_print("done\n")
 }
 
 bool process_hearbeat(struct core_state* state) {

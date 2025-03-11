@@ -509,8 +509,22 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_ZOOM_CH:
             state->cal.zoom_ch1 = arg_low & 0xb0011;
             state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;
+            state->cal.zoom_prod = (arg_low & 0b110000) >> 4;
             break;
-            
+        
+        case RFS_SET_ZOOM_NFFT:
+            if (arg_low>32) {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            } else {
+                state->cal.zoom_Nfft = arg_low;
+            }
+            break;
+
+        case RFS_SET_ZOOM_NAVG:
+            state->cal.zoom_Navg = arg_low;
+            break;
+        
+
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
             state->base.errors |= CDI_COMMAND_UNKNOWN;

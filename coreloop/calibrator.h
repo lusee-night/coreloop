@@ -9,8 +9,10 @@
 
 // spits out calibration data when having a lock
 #define CAL_MODE_RAW0  0b00
-// spits out raw PFB samples
+// spits out raw PFB samples after NNotch
 #define CAL_MODE_RAW1  0b01
+// spits out raw PFB samples before NNotch
+#define CAL_MODE_RAW2  0b10
 // spits out debug and auxiliary data
 #define CAL_MODE_RAW3  0b11
 
@@ -33,7 +35,6 @@
 
 struct calibrator_state {
     uint8_t mode; // this is the actual model of calibrator. If >4 we are in various auto modes
-    uint8_t readout_mode; // this corresponds to the actual register-level readout mode
     uint8_t Navg2, Navg3; // averaging for calibrator
     uint8_t drift_guard, drift_step; // drift guard and step
     uint8_t antenna_mask;
@@ -49,7 +50,10 @@ struct calibrator_state {
     uint8_t sum1_slice, sum2_slice, sd2_slice;
     uint8_t prod1_slice, prod2_slice;
     uint32_t errors;
-    uint32_t zoom_ch1, zoom_ch2;
+    uint8_t zoom_ch1, zoom_ch2;
+    uint8_t zoom_Nfft;
+    uint8_t zoom_prod;
+    uint8_t zoom_Navg;
 
 };
 
@@ -72,7 +76,7 @@ void set_calibrator(struct calibrator_state* cal);
 void calibrator_set_SNR(struct calibrator_state* cal);
 void calibrator_slice_init(struct calibrator_state* cal);
 void calibrator_set_slices(struct calibrator_state* cal);
-struct calibrator_metadata* process_cal_mode11(struct core_state* state, uint32_t next_mode);
+struct calibrator_metadata* process_cal_mode11(struct core_state* state);
 
 
 #endif

@@ -29,10 +29,11 @@ void calib_set_PFB_index(int index) {
     // Placeholder implementation
 }
 
-bool cal_new_cal_ready() {
-    // Placeholder implementation
-    return false;
-}
+//returns true if a new calibration product is ready
+void cal_new_cal_ready(bool* modes) {}
+
+// assuming a certain mode is ready above, transfer it over
+void cal_transfer_data(int mode) {}
 
 bool cal_df_dropped() {
     // Placeholder implementation

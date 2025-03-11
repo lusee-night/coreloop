@@ -157,7 +157,7 @@
 // set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected)
 #define RFS_SET_AVG_FREQ  0x51 
 
-// set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256
+// set notch averaging, 0 = disabled, 2=x4, 4=x16, 6=x64, needs to be even.  Add 16 if you want to disable subtraction (but want to run calibrator)
 #define RFS_SET_AVG_NOTCH  0x52 
 
 // set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
@@ -205,7 +205,7 @@
 // Set drift guard in units of 0.1 ppm
 #define RFS_SET_CAL_DRIFT_GUARD  0x73 
 
-// Sets drift stepping in units of 0.01ppm
+// Sets drift stepping in units of 0.001ppm
 #define RFS_SET_CAL_DRIFT_STEP  0x74 
 
 // bits 0-3 = antenna mask
@@ -250,8 +250,14 @@
 // Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
 #define RFS_SET_CAL_BITSLICE  0x82 
 
-// Set zoom channels to use. Bits 0-1 for CH1 and 1-2 for ch2.
+// Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
 #define RFS_SET_ZOOM_CH  0x90 
+
+// Set number of 64 point FFTs to do before processing next channel
+#define RFS_SET_ZOOM_NFFT  0x91 
+
+// log 2 averaging (of NFFT chunks) before spitting out data
+#define RFS_SET_ZOOM_NAVG  0x92 
 
 
 

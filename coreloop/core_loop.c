@@ -43,6 +43,7 @@ void debug_helper(uint8_t arg, struct core_state* state) {
 
 
 void core_init_state(struct core_state* state){
+    
     spec_set_spectrometer_enable(false);
     calib_enable(false);
     memset(state, 0, sizeof(struct core_state));
@@ -73,8 +74,8 @@ void core_init_state(struct core_state* state){
     state->cdi_stats.cdi_packets_sent = 0;
     state->cdi_stats.cdi_bytes_sent = 0;
 
-
     set_spectrometer(state);
+    
     tap_counter = 0;
     state->timing.cdi_dispatch_counter = 0;
     state->timing.heartbeat_counter = HEARTBEAT_DELAY;
@@ -84,6 +85,7 @@ void core_init_state(struct core_state* state){
     state->request_waveform = 0 ;
     state->request_eos = 0;
     state->range_adc = 0;
+    
 }
 
 bool process_waveform(struct core_state* state) {
