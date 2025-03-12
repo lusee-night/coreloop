@@ -198,7 +198,9 @@ void spec_set_avg1 (uint8_t Navg1_shift) {
     printf ("NAVg1 set to %i\n",Navg1);
 }
 
-
+//enables watchdogs
+uint8_t spec_watchdog_tripped(void);
+void spec_enable_watchdogs(uint8_t enable);
 
 void spec_trigger_ADC_stat(uint16_t Nsamples) {
     adc_trigger = true;

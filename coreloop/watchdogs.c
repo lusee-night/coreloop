@@ -8,32 +8,12 @@
 #include "spectrometer_interface.h"
 #include "lusee_commands.h"
 #include <stdint.h>
+#include <string.h>
 
 void process_watchdogs (struct core_state* state) {
     
-    int fpga_temp = (TVS_sensors_avg[3]>>7) - 273;
-    if (fpga_temp > state->watchdog.FPGA_max_temp) {
-        debug_print(" ~~~~ TEMP ALARM ~~~~");
-        state->base.errors |= FPGA_TEMP_HIGH;
-        if (state->base.spectrometer_enable) RFS_stop(state);
-    }   
-    for (int i=0; i<4; i++) state->base.TVS_sensors[i] = TVS_sensors_avg[i];
-}
-
-#include <string.h>
-
-void cmd_soft_reset(uint8_t arg);
-
-// Add watchdog packet struct (packed)
-struct __attribute__((packed)) watchdog_packet {
-    uint16_t unique_packet_id;
-    uint64_t uC_time;
-    uint8_t tripped;
-};
-
-uint8_t check_and_handle_watchdogs(struct core_state* state) {
     if (!state->base.watchdogs_enabled)
-        return 0;
+        return;
 
     uint8_t tripped = spec_watchdog_tripped();
 
@@ -50,12 +30,20 @@ uint8_t check_and_handle_watchdogs(struct core_state* state) {
 
         cdi_dispatch_uC(&(state->cdi_stats), AppID_Watchdog, sizeof(struct watchdog_packet));
 
-        cmd_soft_reset(0);
+        cmd_soft_reset(0, state);
 
-        return 1;
     }
 
-    return 0;
+    
+
+
+    int fpga_temp = (TVS_sensors_avg[3]>>7) - 273;
+    if (fpga_temp > state->watchdog.FPGA_max_temp) {
+        debug_print(" ~~~~ TEMP ALARM ~~~~");
+        state->base.errors |= FPGA_TEMP_HIGH;
+        if (state->base.spectrometer_enable) RFS_stop(state);
+    }   
+    for (int i=0; i<4; i++) state->base.TVS_sensors[i] = TVS_sensors_avg[i];
 }
 
 

@@ -131,6 +131,14 @@ struct watchdog_config {
     // here add watchdog configuration if needed
 };
 
+
+// Watchdog packet struct (packed)
+struct __attribute__((packed)) watchdog_packet {
+    uint16_t unique_packet_id;
+    uint64_t uC_time;
+    uint8_t tripped;
+};
+
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
     struct core_state_base base;
@@ -230,6 +238,7 @@ bool process_cdi(struct core_state*);
 
 // process watchdogs and temperature alarms
 void process_watchdogs (struct core_state*);
+void cmd_soft_reset(uint8_t arg, struct core_state* state);
 
 // starts / stops / restarts the spectrometer
 void RFS_stop(struct core_state*);

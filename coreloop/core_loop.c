@@ -131,9 +131,6 @@ void core_loop(struct core_state* state)
 
     for (;;)
     {
-        // Watchdog check
-        if (check_and_handle_watchdogs(state)) break;
-
         // Check if we have a new CDI command and process it.
         // If this functions returns true, it means we got the time-to-die command
         if (process_cdi(state)) break;

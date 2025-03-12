@@ -30,13 +30,12 @@ bool process_cdi(struct core_state* state)
     uint8_t cmd, arg_high, arg_low;
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
-    uint32_t dly;
+void spec_enable_watchdogs(uint8_t enable);    uint32_t dly;
 
     #ifdef NOTREAL
     cdi_fill_command_buffer();
     #endif
 
-void spec_enable_watchdogs(uint8_t enable);
 
     
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) {
