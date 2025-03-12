@@ -1,7 +1,7 @@
 r"""Wrapper for core_loop_errors.h
 
 Generated with:
-/u/home/anze/anaconda3/bin/ctypesgen ../coreloop/core_loop_errors.h
+/home/gtspeedie/.local/bin/ctypesgen ../coreloop/core_loop_errors.h
 
 Do not modify this file.
 """
@@ -863,133 +863,133 @@ add_library_search_dirs([])
 
 # No modules
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 6
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 6
 try:
     CDI_COMMAND_UNKNOWN = 1
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 8
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 8
 try:
     CDI_COMMAND_BAD = 2
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 10
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 10
 try:
     CDI_COMMAND_BAD_ARGS = 4
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 12
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 12
 try:
     CDI_COMMAND_LOST = 8
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 14
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 14
 try:
     CDI_COMMAND_BUFFER_OVERFLOW = 16
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 16
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 16
 try:
     ANALOG_AGC_TOO_HIGH_CH1 = 32
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 17
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 17
 try:
     ANALOG_AGC_TOO_HIGH_CH2 = 64
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 18
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 18
 try:
     ANALOG_AGC_TOO_HIGH_CH3 = 128
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 19
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 19
 try:
     ANALOG_AGC_TOO_HIGH_CH4 = 256
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 21
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 21
 try:
     ANALOG_AGC_TOO_LOW_CH1 = 512
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 22
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 22
 try:
     ANALOG_AGC_TOO_LOW_CH2 = 1024
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 23
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 23
 try:
     ANALOG_AGC_TOO_LOW_CH3 = 2048
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 24
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 24
 try:
     ANALOG_AGC_TOO_LOW_CH4 = 4096
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 26
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 26
 try:
     ANALOG_AGC_ACTION_CH1 = (1 << 13)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 27
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 27
 try:
     ANALOG_AGC_ACTION_CH2 = (1 << 14)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 28
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 28
 try:
     ANALOG_AGC_ACTION_CH3 = (1 << 15)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 29
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 29
 try:
     ANALOG_AGC_ACTION_CH4 = (1 << 16)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 31
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 31
 try:
     DF_SPECTRA_DROPPED = (1 << 17)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 32
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 32
 try:
     DF_CAL_DROPPED = (1 << 18)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 33
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 33
 try:
     FLASH_CRC_FAIL = (1 << 19)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 34
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 34
 try:
     FPGA_TEMP_HIGH = (1 << 20)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 36
+# /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 36
 try:
     INTERNAL_ERROR = (1 << 31)
 except:

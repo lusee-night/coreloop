@@ -36,6 +36,8 @@ bool process_cdi(struct core_state* state)
     cdi_fill_command_buffer();
     #endif
 
+void spec_enable_watchdogs(uint8_t enable);
+
     
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) {
         // if there are no new commands, then the buffer is empty and we should agree
@@ -217,6 +219,10 @@ bool process_cdi(struct core_state* state)
             state->reg_value = (state->reg_value & 0x00FFFFFF) + (arg_low << 24);
             spec_reg_write(state->reg_address, state->reg_value);
             break;
+
+	case RFS_SET_ENABLE_WATCHDOGS:
+	    spec_enable_watchdogs(arg_low);
+	    break;
 
         case RFS_SET_SEQ_OVER: 
             state->request_eos = arg_low;

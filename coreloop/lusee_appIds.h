@@ -26,6 +26,9 @@
 // Regular hearbeat packet; Priority:  NONE     
 #define AppID_uC_Heartbeat 0x020A
 
+// Used for Watchdog related telemetry packets; Priority:  xxxxx    
+#define AppID_Watchdog 0x020B
+
 // x = 0..F for 16 correlations; Priority:  High     
 #define AppID_MetaData 0x020F
 

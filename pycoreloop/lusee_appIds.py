@@ -29,6 +29,9 @@ AppID_uC_Start = 0x0209
 # Regular hearbeat packet; Priority:  NONE     
 AppID_uC_Heartbeat = 0x020A
 
+# Used for Watchdog related telemetry packets; Priority:  xxxxx    
+AppID_Watchdog = 0x020B
+
 # x = 0..F for 16 correlations; Priority:  High     
 AppID_MetaData = 0x020F
 

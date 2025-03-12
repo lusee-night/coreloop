@@ -3,7 +3,11 @@
 #include "core_loop.h"
 #include "core_loop_errors.h"
 #include "LuSEE_IO.h"
-
+#include "cdi_interface.h"
+#include "lusee_appIds.h"
+#include "spectrometer_interface.h"
+#include "lusee_commands.h"
+#include <stdint.h>
 
 void process_watchdogs (struct core_state* state) {
     
@@ -14,6 +18,81 @@ void process_watchdogs (struct core_state* state) {
         if (state->base.spectrometer_enable) RFS_stop(state);
     }   
     for (int i=0; i<4; i++) state->base.TVS_sensors[i] = TVS_sensors_avg[i];
+}
+
+#include <string.h>
+
+void cmd_soft_reset(uint8_t arg);
+
+// Add watchdog packet struct (packed)
+struct __attribute__((packed)) watchdog_packet {
+    uint16_t unique_packet_id;
+    uint64_t uC_time;
+    uint8_t tripped;
+};
+
+uint8_t check_and_handle_watchdogs(struct core_state* state) {
+    if (!state->base.watchdogs_enabled)
+        return 0;
+
+    uint8_t tripped = spec_watchdog_tripped();
+
+    if (tripped != 0) {
+        struct watchdog_packet* payload = (struct watchdog_packet*)(TLM_BUF);
+
+        new_unique_packet_id(state); // ensures unique_packet_id is incremented
+        update_time(state);          // ensure time is fresh
+        wait_for_cdi_ready();        // block until CDI buffer is ready
+
+        payload->unique_packet_id = state->unique_packet_id;
+        payload->uC_time = state->base.uC_time;
+        payload->tripped = tripped;
+
+        cdi_dispatch_uC(&(state->cdi_stats), AppID_Watchdog, sizeof(struct watchdog_packet));
+
+        cmd_soft_reset(0);
+
+        return 1;
+    }
+
+    return 0;
+}
+
+
+//// Main watchdog handling logic
+//uint8_t check_and_handle_watchdogs(struct core_state* state) {
+//    // Check if watchdogs are enabled
+//    if (!state->base.watchdogs_enabled)
+//        return 0;
+//
+//    // Check for a watchdog trip
+//    uint8_t tripped = spec_watchdog_tripped();
+//
+//    if (tripped != 0) {
+//        
+//        // CDI Buffer?
+//        cdi_dispatch(AppID_Watchdog, 1);  // 1 byte payload
+//
+//        // increment a packet ID counter (if needed)
+//        state->unique_packet_id++;
+//
+//        // Perform a soft reset
+//        cmd_soft_reset(0);
+//
+//        // Exit main loop
+//        return 1;
+//    }
+//
+//    return 0;
+//}
+
+
+void spec_enable_watchdogs(uint8_t enable) {
+    // No-op for now
+}
+
+uint8_t spec_watchdog_tripped(void) {
+    return 0; // Not tripped
 }
 
 #endif

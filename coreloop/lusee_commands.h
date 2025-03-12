@@ -97,8 +97,11 @@
 // Val bits 16-23
 #define RFS_SET_WR_VAL_2  0x17 
 
-// Val bits 24-32. This triggers the actual register write
+// Val bits 24-32
 #define RFS_SET_WR_VAL_3  0x18 
+
+// Enables or disables the watchdogs. Accepts a single byte argument.
+#define RFS_SET_ENABLE_WATCHDOGS  0x19 
 
 // RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
 #define RFS_SEQ_START  0x20 
@@ -157,7 +160,7 @@
 // set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected)
 #define RFS_SET_AVG_FREQ  0x51 
 
-// set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256
+// set notch averaging, 0 = disabled, 2=x4, 4=x16, 6=x64, needs to be even.  Add 16 if you want to disable subtraction (but want to run calibrator)
 #define RFS_SET_AVG_NOTCH  0x52 
 
 // set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
@@ -205,7 +208,7 @@
 // Set drift guard in units of 0.1 ppm
 #define RFS_SET_CAL_DRIFT_GUARD  0x73 
 
-// Sets drift stepping in units of 0.01ppm
+// Sets drift stepping in units of 0.001ppm
 #define RFS_SET_CAL_DRIFT_STEP  0x74 
 
 // bits 0-3 = antenna mask

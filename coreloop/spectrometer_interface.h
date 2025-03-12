@@ -59,6 +59,11 @@ void spectrometer_init();
 void spec_set_Navg1(uint32_t Navg1);
 void spec_set_spectrometer_enable(bool on);
 
+// Enable watchdogs
+void spec_enable_watchdogs(uint8_t enable);
+// Return value if watchdog trips
+uint8_t spec_watchdog_tripped(void);
+
 
 // Get various version ID
 // subfield s=0 (Version) 1(FW_ID) 2 (FW_Date) 3(FW_Time)
