@@ -443,12 +443,21 @@ bool process_cdi(struct core_state* state)
             state->cal.Nsettle = arg_low;
             break;
 
-        case RFS_SET_CAL_CORRA:
+        case RFS_SET_CAL_CORRA_LSB:
             state->cal.delta_drift_corA = arg_low;
             break;
 
-        case RFS_SET_CAL_CORRB:
+            case RFS_SET_CAL_CORRA_MSB:
+            state->cal.delta_drift_corA += (arg_low << 8);
+            break;
+
+
+        case RFS_SET_CAL_CORRB_LSB:
             state->cal.delta_drift_corB = arg_low;
+            break;
+
+        case RFS_SET_CAL_CORRB_MSB:
+            state->cal.delta_drift_corB += (arg_low << 8);
             break;
 
         case RFS_SET_CAL_WEIGHT_NDX_LO:

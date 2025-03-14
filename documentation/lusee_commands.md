@@ -116,15 +116,17 @@
 | 0x77 | RFS_SET_CAL_SNR_ON_HIGH   | SNR required to get a lock
 | 0x78 | RFS_SET_CAL_SNR_OFF       | SNR required to drop from a lock 
 | 0x79 | RFS_SET_CAL_NSETTLE       | Nsettle
-| 0x7A | RFS_SET_CAL_CORRA         | Famouse CoRRA settinh
-| 0x7B | RFS_SET_CAL_CORRB         | Even more famous CorrB setting
-| 0x7C | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
-| 0x7D | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
-| 0x7E | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
-| 0x7F | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
-| 0x80 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
-| 0x81 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
-| 0x82 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
+| 0x7A | RFS_SET_CAL_CORRA_LSB     | Famous CoRRA setting
+| 0x7B | RFS_SET_CAL_CORRA_MSB     | Famous CoRRA setting (upper 8 bits, commits)
+| 0x7C | RFS_SET_CAL_CORRB_LSB     | Even more famous CorrB setting
+| 0x7D | RFS_SET_CAL_CORRB_MSB     | Even more famous CorrB setting (upper 8 bits, commits)
+| 0x7E | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
+| 0x7F | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
+| 0x80 | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
+| 0x81 | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
+| 0x82 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
+| 0x83 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
+| 0x84 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
 
 ### 0x9X spectral zoom functionality 
 

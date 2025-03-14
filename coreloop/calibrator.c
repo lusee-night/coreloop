@@ -186,7 +186,7 @@ void process_cal_zoom(struct core_state* state) {
 void process_calibrator(struct core_state* state) {
  
     static int32_t hk=0;
-    static int32_t old_errors = 0;
+    static int32_t old_errors = 0xFF;
     static int32_t old_bitslicer_errors = 0; 
 
     //if we are not enabled, return
@@ -209,7 +209,7 @@ void process_calibrator(struct core_state* state) {
     }
 
 
-    /*
+    
     cal->errors = calib_get_errors();
     if (old_errors != cal->errors) {
             debug_print("[ * CE ");
@@ -222,15 +222,25 @@ void process_calibrator(struct core_state* state) {
             debug_print("  * ]");
             old_errors = cal->errors;
     }
-        
+    
+    
     uint32_t bit_slicer_flags = calib_get_slicer_errors();
         
     if (bit_slicer_flags!= old_bitslicer_errors) {
-        debug_print("B");
+        debug_print("[ B");
         debug_print_dec(bit_slicer_flags);
+        /*for (int i=0; i<32; i++) {
+            if (bit_slicer_flags & (1<<i)) {
+                debug_print_dec(i);
+                debug_print(" ");
+            }
+        }*/
+        debug_print(" ]");
+
         old_bitslicer_errors = bit_slicer_flags;
     }
     
+    /*
     if ((bit_slicer_flags > 0) & (cal->mode >= CAL_MODE_BIT_SLICER_SETTLE) & (cal->auto_slice)) {        
         cal->mode = CAL_MODE_BIT_SLICER_SETTLE;
     }

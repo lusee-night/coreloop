@@ -223,32 +223,38 @@
 // Nsettle
 #define RFS_SET_CAL_NSETTLE  0x79 
 
-// Famouse CoRRA settinh
-#define RFS_SET_CAL_CORRA  0x7A 
+// Famous CoRRA setting
+#define RFS_SET_CAL_CORRA_LSB  0x7A 
+
+// Famous CoRRA setting (upper 8 bits, commits)
+#define RFS_SET_CAL_CORRA_MSB  0x7B 
 
 // Even more famous CorrB setting
-#define RFS_SET_CAL_CORRB  0x7B 
+#define RFS_SET_CAL_CORRB_LSB  0x7C 
+
+// Even more famous CorrB setting (upper 8 bits, commits)
+#define RFS_SET_CAL_CORRB_MSB  0x7D 
 
 // Start setting weights. Set the ndx (0-255)
-#define RFS_SET_CAL_WEIGHT_NDX_LO  0x7C 
+#define RFS_SET_CAL_WEIGHT_NDX_LO  0x7E 
 
 // Start setting weights. Set the ndx+256
-#define RFS_SET_CAL_WEIGHT_NDX_HI  0x7D 
+#define RFS_SET_CAL_WEIGHT_NDX_HI  0x7F 
 
 // Sets weigth and advances index
-#define RFS_SET_CAL_WEIGHT_VAL  0x7E 
+#define RFS_SET_CAL_WEIGHT_VAL  0x80 
 
 // set all weights to zero.
-#define RFS_SET_CAL_WEIGHT_ZERO  0x7F 
+#define RFS_SET_CAL_WEIGHT_ZERO  0x81 
 
 // set PFB NDX (8 LSB bits)
-#define RFS_SET_CAL_PFB_NDX_LO  0x80 
+#define RFS_SET_CAL_PFB_NDX_LO  0x82 
 
 // set PFB NDX (3 MSB bits)
-#define RFS_SET_CAL_PFB_NDX_HI  0x81 
+#define RFS_SET_CAL_PFB_NDX_HI  0x83 
 
 // Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
-#define RFS_SET_CAL_BITSLICE  0x82 
+#define RFS_SET_CAL_BITSLICE  0x84 
 
 // Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
 #define RFS_SET_ZOOM_CH  0x90 
