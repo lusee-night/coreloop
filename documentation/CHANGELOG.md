@@ -1,6 +1,14 @@
 
 # CHANGELOG
 
+### Version 3r0
+ * Implemented calibrator compatible with post-Eric FW
+ * Implemented loop counting in heartbeat
+ * Implemented watchdogs
+ * Implemented looping
+
+
+
 ## Version 2r03
  * Extended the heartbeat packet to include additional information, including cdi command received, error array and cdi packets/bytes sent.
  * Implemented wait for n-spectra command

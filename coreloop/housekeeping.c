@@ -42,6 +42,15 @@ bool process_hearbeat(struct core_state* state) {
     payload->TVS_sensors[3] = state->base.TVS_sensors[3];
     payload->cdi_stats = state->cdi_stats;
     payload->errors = state->base.errors;
+    
+    // loop counters
+    state->base.loop_count_min = loop_count_min;
+    state->base.loop_count_max = loop_count_max;
+    payload->loop_count_min = loop_count_min;
+    payload->loop_count_max = loop_count_max;
+    loop_count_max = 0;
+    loop_count_min = UINT16_MAX;
+
     payload->magic[0] = 'B';
     payload->magic[1] = 'R';
     payload->magic[2] = 'N';

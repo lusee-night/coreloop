@@ -22,6 +22,9 @@ volatile uint64_t tap_counter;
 // sensor averaging
 volatile uint32_t TVS_sensors_avg[4];
 uint32_t TVS_sensors[4];
+// overall peformance, numbers of loops per second.
+volatile uint16_t loop_count, loop_count_min, loop_count_max;
+
 
 
 
@@ -85,6 +88,8 @@ void core_init_state(struct core_state* state){
     state->request_waveform = 0 ;
     state->request_eos = 0;
     state->range_adc = 0;
+    loop_count = loop_count_max = 0;
+    loop_count_min = UINT16_MAX;
     
 }
 
@@ -149,6 +154,7 @@ void core_loop(struct core_state* state)
             else if (process_waveform(state)) {}
             else process_eos(state);
         }
+        loop_count++;
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness we call the interrupt routine
@@ -178,7 +184,12 @@ uint8_t MSYS_EI5_IRQHandler(void)
         TVS_sensors_avg[2] = (TVS_sensors[2] >> 6);
         TVS_sensors_avg[3] = (TVS_sensors[3] >> 4);            
         for (int i=0; i<4; i++) TVS_sensors[i] = 0;
+        if (loop_count>loop_count_max) loop_count_max = loop_count;
+        if (loop_count<loop_count_min) loop_count_min = loop_count;
+        debug_print_dec(loop_count);
+        loop_count = 0;
     }
+    
 
     TMR_clear_int(&g_core_timer_0);
     return (EXT_IRQ_KEEP_ENABLED);

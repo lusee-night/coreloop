@@ -34,7 +34,11 @@
 extern bool soft_reset_flag;
 // tap counter increased in the interrupt
 extern volatile uint64_t tap_counter;
+// TVS sensors averaged in timer interrupt
 extern volatile uint32_t TVS_sensors_avg[4];
+// loop count in timer interrupt
+extern volatile uint16_t loop_count_min, loop_count_max;
+
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
@@ -72,6 +76,7 @@ struct core_state_base {
     uint32_t time_32;
     uint16_t time_16;    
     uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
+    uint16_t loop_count_min, loop_count_max;
     // former sequencer state starts here
     uint8_t gain [NINPUT]; // this defines the commanded gain state (can be auto)
     uint16_t gain_auto_min[NINPUT];   
@@ -185,6 +190,7 @@ struct heartbeat {
     uint32_t time_32;
     uint16_t time_16;
     uint16_t TVS_sensors[4];
+    uint16_t loop_count_min, loop_count_max;
     struct cdi_stats cdi_stats;
     uint32_t errors;
     char magic[6];

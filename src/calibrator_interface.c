@@ -110,3 +110,7 @@ uint32_t calib_get_slicer_errors() {return 0;}
 uint32_t calib_get_errors() {return 0;}
 
 int calib_get_readout_mode() {}
+
+void calib_set_ddrift_max(int val) {}
+
+void calib_set_gphase_max(int val) {}

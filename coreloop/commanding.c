@@ -326,7 +326,7 @@ bool process_cdi(struct core_state* state)
                 // do nothing but set the error flag
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->base.Navg1_shift = arg_low & 0x0F;
+                state->base.Navg1_shift = 8 + (arg_low & 0x0F);
                 state->base.Navg2_shift = (arg_low & 0xF0) >> 4;
             }
 

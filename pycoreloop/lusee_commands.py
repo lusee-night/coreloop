@@ -110,11 +110,11 @@ RFS_SEQ_END =  0x21
 # RFS_SPECIAL only! Breaks execution of the sequence.
 RFS_SEQ_BREAK =  0x22 
 
-# Marks beginning of a loop with ARG1 (see below)
+# Marks beginning of a loop with ARG1 repetitions. If zero, infinite repetitions
 RFS_SET_LOOP_START =  0x22 
 
-# Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
-RFS_SET_LOOP_END =  0x23 
+# Marks end of repeatitions
+RFS_SET_LOOP_NEXT =  0x23 
 
 # Send the sequence over command once all buffers are empty.
 RFS_SET_SEQ_OVER =  0x24 
@@ -152,7 +152,7 @@ RFS_SET_ROUTE_SET4 =  0x43
 # set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones)
 RFS_SET_ADC_SPECIAL =  0x44 
 
-# set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
+# set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager MINUS 8 (new in 0x300), higher 4 bits is for Stage2 averager. So B1 means 2^9 stage1 averaging and 2^11 stage2 averaging
 RFS_SET_AVG_SET =  0x50 
 
 # set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected)

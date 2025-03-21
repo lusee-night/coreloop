@@ -45,8 +45,8 @@
 | 0x20 | RFS_SEQ_START              | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
 | 0x21 | RFS_SEQ_END                | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
 | 0x22 | RFS_SEQ_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
-| 0x22 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 (see below)
-| 0x23 | RFS_SET_LOOP_END           | Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
+| 0x22 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 repetitions. If zero, infinite repetitions
+| 0x23 | RFS_SET_LOOP_NEXT          | Marks end of repeatitions 
 | 0x24 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. |
 
 
@@ -76,7 +76,7 @@
 
 | 0x5M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x50 | RFS_SET_AVG_SET       | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
+| 0x50 | RFS_SET_AVG_SET       | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager MINUS 8 (new in 0x300), higher 4 bits is for Stage2 averager. So B1 means 2^9 stage1 averaging and 2^11 stage2 averaging
 | 0x51 | RFS_SET_AVG_FREQ      | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
 | 0x52 | RFS_SET_AVG_NOTCH     | set notch averaging, 0 = disabled, 2=x4, 4=x16, 6=x64, needs to be even.  Add 16 if you want to disable subtraction (but want to run calibrator)
 | 0x53 | RFS_SET_AVG_SET_HI    | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
