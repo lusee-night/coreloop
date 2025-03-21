@@ -101,22 +101,22 @@
 #define RFS_SET_WR_VAL_3  0x18 
 
 // RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
-#define RFS_SEQ_START  0x20 
+#define RFS_SET_SEQ_BEGIN  0x20 
 
 // RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
-#define RFS_SEQ_END  0x21 
+#define RFS_SET_SEQ_END  0x21 
 
 // RFS_SPECIAL only! Breaks execution of the sequence.
-#define RFS_SEQ_BREAK  0x22 
+#define RFS_SET_BREAK  0x22 
 
 // Marks beginning of a loop with ARG1 repetitions. If zero, infinite repetitions
-#define RFS_SET_LOOP_START  0x22 
+#define RFS_SET_LOOP_START  0x23 
 
 // Marks end of repeatitions
-#define RFS_SET_LOOP_NEXT  0x23 
+#define RFS_SET_LOOP_NEXT  0x24 
 
-// Send the sequence over command once all buffers are empty.
-#define RFS_SET_SEQ_OVER  0x24 
+// Send the sequence over command once all buffers are empty. (so we know we are done in tests)
+#define RFS_SET_SEQ_OVER  0x25 
 
 // set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 #define RFS_SET_GAIN_ANA_SET  0x30 

@@ -54,19 +54,35 @@ bool process_cdi(struct core_state* state)
         debug_print("]");
 
         if (cmd == RFS_SPECIAL) {
-            if (arg_high == RFS_SET_RESET) {
+            switch (arg_high) {
+            case RFS_SET_RESET:
                 cmd_soft_reset(arg_low, state);
                 return true;
-            } else if (arg_high == RFS_SET_TIME_TO_DIE) {
+            case RFS_SET_TIME_TO_DIE:
                 return true;
-            } else {
+            case RFS_SET_SEQ_BEGIN:
+                state->sequence_upload = true;
+                return false;
+            case RFS_SET_SEQ_END:
+                state->sequence_upload = false;
+                if (arg_low>0) {
+                    // IMPLEMENT
+                    // store to flash
+                }
+                return false;
+            case RFS_SET_BREAK:
+                // reset the commanding;
+                state->cmd_ptr = state->cmd_end = 0;
+                state->loop_depth = 0;
+                return false;
+            default:
                 cdi_not_implemented("RFS_SPECIAL");
                 state->base.errors |= CDI_COMMAND_UNKNOWN;
+                return false;
             }
-            return false;
         } else if (cmd==RFS_SETTINGS)  {
             uint16_t cmd_end = (state->cmd_end + 1) % CMD_BUFFER_SIZE;
-            if (cmd_end == state->cmd_start) {
+            if (cmd_end == state->cmd_ptr) {
                 state->base.errors != CDI_COMMAND_BUFFER_OVERFLOW;
                 cmd_end = state->cmd_end;
                 return false;
@@ -84,12 +100,13 @@ bool process_cdi(struct core_state* state)
 
     if (state->timing.cdi_wait_counter>tap_counter) return false; //not taking any commands while in the CDI wait state
     if (state->cdi_wait_spectra>0) return false; // not taking any command while waitig for spectra.
-    if (state->cmd_start == state->cmd_end) return false; // no new commands
+    if (state->sequence_upload) return false; // not taking any commands while uploading sequence.
+    if (state->cmd_ptr == state->cmd_end) return false; // no new commands
  
     // finally process the command in the line
-    state->cmd_start = (state->cmd_start + 1) % CMD_BUFFER_SIZE;
-    arg_low = state->cmd_arg_low[state->cmd_start];
-    arg_high = state->cmd_arg_high[state->cmd_start];
+    state->cmd_ptr = (state->cmd_ptr + 1) % CMD_BUFFER_SIZE;
+    arg_low = state->cmd_arg_low[state->cmd_ptr];
+    arg_high = state->cmd_arg_high[state->cmd_ptr];
     debug_print ("[>*");
     debug_print_hex(cmd);
     debug_print_hex(arg_high);
@@ -216,6 +233,35 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_WR_VAL_3:
             state->reg_value = (state->reg_value & 0x00FFFFFF) + (arg_low << 24);
             spec_reg_write(state->reg_address, state->reg_value);
+            break;
+
+        case RFS_SET_LOOP_START:
+            if (state->loop_depth < MAX_LOOPS) {
+                state->loop_start[state->loop_depth] = state->cmd_ptr; //already pointing at the next cmd >0 ? state->cmd_ptr-1 : CMD_BUFFER_SIZE-1;
+                state->loop_count[state->loop_depth] = arg_low;
+                state->loop_depth++;
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
+        case RFS_SET_LOOP_NEXT:
+            if (state->loop_depth > 0) {
+                uint8_t loop_count = state->loop_count[state->loop_depth-1];
+                if (loop_count ==0 ) { // infinite loops
+                    state->cmd_ptr = state->loop_start[state->loop_depth-1];
+                } else if (loop_count > 1) {
+                    // decrease the counter and cycle back
+                    state->loop_count[state->loop_depth-1]--;
+                    state->cmd_ptr = state->loop_start[state->loop_depth-1];
+                } else {
+                    // this is the last iteration
+                    state->loop_depth--;
+                    // and let's move on
+                }
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
             break;
 
         case RFS_SET_SEQ_OVER: 
