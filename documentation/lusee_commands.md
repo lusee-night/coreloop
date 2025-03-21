@@ -126,7 +126,11 @@
 | 0x81 | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
 | 0x82 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
 | 0x83 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
-| 0x84 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
+| 0x84 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.
+| 0x85 | RFS_SET_CAL_DDRIFT_GUARD  | Set delta drift guard. 1 = 25 units of cordic angle 
+| 0x86 | RFS_SET_CAL_GPHASE_GUARD  | Set gphase guard. 1=2000 units of cordic angle 
+
+
 
 ### 0x9X spectral zoom functionality 
 
@@ -138,17 +142,5 @@ input ADC channel using 0x90 command below
 | 0x90 | RFS_SET_ZOOM_CH      | Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
 | 0x91 | RFS_SET_ZOOM_NFFT    | Set number of 64 point FFTs to do before processing next channel |
 | 0x92 | RFS_SET_ZOOM_NAVG    | log 2 averaging (of NFFT chunks) before spitting out data
-
-
-| Seqeunce | Command | Effect
-|----------|---------|----------
-| 0 | 0xA100 | infinite repetitions
-| 1 | 0xA202 | 2 cycles
-| 2 | 0x50B9 | 40 second integration
-| 3 | 0x5200 | no frequency integration
-| 4 | 0xA301 | do it once
-| 5 | 0x0A9  | 20 second intgratoin
-| 6 | 0x5201 | x2 frequency integration
-| 7 | 0xA302 | Do it twice
 
 

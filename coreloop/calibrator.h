@@ -41,6 +41,7 @@ struct calibrator_state {
     uint8_t notch_index;
     uint32_t SNRon, SNRoff;
     uint32_t Nsettle, delta_drift_corA, delta_drift_corB; 
+    uint32_t ddrift_guard, gphase_guard;
     uint16_t pfb_index; // for PFB and spectral zoom mode
     // for saving weights
     uint16_t weight_ndx; // weight index when storing weights
@@ -65,7 +66,7 @@ struct calibrator_metadata {
   uint16_t time_16;
   uint16_t have_lock[4];
   struct calibrator_state state;
-  int SNR_max, SNR_min;
+  int SNR_max[4], SNR_min[4];
   int32_t drift [1024];
   uint32_t error_regs [30];
 };

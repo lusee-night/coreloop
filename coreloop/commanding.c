@@ -515,6 +515,15 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
+        case RFS_SET_CAL_DDRIFT_GUARD:
+            state->cal.ddrift_guard = arg_low*25;
+            break;
+
+        case RFS_SET_CAL_GPHASE_GUARD:
+            state->cal.gphase_guard = arg_low*2000;
+            break;
+
+
         case RFS_SET_ZOOM_CH:
             state->cal.zoom_ch1 = arg_low & 0xb0011;
             state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;

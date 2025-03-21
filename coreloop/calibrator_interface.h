@@ -158,5 +158,11 @@ void calib_set_weight_stage3(int index, uint16_t value);
 // set notch index to use
 void calib_set_notch_index (int index);
 
+// sets the delta drift max in cordic units
+void calib_set_ddrift_max(int val);
+
+// sets the gphase max 
+void calib_set_gphase_max(int val);
+
 
 #endif

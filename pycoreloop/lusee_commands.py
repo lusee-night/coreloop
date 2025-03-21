@@ -254,8 +254,14 @@ RFS_SET_CAL_PFB_NDX_LO =  0x82
 # set PFB NDX (3 MSB bits)
 RFS_SET_CAL_PFB_NDX_HI =  0x83 
 
-# Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
+# Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.
 RFS_SET_CAL_BITSLICE =  0x84 
+
+# Set delta drift guard. 1 = 25 units of cordic angle
+RFS_SET_CAL_DDRIFT_GUARD =  0x85 
+
+# Set gphase guard. 1=2000 units of cordic angle
+RFS_SET_CAL_GPHASE_GUARD =  0x86 
 
 # Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
 RFS_SET_ZOOM_CH =  0x90 

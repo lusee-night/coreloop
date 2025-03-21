@@ -44,6 +44,8 @@ void calibrator_default_state (struct calibrator_state* cal) {
     cal->sd2_slice = 0;
     cal->zoom_ch1 = 0;
     cal->zoom_ch2 = 1;
+    cal->ddrift_guard = 2500;
+    cal->gphase_guard = 200000;
 }
 
 
@@ -60,6 +62,21 @@ void set_calibrator(struct calibrator_state* cal) {
     calib_set_delta_drift_corA(cal->delta_drift_corA);
     calib_set_delta_drift_corB(cal->delta_drift_corB);
     calib_set_PFB_index(cal->pfb_index);
+    calib_set_ddrift_max(cal->ddrift_guard);
+    calib_set_gphase_max(cal->gphase_guard);
+
+    /* Does not seem to do anything, spectrometer probalby needs to be enabled
+    // empty any DF
+    bool df_ready[4];
+    cal_new_cal_ready(df_ready);
+    for (int i=0; i<4; i++) {
+        if (df_ready[i]) {
+            cal_transfer_data(i);
+            cal_clear_df_flag();
+        }
+    }
+    */
+
     memset((void *) CAL_DF, 0, CAL_MODE0_DATASIZE);
 
     if ((cal->mode == CAL_MODE_SNR_SETTLE) || (cal->mode == CAL_MODE_BIT_SLICER_SETTLE)) {
@@ -102,8 +119,6 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     out->time_32 = state->base.time_32;
     out->time_16 = state->base.time_16;
     out->state = state->cal;
-    out->SNR_max = 0;
-    out->SNR_min = 0;
     uint32_t* have_lock = (uint32_t *)(CAL_DF + 0*CAL_MODE3_CHUNKSIZE);
     out->have_lock[0] = out->have_lock[1] = out->have_lock[2] = out->have_lock[3] = 0;
     for (int i=0; i<1024; i++) {
@@ -116,13 +131,19 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     // drift is chunk
     memcpy ((void*) &out->drift, (void *)CAL_DF + 1*CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
     int32_t* SNR = (int32_t *)(CAL_DF + 20*CAL_MODE3_CHUNKSIZE);
-    out->SNR_max = 0;
-    out->SNR_min = 0xFFFFFF;
-    for (int i=0; i<4*1024; i++) {
-        if (SNR[i] > out->SNR_max) out->SNR_max = SNR[i];
-        if (SNR[i] < out->SNR_min) out->SNR_min = SNR[i];
+    for (int ant=0; ant<4; ant++) {
+        int ofs = ant*1024;
+        int ofe = ofs + 1024;
+        uint32_t cmin = 0xFFFF;
+        uint32_t cmax = 0;
+        for (int i=ofs; i<ofe; i++) {
+            if (SNR[i] > cmax) cmax = SNR[i];
+            if (SNR[i] < cmin) cmin = SNR[i];
+        }
+        out->SNR_max[ant] = cmax;
+        out->SNR_min[ant] = cmin;
     }
-    
+
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
@@ -289,31 +310,33 @@ void process_calibrator(struct core_state* state) {
             cal->mode = CAL_MODE_SNR_SETTLE;
         }
     }
-    
+    */    
     
     if (cal->mode == CAL_MODE_SNR_SETTLE) {
-        if (new_data) {
-            //assert (readout_mode == 0b11);
-            struct calibrator_metadata* out = process_cal_mode11 (state, CAL_MODE_RAW3);
-            debug_print("[SNR:");
-            debug_print_dec(out->SNR_min);
-            debug_print("|");
-            debug_print_dec(out->SNR_max );
-            debug_print("]");
-            if ((out->SNR_max/(1+out->SNR_min))>=3)  {
-                int diff = out->SNR_max - out->SNR_min;
-                cal->SNRon = out->SNR_min + diff*3/4;
-                cal->SNRoff = out->SNR_min + diff/4;
-                calibrator_set_SNR(cal);                
-                cal->mode = CAL_MODE_RUN;  // debug only!!!
-                set_readout_mode(cal,CAL_MODE_RAW3); // should be zero after fix                
-                //cal->mode = CAL_MODE_RUN;
-                debug_print("\r\n[ -> RUN]")
-                return; 
-            }            
+        if (df_ready[3]) {            
+            struct calibrator_metadata* out = process_cal_mode11 (state);
+            debug_print(" SNR:");
+
+            for (int ant=0; ant<4; ant++) {
+                if (out->SNR_min[ant]==0) {
+                    continue;
+                }
+                debug_print_dec(out->SNR_min[ant]);
+                debug_print(" ");
+                debug_print_dec(out->SNR_max[ant] );
+                if ((cal->antenna_mask >> ant ) && (out->SNR_max[ant]/(out->SNR_min[ant]) >= 15))  {
+                    int diff = out->SNR_max[ant] - out->SNR_min[ant];
+                    cal->SNRon = out->SNR_min[ant] + diff * 3 / 4;
+                    cal->SNRoff = out->SNR_min[ant] + diff / 8;
+                    calibrator_set_SNR(cal);                
+                    cal->mode = CAL_MODE_RUN;  
+                    debug_print("\r\n[ -> RUN]")
+                    return; 
+                }            
+            }
         }
     }
-    */
+
 
     if (mode == CAL_MODE_RUN) {
         if (df_ready[0]) {
