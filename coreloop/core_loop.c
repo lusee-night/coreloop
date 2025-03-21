@@ -53,7 +53,9 @@ void core_init_state(struct core_state* state){
     default_state (&state->base);
     calibrator_default_state(&state->cal);
     state->base.errors = 0;
-    state->cmd_start = state->cmd_end = 0;
+    state->cmd_ptr = state->cmd_end = 0;
+    state->sequence_upload = false;
+    state->loop_depth = 0;
     state->base.corr_products_mask=0xFFFF; //65535, everything on
     state->base.spectrometer_enable = false;
     state->base.calibrator_enable = false;

@@ -42,12 +42,12 @@
 
 | 0x2M | Name                       |  Description                                       |
 |------|----------------------------|----------------------------------------------------|                             
-| 0x20 | RFS_SEQ_START              | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
-| 0x21 | RFS_SEQ_END                | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
-| 0x22 | RFS_SEQ_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
-| 0x22 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 repetitions. If zero, infinite repetitions
-| 0x23 | RFS_SET_LOOP_NEXT          | Marks end of repeatitions 
-| 0x24 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. |
+| 0x20 | RFS_SET_SEQ_BEGIN          | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
+| 0x21 | RFS_SET_SEQ_END            | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
+| 0x22 | RFS_SET_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
+| 0x23 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 repetitions. If zero, infinite repetitions
+| 0x24 | RFS_SET_LOOP_NEXT          | Marks end of repeatitions 
+| 0x25 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. (so we know we are done in tests) |
 
 
 ### 0x3X Gain Settings and Bit slicing

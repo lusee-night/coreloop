@@ -20,6 +20,7 @@
 #define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
 #define CMD_BUFFER_SIZE 128 // size of command buffer for 0x10 commands
+#define MAX_LOOPS 4   // how many nested loops we can do
 
 
 #define ADC_STAT_SAMPLES 16000
@@ -156,7 +157,16 @@ struct core_state {
     uint32_t heartbeat_packet_count;
     uint16_t flash_store_pointer;
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
-    uint16_t cmd_start, cmd_end;
+    // pointeres to the beginning and end of commands, also used during sequence upload
+    uint16_t cmd_ptr, cmd_end;
+    // are we uploading -- if so block sequences
+    bool sequence_upload;
+    // for loops
+    uint8_t loop_depth; // how many nested loops
+    uint16_t loop_start[MAX_LOOPS];
+    uint8_t loop_count[MAX_LOOPS];
+
+
     uint32_t cmd_counter;
     uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
     uint16_t reg_address; // address of the register to be written (for commands that do that)
