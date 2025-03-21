@@ -186,7 +186,6 @@ uint8_t MSYS_EI5_IRQHandler(void)
         for (int i=0; i<4; i++) TVS_sensors[i] = 0;
         if (loop_count>loop_count_max) loop_count_max = loop_count;
         if (loop_count<loop_count_min) loop_count_min = loop_count;
-        debug_print_dec(loop_count);
         loop_count = 0;
     }
     
