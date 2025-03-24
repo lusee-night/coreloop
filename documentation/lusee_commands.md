@@ -48,7 +48,7 @@
 | 0x23 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 repetitions. If zero, infinite repetitions
 | 0x24 | RFS_SET_LOOP_NEXT          | Marks end of repeatitions 
 | 0x25 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. (so we know we are done in tests) |
-
+| 0x26 | RFS_SET_FLASH_CLR          | Clear flash to prevent restarting old sequence 
 
 ### 0x3X Gain Settings and Bit slicing
 

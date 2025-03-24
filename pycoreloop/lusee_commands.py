@@ -119,6 +119,9 @@ RFS_SET_LOOP_NEXT =  0x24
 # Send the sequence over command once all buffers are empty. (so we know we are done in tests)
 RFS_SET_SEQ_OVER =  0x25 
 
+# Clear flash to prevent restarting old sequence
+RFS_SET_FLASH_CLR =  0x26 
+
 # set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 RFS_SET_GAIN_ANA_SET =  0x30 
 

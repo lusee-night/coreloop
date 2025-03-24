@@ -19,15 +19,13 @@
 #define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
-#define CMD_BUFFER_SIZE 128 // size of command buffer for 0x10 commands
+#define CMD_BUFFER_SIZE 512 // size of command buffer for 0x10 commands
 #define MAX_LOOPS 4   // how many nested loops we can do
 
 
 #define ADC_STAT_SAMPLES 16000
 
-#define MAX_STATE_SLOTS 64
-//consistent with 4k erases
-#define PAGES_PER_SLOT 256
+#define MAX_STATE_SLOTS 16
 
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
@@ -155,7 +153,7 @@ struct core_state {
     bool tick_tock;
     bool drop_df;
     uint32_t heartbeat_packet_count;
-    uint16_t flash_store_pointer;
+    uint16_t flash_slot;
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
     // pointeres to the beginning and end of commands, also used during sequence upload
     uint16_t cmd_ptr, cmd_end;
@@ -173,10 +171,16 @@ struct core_state {
     int32_t reg_value; // value to be written to the register
 };
 
-struct saved_core_state {
+struct saved_state {
     uint32_t in_use;
-    struct core_state state;
+    uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
+    uint16_t cmd_ptr, cmd_end;
     uint32_t CRC;
+};
+
+struct state_recover_notification {
+    uint32_t slot;
+    uint32_t size;
 };
 
 struct end_of_sequence {

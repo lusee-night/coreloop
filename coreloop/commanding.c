@@ -21,7 +21,8 @@ void cmd_soft_reset(uint8_t arg_low, struct core_state* state)
     RFS_stop(state);
     spec_set_reset();
     // arglow controls what to do with the stored states after reset.
-    spec_write_uC_register(0,arg_low);
+    spec_write_uC_register(0,arg_low & 0b011);
+    spec_write_uC_register(1,arg_low & 0b100);
     soft_reset_flag = true;
 }
 
@@ -65,10 +66,8 @@ bool process_cdi(struct core_state* state)
                 return false;
             case RFS_SET_SEQ_END:
                 state->sequence_upload = false;
-                if (arg_low>0) {
-                    // IMPLEMENT
-                    // store to flash
-                }
+                // flash storing
+                if (arg_low>0) store_state(state);                
                 return false;
             case RFS_SET_BREAK:
                 // reset the commanding;
@@ -117,20 +116,11 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_START:
             if (!state->base.spectrometer_enable) {
                 RFS_start(state);
-                if (!(arg_low & 1)) {
-                    state->flash_store_pointer = tap_counter%MAX_STATE_SLOTS;
-                    flash_state_store(state->flash_store_pointer, state);
-                } else {
-                    debug_print ("Not storing flash state->\r\n");
-                }
             }
             break;
         case RFS_SET_STOP:
             if (state->base.spectrometer_enable) {
                 RFS_stop(state);
-                if (!(arg_low & 1)) {
-                    flash_state_clear(state->flash_store_pointer);
-                }
             }
             break;
         case RFS_SET_RESET:
@@ -266,6 +256,10 @@ bool process_cdi(struct core_state* state)
 
         case RFS_SET_SEQ_OVER: 
             state->request_eos = arg_low;
+            break;
+
+        case RFS_SET_FLASH_CLR:
+            clear_current_slot(state);
             break;
 
         case RFS_SET_GAIN_ANA_SET:

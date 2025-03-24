@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "LuSEE_IO.h"
 #include "LuSEE_SPI.h"
-#include "LuSEE_Flash_cntrl.h"
 #include "core_loop.h"
 #include "spectrometer_interface.h"
 #include "calibrator_interface.h"
@@ -124,8 +123,11 @@ void core_loop(struct core_state* state)
     for (int i=0; i<4; i++) TVS_sensors[i] = 0;
     // now empty the CDI command buffer in case we are doing the reset.
     #ifndef NOTREAL
-    uint8_t tmp;
-    while (cdi_new_command(&tmp, &tmp, &tmp)) {};
+    // by default clear the incoming command buffer
+    if (spec_read_uC_register(1)==0) {
+        uint8_t tmp;
+        while (cdi_new_command(&tmp, &tmp, &tmp)) {};
+    }
     #endif
 
     send_hello_packet(state);
@@ -137,6 +139,8 @@ void core_loop(struct core_state* state)
     restore_state(state);
     #endif
 
+    spec_write_uC_register(0,0);
+    spec_write_uC_register(1,0);
     for (;;)
     {
         

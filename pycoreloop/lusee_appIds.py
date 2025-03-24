@@ -14,7 +14,7 @@ AppID_Reset_Request = 0x0201
 # Dumps all register values from the RFS into packet; Priority:  High     
 AppID_Registers_RB = 0x0205
 
-# uC generater housekeeping; Priority:  High     
+# uC generated housekeeping; Priority:  High     
 AppID_uC_Housekeeping = 0x0206
 
 # End of sequence; Priority:  High     
@@ -28,6 +28,9 @@ AppID_uC_Start = 0x0209
 
 # Regular hearbeat packet; Priority:  NONE     
 AppID_uC_Heartbeat = 0x020A
+
+# Automatically restored saved state; Priority:  High     
+AppID_uC_Restored = 0x020B
 
 # x = 0..F for 16 correlations; Priority:  High     
 AppID_MetaData = 0x020F
