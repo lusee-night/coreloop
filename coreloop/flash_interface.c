@@ -63,6 +63,7 @@ void clear_current_slot (struct core_state* state) {
         debug_print_dec(state->flash_slot)    
         uint32_t flash_addr = get_flash_addr(state->flash_slot);
         SPI_4k_erase(flash_addr);
+        state->flash_slot = -1;
     }
 }
 
@@ -87,6 +88,7 @@ void restore_state(struct core_state* state) {
     uint32_t arg1 = spec_read_uC_register(0);  // register contains argumed passed from bootloader
     if (arg1 == 1) {
         debug_print("Ignoring saved states\r\n");
+        state->flash_slot = -1;
         return;
     } else if (arg1==2) {
         // remove all slots

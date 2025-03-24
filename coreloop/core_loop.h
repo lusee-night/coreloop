@@ -153,7 +153,7 @@ struct core_state {
     bool tick_tock;
     bool drop_df;
     uint32_t heartbeat_packet_count;
-    uint16_t flash_slot;
+    int8_t flash_slot;
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
     // pointeres to the beginning and end of commands, also used during sequence upload
     uint16_t cmd_ptr, cmd_end;

@@ -176,6 +176,22 @@ void core_loop(struct core_state* state)
         }
 #endif
     }
+    if (!soft_reset_flag) {
+        // empty buffers and call it a day
+        debug_print("Winding down...\n\r")
+        RFS_stop(state);
+        clear_current_slot(state);
+        // empty buffers
+        while (true) {
+            if (process_hearbeat(state)) {}
+            else if (process_delayed_cdi_dispatch(state)) {}
+            else if (process_housekeeping(state)) {}
+            else if (process_waveform(state)) {}
+            else if (process_eos(state)) {}
+            else if (delayed_cdi_dispatch_done(state)  && cdi_ready()) {break;}
+        }
+    }
+    
 }
 
 uint8_t MSYS_EI5_IRQHandler(void)
