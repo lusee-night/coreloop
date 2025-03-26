@@ -52,6 +52,8 @@ bool flash_state_restore(uint8_t slot, struct core_state* state) {
         state->cmd_ptr = tostore->cmd_ptr;
         state->cmd_end = tostore->cmd_end;
         return true;
+    } else {
+        state->base.errors |= FLASH_CRC_FAIL;
     }
     return false;
  }

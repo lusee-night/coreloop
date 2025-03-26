@@ -21,11 +21,9 @@
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
 #define CMD_BUFFER_SIZE 512 // size of command buffer for 0x10 commands
 #define MAX_LOOPS 4   // how many nested loops we can do
-
-
-#define ADC_STAT_SAMPLES 16000
-
-#define MAX_STATE_SLOTS 16
+#define ADC_STAT_SAMPLES 16000 // how many samples we take when doign AGC statics/
+#define MAX_STATE_SLOTS 16  // 16 slots of 4k = 64k
+#define BITSLICER_MAX_ACTION 5  // how many iterations before we bitslicer stuck
 
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
@@ -163,12 +161,11 @@ struct core_state {
     uint8_t loop_depth; // how many nested loops
     uint16_t loop_start[MAX_LOOPS];
     uint8_t loop_count[MAX_LOOPS];
-
-
     uint32_t cmd_counter;
     uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
     uint16_t reg_address; // address of the register to be written (for commands that do that)
     int32_t reg_value; // value to be written to the register
+    int8_t bitslicer_action_counter;  // counting how many times in a row we have changed bit slicer to prevent infinite loop
 };
 
 struct saved_state {

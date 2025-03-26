@@ -156,11 +156,19 @@ void process_spectrometer(struct core_state* state) {
             state->base.notch_overflow |= notch_owf;
 
             spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-            bool bit_slice_changed = bitslice_control(state);
-            if (bit_slice_changed) {
-                restart_spectrometer(state); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
-            }
+            
+            if (state->bitslicer_action_counter<BITSLICER_MAX_ACTION) { 
+                bool bit_slice_changed = bitslice_control(state);
 
+                if (bit_slice_changed) {
+                    (state->bitslicer_action_counter)++;
+                    restart_spectrometer(state); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
+                 } else {
+                    state ->bitslicer_action_counter = 0;
+                 }
+            } else {
+                state->base.errors |= DIGITAL_AGC_STUCK;
+            }
             // Check if we have reached filled up Stage 2 averaging
             // and if so, push things out to CDI
             if (state->avg_counter == get_Navg2(state)) {
