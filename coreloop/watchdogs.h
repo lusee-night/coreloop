@@ -4,7 +4,7 @@
 #include "core_loop.h"
 #include <stdint.h>
 
-uint8_t check_and_handle_watchdogs(struct core_state* state);
+void process_watchdogs(struct core_state* state);
 
 #endif
 

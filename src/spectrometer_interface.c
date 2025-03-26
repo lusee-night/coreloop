@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <time.h>
 #include "LuSEE_IO.h"
+#include <stdbool.h>
+#include "core_loop.h" // for tap_counter
 
 const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
@@ -199,8 +201,49 @@ void spec_set_avg1 (uint8_t Navg1_shift) {
 }
 
 //enables watchdogs
-uint8_t spec_watchdog_tripped(void);
-void spec_enable_watchdogs(uint8_t enable);
+
+static bool watchdogs_enabled = false;
+static bool watchdog_triggered = false;
+static uint64_t watchdog_start_tick = 0;
+static const uint64_t WATCHDOG_TICK_THRESHOLD = 100;  // ~1 second
+
+void spec_enable_watchdogs(uint8_t enable) {
+    watchdogs_enabled = (enable > 0);
+    watchdog_triggered = false;
+    watchdog_start_tick = tap_counter;  // reset start tick
+    printf("[watchdog] Enabled: %d, start_tick = %lu\n", watchdogs_enabled, watchdog_start_tick);
+}
+
+uint8_t spec_watchdog_tripped(void) {
+    if (!watchdogs_enabled) {
+        return 0;
+    }
+
+    uint64_t ticks_elapsed = tap_counter - watchdog_start_tick;
+
+    printf("[watchdog] Ticks elapsed: %lu / %lu\n", ticks_elapsed, WATCHDOG_TICK_THRESHOLD);
+
+    if (ticks_elapsed > WATCHDOG_TICK_THRESHOLD) {
+        watchdog_triggered = true;
+        printf("[watchdog] Trip condition met!\n");
+    }
+
+    return watchdog_triggered ? 1 : 0;
+}
+
+
+//uint8_t spec_watchdog_tripped(void) {
+//    if (!watchdogs_enabled)
+//        return 0;
+//
+//    time_t now = time(NULL);
+//    if (difftime(now, last_watchdog_time) > WATCHDOG_INTERVAL_SEC) {
+//        watchdog_triggered = true;
+//    }
+//
+//    return watchdog_triggered ? 1 : 0;
+//}
+
 
 void spec_trigger_ADC_stat(uint16_t Nsamples) {
     adc_trigger = true;

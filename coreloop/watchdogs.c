@@ -20,6 +20,7 @@ void process_watchdogs (struct core_state* state) {
     if (tripped != 0) {
         struct watchdog_packet* payload = (struct watchdog_packet*)(TLM_BUF);
 
+        debug_print("WATCHDOG TRIPPED!\n");
         new_unique_packet_id(state); // ensures unique_packet_id is incremented
         update_time(state);          // ensure time is fresh
         wait_for_cdi_ready();        // block until CDI buffer is ready
@@ -73,14 +74,5 @@ void process_watchdogs (struct core_state* state) {
 //
 //    return 0;
 //}
-
-
-void spec_enable_watchdogs(uint8_t enable) {
-    // No-op for now
-}
-
-uint8_t spec_watchdog_tripped(void) {
-    return 0; // Not tripped
-}
 
 #endif
