@@ -31,6 +31,8 @@ uint8_t channel_gain[NINPUT];
 #define N_BOOT_REGISTERS 16
 uint32_t boot_registers[N_BOOT_REGISTERS];
 
+uint8_t watchdog_enabled = 0;
+
 // Mapping of channels to cross-correlations
 const int ch_ant1[] = {0,1,2,3, 0,0,  0,0,  0,0,  1,1,  1,1, 2, 2};
 const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
@@ -198,9 +200,6 @@ void spec_set_avg1 (uint8_t Navg1_shift) {
     printf ("NAVg1 set to %i\n",Navg1);
 }
 
-//enables watchdogs
-uint8_t spec_watchdog_tripped(void);
-void spec_enable_watchdogs(uint8_t enable);
 
 void spec_trigger_ADC_stat(uint16_t Nsamples) {
     adc_trigger = true;
@@ -316,3 +315,21 @@ void spec_set_fw_cdi_delay(uint32_t delay) {}
  void spec_reg_write(uint16_t reg, uint32_t value) {}
  
  void spec_notch_disable_subtraction(bool disable) {}
+
+
+
+
+void spec_enable_watchdogs(uint8_t enable) {
+    watchdog_enabled = enable;
+}
+
+uint8_t spec_watchdog_tripped(void) {
+
+    if (!watchdog_enabled)   
+        return 0;
+    clock_gettime(CLOCK_REALTIME, &time_now);
+    long s_passed = (time_now.tv_sec - time_spec_start.tv_sec);
+    return (s_passed>20);
+}
+
+void feed_uC_watchdog(void) {}

@@ -12,26 +12,25 @@
 
 void process_watchdogs (struct core_state* state) {
     
-    if (!state->base.watchdogs_enabled)
-        return;
+    if (state->watchdog.watchdogs_enabled) {
+        feed_uC_watchdog();
+        uint8_t tripped = spec_watchdog_tripped();
 
-    uint8_t tripped = spec_watchdog_tripped();
+        if (tripped > 0) {
+            struct watchdog_packet* payload = (struct watchdog_packet*)(TLM_BUF);
 
-    if (tripped != 0) {
-        struct watchdog_packet* payload = (struct watchdog_packet*)(TLM_BUF);
+            new_unique_packet_id(state); // ensures unique_packet_id is incremented
+            update_time(state);          // ensure time is fresh
+            wait_for_cdi_ready();        // block until CDI buffer is ready
 
-        new_unique_packet_id(state); // ensures unique_packet_id is incremented
-        update_time(state);          // ensure time is fresh
-        wait_for_cdi_ready();        // block until CDI buffer is ready
+            payload->unique_packet_id = state->unique_packet_id;
+            payload->uC_time = state->base.uC_time;
+            payload->tripped = tripped;
 
-        payload->unique_packet_id = state->unique_packet_id;
-        payload->uC_time = state->base.uC_time;
-        payload->tripped = tripped;
+            cdi_dispatch_uC(&(state->cdi_stats), AppID_Watchdog, sizeof(struct watchdog_packet));
 
-        cdi_dispatch_uC(&(state->cdi_stats), AppID_Watchdog, sizeof(struct watchdog_packet));
-
-        cmd_soft_reset(0, state);
-
+            cmd_soft_reset(0, state);
+        }
     }
 
     
@@ -73,14 +72,5 @@ void process_watchdogs (struct core_state* state) {
 //
 //    return 0;
 //}
-
-
-void spec_enable_watchdogs(uint8_t enable) {
-    // No-op for now
-}
-
-uint8_t spec_watchdog_tripped(void) {
-    return 0; // Not tripped
-}
 
 #endif

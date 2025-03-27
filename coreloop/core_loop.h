@@ -100,7 +100,6 @@ struct core_state_base {
     bool calibrator_enable; // calibrator enable is true will enable calibrator with enabling the FFT engine.
     uint32_t rand_state;
     uint8_t weight_previous, weight_current;
-    uint8_t watchdogs_enabled; //new uint8_t variable enabling watchdogs
 };
 
 struct cdi_stats {
@@ -128,7 +127,8 @@ struct delayed_cdi_sending {
 
 struct watchdog_config {
     uint8_t FPGA_max_temp;
-    // here add watchdog configuration if needed
+    uint8_t watchdogs_enabled;
+
 };
 
 

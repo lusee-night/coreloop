@@ -70,6 +70,8 @@ void core_init_state(struct core_state* state){
     update_time(state);
     state->unique_packet_id = state->base.time_32;
     state->watchdog.FPGA_max_temp = 90;
+    spec_enable_watchdogs(0);
+    state->watchdog.watchdogs_enabled = false;
     state->cmd_counter = cdi_command_count();
     state->cdi_stats.cdi_packets_sent = 0;
     state->cdi_stats.cdi_bytes_sent = 0;
@@ -108,6 +110,7 @@ bool process_waveform(struct core_state* state) {
 
 void core_loop(struct core_state* state)
 {
+    // disable watchdogs at start
     spectrometer_init();
     calib_init();
     cdi_init();

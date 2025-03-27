@@ -30,7 +30,7 @@ bool process_cdi(struct core_state* state)
     uint8_t cmd, arg_high, arg_low;
     uint8_t ch, xcor, val;
     uint8_t ant1low, ant1high, ant2low, ant2high, ant3low, ant3high, ant4low, ant4high;
-void spec_enable_watchdogs(uint8_t enable);    uint32_t dly;
+    uint32_t dly;
 
     #ifdef NOTREAL
     cdi_fill_command_buffer();
@@ -219,9 +219,10 @@ void spec_enable_watchdogs(uint8_t enable);    uint32_t dly;
             spec_reg_write(state->reg_address, state->reg_value);
             break;
 
-	case RFS_SET_ENABLE_WATCHDOGS:
-	    spec_enable_watchdogs(arg_low);
-	    break;
+	    case RFS_SET_ENABLE_WATCHDOGS:
+            state->watchdog.watchdogs_enabled = arg_low;
+	        spec_enable_watchdogs(arg_low);
+	        break;
 
         case RFS_SET_SEQ_OVER: 
             state->request_eos = arg_low;
