@@ -33,8 +33,6 @@ void process_watchdogs (struct core_state* state) {
         }
     }
 
-    
-
 
     int fpga_temp = (TVS_sensors_avg[3]>>7) - 273;
     if (fpga_temp > state->watchdog.FPGA_max_temp) {

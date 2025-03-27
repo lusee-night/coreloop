@@ -212,7 +212,7 @@ void spec_enable_watchdogs(uint8_t enable) {
     watchdogs_enabled = (enable > 0);
     watchdog_triggered = false;
     watchdog_start_tick = tap_counter;  // reset start tick
-    printf("[watchdog] Enabled: %d, start_tick = %lu\n", watchdogs_enabled, watchdog_start_tick);
+    //printf("[watchdog] Enabled: %d, start_tick = %lu\n", watchdogs_enabled, watchdog_start_tick);
 }
 
 uint8_t spec_watchdog_tripped(void) {
@@ -222,11 +222,11 @@ uint8_t spec_watchdog_tripped(void) {
 
     uint64_t ticks_elapsed = tap_counter - watchdog_start_tick;
 
-    printf("[watchdog] Ticks elapsed: %lu / %lu\n", ticks_elapsed, WATCHDOG_TICK_THRESHOLD);
+    //printf("[watchdog] Ticks elapsed: %lu / %lu\n", ticks_elapsed, WATCHDOG_TICK_THRESHOLD);
 
     if (ticks_elapsed > WATCHDOG_TICK_THRESHOLD) {
         watchdog_triggered = true;
-        printf("[watchdog] Trip condition met!\n");
+        //printf("[watchdog] Trip condition met!\n");
     }
 
     return watchdog_triggered ? 1 : 0;
