@@ -410,6 +410,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_REJ_NBAD:
             state->base.reject_maxbad = arg_low;
             break;
+
         case RFS_SET_TR_START_LSB:
             if (state->base.spectrometer_enable) {
                 // changing settings while spectrometer is running is not allowed;

@@ -13,11 +13,12 @@ void update_spec_gains(struct core_state* state) {
 void set_route(struct core_state* state, uint8_t ch, uint8_t arg_low) {
     state->base.route[ch].plus = arg_low & 0b111;
     state->base.route[ch].minus = ((arg_low & 0b111000) >> 3);
-    uint8_t gain = ((arg_low & 0b11000000) >> 6);
+    
     spec_set_route(ch, state->base.route[ch].plus, state->base.route[ch].minus);
+    /* uint8_t gain = ((arg_low & 0b11000000) >> 6);
     state->base.gain[ch] = gain;
     state->base.actual_gain[ch] = gain;
-    spec_set_gain(ch, state->base.actual_gain[ch]);
+    spec_set_gain(ch, state->base.actual_gain[ch]); */
 }
 
 

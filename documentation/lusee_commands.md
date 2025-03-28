@@ -54,7 +54,7 @@
 
 | 0x3M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x30 | RFS_SET_GAIN_ANA_SET  |set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
+| 0x30 | RFS_SET_GAIN_ANA_SET  |set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A. If not A it will also set actual gains, otherwise just arm AGC
 | 0x31 | RFS_SET_GAIN_ANA_CFG_MIN | automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
 | 0x32 | RFS_SET_GAIN_ANA_CFG_MULT | automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
 | 0x33 | RFS_SET_BITSLICE_LOW | Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
@@ -65,8 +65,7 @@
 
 | 0x4M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus, bits 7-8 are direct gain
-| 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 2
+| 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
 | 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
 | 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4
 | 0x44 | RFS_SET_ADC_SPECIAL  | set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones) |
