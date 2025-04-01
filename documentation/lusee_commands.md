@@ -66,6 +66,7 @@
 | 0x4M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
 | 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+| 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 2
 | 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
 | 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4
 | 0x44 | RFS_SET_ADC_SPECIAL  | set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones) |
