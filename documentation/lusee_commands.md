@@ -66,6 +66,7 @@
 | 0x4M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
 | 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+| 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
 | 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
 | 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4
 | 0x44 | RFS_SET_ADC_SPECIAL  | set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones) |
@@ -128,6 +129,8 @@
 | 0x84 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.
 | 0x85 | RFS_SET_CAL_DDRIFT_GUARD  | Set delta drift guard. 1 = 25 units of cordic angle 
 | 0x86 | RFS_SET_CAL_GPHASE_GUARD  | Set gphase guard. 1=2000 units of cordic angle 
+| 0x87 | RFS_SET_CAL_WSAVE        | Store the weight set into one of the 16 slots specified in arg_low 
+| 0x88 | RFS_SET_CAL_WLOAD      | Restore the weight set 
 
 
 

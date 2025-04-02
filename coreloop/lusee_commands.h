@@ -121,7 +121,7 @@
 // Clear flash to prevent restarting old sequence
 #define RFS_SET_FLASH_CLR  0x26 
 
-// set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
+// set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A. If not A it will also set actual gains, otherwise just arm AGC
 #define RFS_SET_GAIN_ANA_SET  0x30 
 
 // automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
@@ -139,10 +139,10 @@
 // Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
 #define RFS_SET_BITSLICE_AUTO  0x35 
 
-// set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus, bits 7-8 are direct gain
+// set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
 #define RFS_SET_ROUTE_SET1  0x40 
 
-// set routing for ADC channels 2
+// set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
 #define RFS_SET_ROUTE_SET2  0x41 
 
 // set routing for ADC channels 3
@@ -264,6 +264,12 @@
 
 // Set gphase guard. 1=2000 units of cordic angle
 #define RFS_SET_CAL_GPHASE_GUARD  0x86 
+
+// Store the weight set into one of the 16 slots specified in arg_low
+#define RFS_SET_CAL_WSAVE  0x87 
+
+// Restore the weight set
+#define RFS_SET_CAL_WLOAD  0x88 
 
 // Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
 #define RFS_SET_ZOOM_CH  0x90 

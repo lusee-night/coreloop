@@ -1,8 +1,11 @@
 #include "LuSEE_IO.h"
 #include "LuSEE_SPI.h"
 
+
 #include "lusee_appIds.h"
 #include "core_loop.h"
+#include "calibrator.h"
+#include "calibrator_interface.h"
 #include "flash_interface.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -14,10 +17,15 @@ inline static uint32_t get_flash_addr (uint32_t slot) {
     return slot*4096 + Flash_FS_Save;
 }
 
+inline static uint32_t get_cal_flash_addr (uint32_t slot) {
+    return slot*4096 + Flash_CAL_Save;
+}
+
+
 
 void flash_state_store(uint8_t slot, struct core_state* state) {
     // we will do this when spectrometer is off, so ok
-    struct saved_state *tostore = (struct saved_state *)(SPEC_TICK);
+    struct saved_state *tostore = (struct saved_state *)(FLASH_WORK);
     tostore->in_use = 0xBEBEC;
     for (int i=0; i<CMD_BUFFER_SIZE; i++) {
         tostore->cmd_arg_high[i] = state->cmd_arg_high[i];
@@ -35,7 +43,7 @@ void flash_state_store(uint8_t slot, struct core_state* state) {
 
 bool flash_state_restore(uint8_t slot, struct core_state* state) {
     // we will do this when spectrometer is off, so ok
-    struct saved_state *tostore = (struct saved_state *)(SPEC_TICK);
+    struct saved_state *tostore = (struct saved_state *)(FLASH_WORK);
     uint32_t flash_addr = get_flash_addr(slot);
     // read just a little bit to start with
     memcpy_from_flash(tostore, flash_addr, 8);
@@ -120,5 +128,40 @@ void restore_state(struct core_state* state) {
     srn->size = state->cmd_end - state->cmd_ptr;
     cdi_dispatch_uC(&state->cdi_stats, AppID_uC_Restored, sizeof(*srn));
     debug_print("\r\n");
+}
+
+
+
+void flash_calweights_store(uint8_t slot) {
+    struct saved_calibrator_weights *tostore = (struct saved_calibrator_weights *)(FLASH_WORK);
+    tostore->in_use = 0xBABAC;
+    for (int i=0; i<512; i++) {
+        tostore->weights[i] = calib_get_weight(i);
+    }
+    tostore->CRC = CRC(&tostore->weights, 512*sizeof(uint16_t));
+    uint32_t flash_addr = get_cal_flash_addr(slot);
+    memcpy_to_flash(flash_addr, tostore, sizeof(struct saved_calibrator_weights));
+}
+
+bool flash_calweights_restore(uint8_t slot, bool just_check) {
+    struct saved_calibrator_weights *tostore = (struct saved_calibrator_weights *)(FLASH_WORK);
+    uint32_t flash_addr = get_cal_flash_addr(slot);
+    // read just a little bit to start with
+    memcpy_from_flash(tostore, flash_addr, 8);
+    if (tostore->in_use == 0xBABAC) {
+        memcpy_from_flash(tostore, flash_addr, sizeof(struct saved_calibrator_weights));
+        uint32_t crc = CRC(&tostore->weights, 512*sizeof(uint16_t));
+        if (crc == tostore->CRC) {
+            if (!just_check) {
+                for (int i=0; i<512; i++) {
+                    calib_set_weight(i, tostore->weights[i]);
+                }
+            }
+            debug_print("[FWR]")
+            return true;
+        }
+    }
+    debug_print("[FWR fail]");
+    return false;
 }
 

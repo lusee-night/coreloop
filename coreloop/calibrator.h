@@ -71,6 +71,14 @@ struct calibrator_metadata {
   uint32_t error_regs [30];
 };
 
+
+struct saved_calibrator_weights {
+  uint32_t in_use;
+  uint32_t CRC;
+  uint16_t weights[512];
+};
+
+
 struct core_state;
 
 void set_calibrator(struct calibrator_state* cal);

@@ -565,6 +565,24 @@ bool process_cdi(struct core_state* state)
             break;
 
 
+        case RFS_SET_CAL_WSAVE:
+            if (arg_low<16) {
+                flash_calweights_store(arg_low);
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
+        case RFS_SET_CAL_WLOAD:
+            if (arg_low<16) {
+                if (!flash_calweights_restore(arg_low, false)) {
+                    state->base.errors |= FLASH_CRC_FAIL;
+                }
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
         case RFS_SET_ZOOM_CH:
             state->cal.zoom_ch1 = arg_low & 0xb0011;
             state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;

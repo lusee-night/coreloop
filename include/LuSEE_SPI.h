@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-extern uint32_t Flash_FS_Save;
+extern uint32_t Flash_FS_Save, Flash_CAL_Save;
 extern void* SFL_RD_BUFF;
 extern void* SFL_WR_BUFF;
 

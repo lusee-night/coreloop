@@ -95,6 +95,7 @@ void calib_set_notch_index(int index) {
     // Placeholder implementation
 }
 
+uint16_t calib_get_weight (int index) {return index;}
 
 
 void cal_reset() {};

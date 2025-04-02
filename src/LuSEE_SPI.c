@@ -1,6 +1,6 @@
 #include "LuSEE_SPI.h"
 
-uint32_t  Flash_FS_Save;
+uint32_t  Flash_FS_Save, Flash_CAL_Save;
 void*  SFL_RD_BUFF;
 void* SFL_WR_BUFF;
 

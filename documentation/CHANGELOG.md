@@ -6,7 +6,9 @@
  * Implemented loop counting in heartbeat
  * Implemented watchdogs
  * Implemented looping
-
+ * Removed gain changes when setting bitslicers
+ * Fixed a potential problem in auto bit-slicer, added fence
+ * Fixed rejection? Not yet
 
 
 ## Version 2r03

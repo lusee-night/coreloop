@@ -151,6 +151,7 @@ void calib_unit_weights();
 
 // set set weight(0-510) (both main and stage3)
 void calib_set_weight (int index, uint16_t value);
+uint16_t calib_get_weight (int index);
 
 // stage3 only
 void calib_set_weight_stage3(int index, uint16_t value);
