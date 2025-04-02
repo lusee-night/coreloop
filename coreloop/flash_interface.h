@@ -13,3 +13,4 @@ bool flash_state_restore(uint8_t slot, struct core_state*);
 void flash_calweights_store(uint8_t slot);
 bool flash_calweights_restore(uint8_t slot, bool just_check);
 
+void clear_current_slot (struct core_state* state);
