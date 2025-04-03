@@ -139,16 +139,16 @@
 // Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
 #define RFS_SET_BITSLICE_AUTO  0x35 
 
-// set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+// set routing for ADC channels 0 bits 0-2 are minus, bits 3-6 are plus
 #define RFS_SET_ROUTE_SET1  0x40 
 
 // set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
 #define RFS_SET_ROUTE_SET2  0x41 
 
-// set routing for ADC channels 3
+// set routing for ADC channels 2
 #define RFS_SET_ROUTE_SET3  0x42 
 
-// set routing for ADC channels 4
+// set routing for ADC channels 3
 #define RFS_SET_ROUTE_SET4  0x43 
 
 // set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones)

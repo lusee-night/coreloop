@@ -68,7 +68,10 @@ void core_init_state(struct core_state* state){
     state->cdi_dispatch.tr_count = 0xFF; // >0F so disabled. 
     state->cdi_dispatch.cal_count = 0xFF; // >0F so disabled.            
     state->tick_tock = true;
-    state->base.weight_current = state->base.weight_previous = 0;
+    state->base.weight_current = state->base.weight = 0;
+    state->base.num_bad_min = state->base.num_bad_min_current = 0xFFFF;
+    state->base.num_bad_max = state->base.num_bad_max_current = 0;
+
     state->drop_df = false;
     state->avg_counter = 0;
     update_time(state);
@@ -298,7 +301,9 @@ void RFS_stop(struct core_state* state) {
 void RFS_start(struct core_state* state) {
     debug_print ("\n\rStarting spectrometer\n\r");
     state->base.spectrometer_enable = true;
-    state->base.weight_previous = state->base.weight_current = 0;
+    state->base.weight = state->base.weight_current = 0;
+    state->base.num_bad_min = state->base.num_bad_min_current = 0xFFFF;
+    state->base.num_bad_max = state->base.num_bad_min_current = 0;
     state->bitslicer_action_counter = 0; 
     state->avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));

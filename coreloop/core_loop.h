@@ -101,7 +101,12 @@ struct core_state_base {
     bool spectrometer_enable; // spectrometer_enable is true when FFT enegine is running
     bool calibrator_enable; // calibrator enable is true will enable calibrator with enabling the FFT engine.
     uint32_t rand_state;
-    uint8_t weight_previous, weight_current;
+    
+    uint16_t weight, weight_current;
+    uint16_t num_bad_min_current, num_bad_max_current; // actual number of bad bins in the previous integration
+    uint16_t num_bad_min, num_bad_max; // actual number of bad bins in the previous integration
+    
+
 };
 
 struct cdi_stats {
