@@ -277,6 +277,13 @@ bool process_cdi(struct core_state* state)
             update_spec_gains(state);
             break;
 
+        case RFS_SET_GAIN_ADOPT:
+            for (int i=0; i<NINPUT; i++) {                
+                if ((arg_low & (1<<i)) && (state->base.gain[i] == GAIN_AUTO)) {
+                    state->base.gain[i] = state->base.actual_gain[i];
+                }
+            }
+
         case RFS_SET_DISABLE_ADC:
             for (int i=0; i<NINPUT; i++){
                 if ((arg_low >> (i)) & 0x01) {

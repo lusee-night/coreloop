@@ -55,11 +55,12 @@
 | 0x3M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
 | 0x30 | RFS_SET_GAIN_ANA_SET  |set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A. If not A it will also set actual gains, otherwise just arm AGC
-| 0x31 | RFS_SET_GAIN_ANA_CFG_MIN | automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
-| 0x32 | RFS_SET_GAIN_ANA_CFG_MULT | automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
-| 0x33 | RFS_SET_BITSLICE_LOW | Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
-| 0x34 | RFS_SET_BITSLICE_HIGH | Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
-| 0x35 | RFS_SET_BITSLICE_AUTO | Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
+| 0x31 | RFS_SET_GAIN_ADOPT    | for every channel that is enabled with first four bits: if gain=A, take actual_gain and put it into gain (i.e. move from automatic gain to what we currently have)
+| 0x32 | RFS_SET_GAIN_ANA_CFG_MIN | automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
+| 0x33 | RFS_SET_GAIN_ANA_CFG_MULT | automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
+| 0x34 | RFS_SET_BITSLICE_LOW | Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
+| 0x35 | RFS_SET_BITSLICE_HIGH | Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
+| 0x36 | RFS_SET_BITSLICE_AUTO | Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
 
 ### 0x4X Signal Routing Settings
 

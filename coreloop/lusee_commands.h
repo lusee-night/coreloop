@@ -124,20 +124,23 @@
 // set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A. If not A it will also set actual gains, otherwise just arm AGC
 #define RFS_SET_GAIN_ANA_SET  0x30 
 
+// for every channel that is enabled with first four bits: if gain=A, take actual_gain and put it into gain (i.e. move from automatic gain to what we currently have)
+#define RFS_SET_GAIN_ADOPT  0x31 
+
 // automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
-#define RFS_SET_GAIN_ANA_CFG_MIN  0x31 
+#define RFS_SET_GAIN_ANA_CFG_MIN  0x32 
 
 // automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
-#define RFS_SET_GAIN_ANA_CFG_MULT  0x32 
+#define RFS_SET_GAIN_ANA_CFG_MULT  0x33 
 
 // Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
-#define RFS_SET_BITSLICE_LOW  0x33 
+#define RFS_SET_BITSLICE_LOW  0x34 
 
 // Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
-#define RFS_SET_BITSLICE_HIGH  0x34 
+#define RFS_SET_BITSLICE_HIGH  0x35 
 
 // Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
-#define RFS_SET_BITSLICE_AUTO  0x35 
+#define RFS_SET_BITSLICE_AUTO  0x36 
 
 // set routing for ADC channels 0 bits 0-2 are minus, bits 3-6 are plus
 #define RFS_SET_ROUTE_SET1  0x40 

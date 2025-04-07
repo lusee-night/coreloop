@@ -9,6 +9,7 @@
  * Removed gain changes when setting bitslicers
  * Fixed a potential problem in auto bit-slicer, added fence
  * Fixed rejection, aded num_bad_min and numb_bad_max to base, increased weights to 16 bit counters
+ * Added command to adopt automatically adjusted gains
 
 
 ## Version 2r03
