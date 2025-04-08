@@ -39,17 +39,25 @@ void flash_state_store(uint8_t slot, struct core_state* state) {
 }
 
 
-
-
-bool flash_state_restore(uint8_t slot, struct core_state* state) {
-    // we will do this when spectrometer is off, so ok
+bool flash_slot_busy(uint8_t slot) {
     struct saved_state *tostore = (struct saved_state *)(FLASH_WORK);
     uint32_t flash_addr = get_flash_addr(slot);
     // read just a little bit to start with
     memcpy_from_flash(tostore, flash_addr, 8);
-    if (tostore->in_use != 0xBEBEC) {
+    if (tostore->in_use == 0xBEBEC) {
+        return true;
+    }
+    return false;
+}
+
+
+bool flash_state_restore(uint8_t slot, struct core_state* state) {
+    // we will do this when spectrometer is off, so ok
+    if (!flash_slot_busy(slot)) {
         return false;
     }
+    struct saved_state *tostore = (struct saved_state *)(FLASH_WORK);
+    uint32_t flash_addr = get_flash_addr(slot);
     memcpy_from_flash(tostore, flash_addr, sizeof(struct saved_state));
     uint32_t crc = CRC(tostore,sizeof(struct saved_state)-sizeof(uint32_t));
     if (crc == tostore->CRC) {
@@ -84,11 +92,10 @@ void store_state (struct core_state* state) {
     uint16_t timer_time_16;
     uint32_t timer_time_32;
     spec_get_time(&timer_time_32, &timer_time_16);
-    state->flash_slot  = (timer_time_32 >> 4) % MAX_STATE_SLOTS;
+    state->flash_slot  = ((timer_time_32 >> 4) % MAX_STATE_SLOTS);
     debug_print("STR ");
     debug_print_dec(state->flash_slot)    
     flash_state_store(state->flash_slot, state);
-    debug_print("Stored sequence to slot ")
     debug_print_dec(state->flash_slot);
 }
 
@@ -97,18 +104,20 @@ void store_state (struct core_state* state) {
 void restore_state(struct core_state* state) {
     uint32_t arg1 = spec_read_uC_register(0);  // register contains argumed passed from bootloader
     if (arg1 == 1) {
-        debug_print("Ignoring saved states\r\n");
+        debug_print("\r\nISS\r\n");
         state->flash_slot = -1;
         return;
     } else if (arg1==2) {
         // remove all slots
+        debug_print("\r\nDS ");
         for (int i=0; i<MAX_STATE_SLOTS; i++) {
-            debug_print("Deleting slot ");
-            debug_print_dec(i);
-            debug_print("\r\n");
-            uint32_t flash_addr = get_flash_addr(i);
-            SPI_4k_erase(flash_addr);
+            if (flash_slot_busy(i)) {            
+                debug_print_dec(i);
+                uint32_t flash_addr = get_flash_addr(i);
+                SPI_4k_erase(flash_addr);    
+            }
         }
+        state->flash_slot = -1;
         return;
     }
 
@@ -120,7 +129,7 @@ void restore_state(struct core_state* state) {
             return;
         }
     }
-    debug_print("Restored sequence from slot ")
+    debug_print("\r\nRSS ")
     debug_print_dec(state->flash_slot);
     // now also send the appropriate CDI packet.
     struct state_recover_notification* srn = (struct state_recover_notification*)TLM_BUF;
