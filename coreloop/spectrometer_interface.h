@@ -57,6 +57,8 @@ struct ADC_stat {
 void spectrometer_init();
 
 void spec_set_Navg1(uint32_t Navg1);
+
+// Enable PFB spectrometer engine
 void spec_set_spectrometer_enable(bool on);
 
 // Enable watchdogs

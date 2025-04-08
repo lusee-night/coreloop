@@ -21,7 +21,8 @@ void cmd_soft_reset(uint8_t arg_low, struct core_state* state)
     RFS_stop(state);
     spec_set_reset();
     // arglow controls what to do with the stored states after reset.
-    spec_write_uC_register(0,arg_low);
+    spec_write_uC_register(0,arg_low & 0b011);
+    spec_write_uC_register(1,arg_low & 0b100);
     soft_reset_flag = true;
 }
 
@@ -53,19 +54,33 @@ bool process_cdi(struct core_state* state)
         debug_print("]");
 
         if (cmd == RFS_SPECIAL) {
-            if (arg_high == RFS_SET_RESET) {
+            switch (arg_high) {
+            case RFS_SET_RESET:
                 cmd_soft_reset(arg_low, state);
                 return true;
-            } else if (arg_high == RFS_SET_TIME_TO_DIE) {
+            case RFS_SET_TIME_TO_DIE:
                 return true;
-            } else {
+            case RFS_SET_SEQ_BEGIN:
+                state->sequence_upload = true;
+                return false;
+            case RFS_SET_SEQ_END:
+                state->sequence_upload = false;
+                // flash storing
+                if (arg_low>0) store_state(state);                
+                return false;
+            case RFS_SET_BREAK:
+                // reset the commanding;
+                state->cmd_ptr = state->cmd_end = 0;
+                state->loop_depth = 0;
+                return false;
+            default:
                 cdi_not_implemented("RFS_SPECIAL");
                 state->base.errors |= CDI_COMMAND_UNKNOWN;
+                return false;
             }
-            return false;
         } else if (cmd==RFS_SETTINGS)  {
             uint16_t cmd_end = (state->cmd_end + 1) % CMD_BUFFER_SIZE;
-            if (cmd_end == state->cmd_start) {
+            if (cmd_end == state->cmd_ptr) {
                 state->base.errors != CDI_COMMAND_BUFFER_OVERFLOW;
                 cmd_end = state->cmd_end;
                 return false;
@@ -83,12 +98,13 @@ bool process_cdi(struct core_state* state)
 
     if (state->timing.cdi_wait_counter>tap_counter) return false; //not taking any commands while in the CDI wait state
     if (state->cdi_wait_spectra>0) return false; // not taking any command while waitig for spectra.
-    if (state->cmd_start == state->cmd_end) return false; // no new commands
+    if (state->sequence_upload) return false; // not taking any commands while uploading sequence.
+    if (state->cmd_ptr == state->cmd_end) return false; // no new commands
  
     // finally process the command in the line
-    state->cmd_start = (state->cmd_start + 1) % CMD_BUFFER_SIZE;
-    arg_low = state->cmd_arg_low[state->cmd_start];
-    arg_high = state->cmd_arg_high[state->cmd_start];
+    state->cmd_ptr = (state->cmd_ptr + 1) % CMD_BUFFER_SIZE;
+    arg_low = state->cmd_arg_low[state->cmd_ptr];
+    arg_high = state->cmd_arg_high[state->cmd_ptr];
     debug_print ("[>*");
     debug_print_hex(cmd);
     debug_print_hex(arg_high);
@@ -99,20 +115,11 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_START:
             if (!state->base.spectrometer_enable) {
                 RFS_start(state);
-                if (!(arg_low & 1)) {
-                    state->flash_store_pointer = tap_counter%MAX_STATE_SLOTS;
-                    flash_state_store(state->flash_store_pointer, state);
-                } else {
-                    debug_print ("Not storing flash state->\r\n");
-                }
             }
             break;
         case RFS_SET_STOP:
             if (state->base.spectrometer_enable) {
                 RFS_stop(state);
-                if (!(arg_low & 1)) {
-                    flash_state_clear(state->flash_store_pointer);
-                }
             }
             break;
         case RFS_SET_RESET:
@@ -220,10 +227,42 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_ENABLE_WATCHDOGS:
             state->watchdog.watchdogs_enabled = arg_low;
             spec_enable_watchdogs(arg_low);
+
+        case RFS_SET_LOOP_START:
+            if (state->loop_depth < MAX_LOOPS) {
+                state->loop_start[state->loop_depth] = state->cmd_ptr; //already pointing at the next cmd >0 ? state->cmd_ptr-1 : CMD_BUFFER_SIZE-1;
+                state->loop_count[state->loop_depth] = arg_low;
+                state->loop_depth++;
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
+        case RFS_SET_LOOP_NEXT:
+            if (state->loop_depth > 0) {
+                uint8_t loop_count = state->loop_count[state->loop_depth-1];
+                if (loop_count ==0 ) { // infinite loops
+                    state->cmd_ptr = state->loop_start[state->loop_depth-1];
+                } else if (loop_count > 1) {
+                    // decrease the counter and cycle back
+                    state->loop_count[state->loop_depth-1]--;
+                    state->cmd_ptr = state->loop_start[state->loop_depth-1];
+                } else {
+                    // this is the last iteration
+                    state->loop_depth--;
+                    // and let's move on
+                }
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
             break;
 
         case RFS_SET_SEQ_OVER: 
             state->request_eos = arg_low;
+            break;
+
+        case RFS_SET_FLASH_CLR:
+            clear_current_slot(state);
             break;
 
         case RFS_SET_GAIN_ANA_SET:
@@ -240,6 +279,13 @@ bool process_cdi(struct core_state* state)
             }
             update_spec_gains(state);
             break;
+
+        case RFS_SET_GAIN_ADOPT:
+            for (int i=0; i<NINPUT; i++) {                
+                if ((arg_low & (1<<i)) && (state->base.gain[i] == GAIN_AUTO)) {
+                    state->base.gain[i] = state->base.actual_gain[i];
+                }
+            }
 
         case RFS_SET_DISABLE_ADC:
             for (int i=0; i<NINPUT; i++){
@@ -330,7 +376,7 @@ bool process_cdi(struct core_state* state)
                 // do nothing but set the error flag
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->base.Navg1_shift = arg_low & 0x0F;
+                state->base.Navg1_shift = 8 + (arg_low & 0x0F);
                 state->base.Navg2_shift = (arg_low & 0xF0) >> 4;
             }
 
@@ -374,6 +420,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_REJ_NBAD:
             state->base.reject_maxbad = arg_low;
             break;
+
         case RFS_SET_TR_START_LSB:
             if (state->base.spectrometer_enable) {
                 // changing settings while spectrometer is running is not allowed;
@@ -447,12 +494,21 @@ bool process_cdi(struct core_state* state)
             state->cal.Nsettle = arg_low;
             break;
 
-        case RFS_SET_CAL_CORRA:
+        case RFS_SET_CAL_CORRA_LSB:
             state->cal.delta_drift_corA = arg_low;
             break;
 
-        case RFS_SET_CAL_CORRB:
+            case RFS_SET_CAL_CORRA_MSB:
+            state->cal.delta_drift_corA += (arg_low << 8);
+            break;
+
+
+        case RFS_SET_CAL_CORRB_LSB:
             state->cal.delta_drift_corB = arg_low;
+            break;
+
+        case RFS_SET_CAL_CORRB_MSB:
+            state->cal.delta_drift_corB += (arg_low << 8);
             break;
 
         case RFS_SET_CAL_WEIGHT_NDX_LO:
@@ -510,11 +566,52 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
+        case RFS_SET_CAL_DDRIFT_GUARD:
+            state->cal.ddrift_guard = arg_low*25;
+            break;
+
+        case RFS_SET_CAL_GPHASE_GUARD:
+            state->cal.gphase_guard = arg_low*2000;
+            break;
+
+
+        case RFS_SET_CAL_WSAVE:
+            if (arg_low<16) {
+                flash_calweights_store(arg_low);
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
+        case RFS_SET_CAL_WLOAD:
+            if (arg_low<16) {
+                if (!flash_calweights_restore(arg_low, false)) {
+                    state->base.errors |= FLASH_CRC_FAIL;
+                }
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
         case RFS_SET_ZOOM_CH:
             state->cal.zoom_ch1 = arg_low & 0xb0011;
             state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;
+            state->cal.zoom_prod = (arg_low & 0b110000) >> 4;
             break;
-            
+        
+        case RFS_SET_ZOOM_NFFT:
+            if (arg_low>32) {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            } else {
+                state->cal.zoom_Nfft = arg_low;
+            }
+            break;
+
+        case RFS_SET_ZOOM_NAVG:
+            state->cal.zoom_Navg = arg_low;
+            break;
+        
+
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
             state->base.errors |= CDI_COMMAND_UNKNOWN;

@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "LuSEE_IO.h"
 #include "LuSEE_SPI.h"
-#include "LuSEE_Flash_cntrl.h"
 #include "core_loop.h"
 #include "spectrometer_interface.h"
 #include "calibrator_interface.h"
@@ -25,6 +24,9 @@ volatile uint64_t tap_counter;
 // sensor averaging
 volatile uint32_t TVS_sensors_avg[4];
 uint32_t TVS_sensors[4];
+// overall peformance, numbers of loops per second.
+volatile uint16_t loop_count, loop_count_min, loop_count_max;
+
 
 
 
@@ -46,13 +48,16 @@ void debug_helper(uint8_t arg, struct core_state* state) {
 
 
 void core_init_state(struct core_state* state){
+    
     spec_set_spectrometer_enable(false);
     calib_enable(false);
     memset(state, 0, sizeof(struct core_state));
     default_state (&state->base);
     calibrator_default_state(&state->cal);
     state->base.errors = 0;
-    state->cmd_start = state->cmd_end = 0;
+    state->cmd_ptr = state->cmd_end = 0;
+    state->sequence_upload = false;
+    state->loop_depth = 0;
     state->base.corr_products_mask=0xFFFF; //65535, everything on
     state->base.spectrometer_enable = false;
     state->base.calibrator_enable = false;
@@ -66,7 +71,10 @@ void core_init_state(struct core_state* state){
     state->cdi_dispatch.tr_count = 0xFF; // >0F so disabled. 
     state->cdi_dispatch.cal_count = 0xFF; // >0F so disabled.            
     state->tick_tock = true;
-    state->base.weight_current = state->base.weight_previous = 0;
+    state->base.weight_current = state->base.weight = 0;
+    state->base.num_bad_min = state->base.num_bad_min_current = 0xFFFF;
+    state->base.num_bad_max = state->base.num_bad_max_current = 0;
+
     state->drop_df = false;
     state->avg_counter = 0;
     update_time(state);
@@ -78,8 +86,8 @@ void core_init_state(struct core_state* state){
     state->cdi_stats.cdi_packets_sent = 0;
     state->cdi_stats.cdi_bytes_sent = 0;
 
-
     set_spectrometer(state);
+    
     tap_counter = 0;
     state->timing.cdi_dispatch_counter = 0;
     state->timing.heartbeat_counter = HEARTBEAT_DELAY;
@@ -89,6 +97,9 @@ void core_init_state(struct core_state* state){
     state->request_waveform = 0 ;
     state->request_eos = 0;
     state->range_adc = 0;
+    loop_count = loop_count_max = 0;
+    loop_count_min = UINT16_MAX;
+    
 }
 
 bool process_waveform(struct core_state* state) {
@@ -121,8 +132,11 @@ void core_loop(struct core_state* state)
     for (int i=0; i<4; i++) TVS_sensors[i] = 0;
     // now empty the CDI command buffer in case we are doing the reset.
     #ifndef NOTREAL
-    uint8_t tmp;
-    while (cdi_new_command(&tmp, &tmp, &tmp)) {};
+    // by default clear the incoming command buffer
+    if (spec_read_uC_register(1)==0) {
+        uint8_t tmp;
+        while (cdi_new_command(&tmp, &tmp, &tmp)) {};
+    }
     #endif
 
     send_hello_packet(state);
@@ -134,6 +148,8 @@ void core_loop(struct core_state* state)
     restore_state(state);
     #endif
 
+    spec_write_uC_register(0,0);
+    spec_write_uC_register(1,0);
     for (;;)
     {
         // Check if we have a new CDI command and process it.
@@ -153,6 +169,7 @@ void core_loop(struct core_state* state)
             else if (process_waveform(state)) {}
             else process_eos(state);
         }
+        loop_count++;
 
 #ifdef NOTREAL
         // if we are running inside the coreloop test harness we call the interrupt routine
@@ -168,6 +185,22 @@ void core_loop(struct core_state* state)
         }
 #endif
     }
+    if (!soft_reset_flag) {
+        // empty buffers and call it a day
+        debug_print("Winding down...\n\r")
+        RFS_stop(state);
+        clear_current_slot(state);
+        // empty buffers
+        while (true) {
+            if (process_hearbeat(state)) {}
+            else if (process_delayed_cdi_dispatch(state)) {}
+            else if (process_housekeeping(state)) {}
+            else if (process_waveform(state)) {}
+            else if (process_eos(state)) {}
+            else if (delayed_cdi_dispatch_done(state)  && cdi_ready()) {break;}
+        }
+    }
+    
 }
 
 uint8_t MSYS_EI5_IRQHandler(void)
@@ -182,7 +215,11 @@ uint8_t MSYS_EI5_IRQHandler(void)
         TVS_sensors_avg[2] = (TVS_sensors[2] >> 6);
         TVS_sensors_avg[3] = (TVS_sensors[3] >> 4);            
         for (int i=0; i<4; i++) TVS_sensors[i] = 0;
+        if (loop_count>loop_count_max) loop_count_max = loop_count;
+        if (loop_count<loop_count_min) loop_count_min = loop_count;
+        loop_count = 0;
     }
+    
 
     TMR_clear_int(&g_core_timer_0);
     return (EXT_IRQ_KEEP_ENABLED);
@@ -270,7 +307,10 @@ void RFS_stop(struct core_state* state) {
 void RFS_start(struct core_state* state) {
     debug_print ("\n\rStarting spectrometer\n\r");
     state->base.spectrometer_enable = true;
-    state->base.weight_previous = state->base.weight_current = 0;
+    state->base.weight = state->base.weight_current = 0;
+    state->base.num_bad_min = state->base.num_bad_min_current = 0xFFFF;
+    state->base.num_bad_max = state->base.num_bad_min_current = 0;
+    state->bitslicer_action_counter = 0; 
     state->avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));

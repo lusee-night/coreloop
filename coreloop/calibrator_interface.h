@@ -103,7 +103,10 @@ int calib_get_PFB_index();
 void calib_set_PFB_index(int index);
 
 //returns true if a new calibration product is ready
-bool cal_new_cal_ready();
+void cal_new_cal_ready(bool* modes);
+
+// assuming a certain mode is ready above, transfer it over
+void cal_transfer_data(int mode);
 
 // return true if calibrato dropped
 bool cal_df_dropped(); 
@@ -146,11 +149,21 @@ void calib_zero_weights();
 // setting weights to unit
 void calib_unit_weights();
 
-// set set weight(0-510)
+// set set weight(0-510) (both main and stage3)
 void calib_set_weight (int index, uint16_t value);
+uint16_t calib_get_weight (int index);
+
+// stage3 only
+void calib_set_weight_stage3(int index, uint16_t value);
 
 // set notch index to use
 void calib_set_notch_index (int index);
+
+// sets the delta drift max in cordic units
+void calib_set_ddrift_max(int val);
+
+// sets the gphase max 
+void calib_set_gphase_max(int val);
 
 
 #endif

@@ -895,73 +895,73 @@ except:
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 16
 try:
-    ANALOG_AGC_TOO_HIGH_CH1 = 32
+    ANALOG_AGC_TOO_HIGH_CH0 = 32
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 17
 try:
-    ANALOG_AGC_TOO_HIGH_CH2 = 64
+    ANALOG_AGC_TOO_HIGH_CH1 = 64
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 18
 try:
-    ANALOG_AGC_TOO_HIGH_CH3 = 128
+    ANALOG_AGC_TOO_HIGH_CH2 = 128
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 19
 try:
-    ANALOG_AGC_TOO_HIGH_CH4 = 256
+    ANALOG_AGC_TOO_HIGH_CH3 = 256
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 21
 try:
-    ANALOG_AGC_TOO_LOW_CH1 = 512
+    ANALOG_AGC_TOO_LOW_CH0 = 512
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 22
 try:
-    ANALOG_AGC_TOO_LOW_CH2 = 1024
+    ANALOG_AGC_TOO_LOW_CH1 = 1024
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 23
 try:
-    ANALOG_AGC_TOO_LOW_CH3 = 2048
+    ANALOG_AGC_TOO_LOW_CH2 = 2048
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 24
 try:
-    ANALOG_AGC_TOO_LOW_CH4 = 4096
+    ANALOG_AGC_TOO_LOW_CH3 = 4096
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 26
 try:
-    ANALOG_AGC_ACTION_CH1 = (1 << 13)
+    ANALOG_AGC_ACTION_CH0 = (1 << 13)
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 27
 try:
-    ANALOG_AGC_ACTION_CH2 = (1 << 14)
+    ANALOG_AGC_ACTION_CH1 = (1 << 14)
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 28
 try:
-    ANALOG_AGC_ACTION_CH3 = (1 << 15)
+    ANALOG_AGC_ACTION_CH2 = (1 << 15)
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 29
 try:
-    ANALOG_AGC_ACTION_CH4 = (1 << 16)
+    ANALOG_AGC_ACTION_CH3 = (1 << 16)
 except:
     pass
 
@@ -990,6 +990,36 @@ except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/core_loop_errors.h: 36
+try:
+    DIGITAL_AGC_ACTION_CH0 = (1 << 21)
+except:
+    pass
+
+# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 37
+try:
+    DIGITAL_AGC_ACTION_CH1 = (1 << 22)
+except:
+    pass
+
+# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 38
+try:
+    DIGITAL_AGC_ACTION_CH2 = (1 << 23)
+except:
+    pass
+
+# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 39
+try:
+    DIGITAL_AGC_ACTION_CH3 = (1 << 24)
+except:
+    pass
+
+# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 40
+try:
+    DIGITAL_AGC_STUCK = (1 < 25)
+except:
+    pass
+
+# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 44
 try:
     INTERNAL_ERROR = (1 << 31)
 except:

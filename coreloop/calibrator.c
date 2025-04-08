@@ -44,13 +44,10 @@ void calibrator_default_state (struct calibrator_state* cal) {
     cal->sd2_slice = 0;
     cal->zoom_ch1 = 0;
     cal->zoom_ch2 = 1;
+    cal->ddrift_guard = 2500;
+    cal->gphase_guard = 200000;
 }
 
-
-void set_readout_mode (struct calibrator_state* cal, int32_t mode ) {
-    cal->readout_mode = mode;
-    calib_set_readout_mode(mode);
-}
 
 
 
@@ -65,21 +62,29 @@ void set_calibrator(struct calibrator_state* cal) {
     calib_set_delta_drift_corA(cal->delta_drift_corA);
     calib_set_delta_drift_corB(cal->delta_drift_corB);
     calib_set_PFB_index(cal->pfb_index);
-    memset((void *) CAL_DF, 0, CAL_MODE0_DATASIZE);
-    if (cal->mode <=4) {
-        set_readout_mode (cal, cal->mode);
-    } else if (cal->mode == CAL_MODE_ZOOM) {
-        set_readout_mode(cal, CAL_MODE_RAW1);
-    } else {
-        set_readout_mode(cal, CAL_MODE_RAW3);
+    calib_set_ddrift_max(cal->ddrift_guard);
+    calib_set_gphase_max(cal->gphase_guard);
+
+    /* Does not seem to do anything, spectrometer probalby needs to be enabled
+    // empty any DF
+    bool df_ready[4];
+    cal_new_cal_ready(df_ready);
+    for (int i=0; i<4; i++) {
+        if (df_ready[i]) {
+            cal_transfer_data(i);
+            cal_clear_df_flag();
+        }
     }
+    */
+
+    memset((void *) CAL_DF, 0, CAL_MODE0_DATASIZE);
+
     if ((cal->mode == CAL_MODE_SNR_SETTLE) || (cal->mode == CAL_MODE_BIT_SLICER_SETTLE)) {
         calib_set_SNR_lock_on(0xFFFFFF);
         if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
             calibrator_slice_init(cal);
         }
-    }   
-    
+    }       
     calibrator_set_slices(cal);
     cal_clear_df_flag();
 }
@@ -105,17 +110,15 @@ void calibrator_set_slices(struct calibrator_state* cal) {
 }
 
 
-struct calibrator_metadata* process_cal_mode11(struct core_state* state, uint32_t next_state) {
+struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     struct calibrator_metadata* out = (struct calibrator_metadata *)CAL_DATA;
-
+    cal_transfer_data(0b11);
     out->version = VERSION_ID;
     new_unique_packet_id(state);
     out->unique_packet_id = state->unique_packet_id;
     out->time_32 = state->base.time_32;
     out->time_16 = state->base.time_16;
     out->state = state->cal;
-    out->SNR_max = 0;
-    out->SNR_min = 0;
     uint32_t* have_lock = (uint32_t *)(CAL_DF + 0*CAL_MODE3_CHUNKSIZE);
     out->have_lock[0] = out->have_lock[1] = out->have_lock[2] = out->have_lock[3] = 0;
     for (int i=0; i<1024; i++) {
@@ -128,16 +131,19 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state, uint32_
     // drift is chunk
     memcpy ((void*) &out->drift, (void *)CAL_DF + 1*CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
     int32_t* SNR = (int32_t *)(CAL_DF + 20*CAL_MODE3_CHUNKSIZE);
-    out->SNR_max = 0;
-    out->SNR_min = 0xFFFFFF;
-    for (int i=0; i<4*1024; i++) {
-        if (SNR[i] > out->SNR_max) out->SNR_max = SNR[i];
-        if (SNR[i] < out->SNR_min) out->SNR_min = SNR[i];
+    for (int ant=0; ant<4; ant++) {
+        int ofs = ant*1024;
+        int ofe = ofs + 1024;
+        uint32_t cmin = 0xFFFF;
+        uint32_t cmax = 0;
+        for (int i=ofs; i<ofe; i++) {
+            if (SNR[i] > cmax) cmax = SNR[i];
+            if (SNR[i] < cmin) cmin = SNR[i];
+        }
+        out->SNR_max[ant] = cmax;
+        out->SNR_min[ant] = cmin;
     }
 
-    //cal_copy_error_regs (&(out->error_regs));
-    // nextmode //debug
-    set_readout_mode(&(state->cal), next_state);
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
@@ -147,10 +153,9 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state, uint32_
 }
 
 void process_cal_mode00(struct core_state* state) {
+    // now that we have the flag, transfer data over;
+    cal_transfer_data(00);
     memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE0_DATASIZE);
-    // nextmode //debug
-    set_readout_mode(&(state->cal),CAL_MODE_RAW3);
-
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     new_unique_packet_id(state);
@@ -161,7 +166,8 @@ void process_cal_mode00(struct core_state* state) {
 }
 
 
-void process_cal_mode01(struct core_state* state) {
+void process_cal_mode_01_10(struct core_state* state, int mode) {
+    cal_transfer_data(mode);
     memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE1_DATASIZE);
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
@@ -173,6 +179,8 @@ void process_cal_mode01(struct core_state* state) {
 }
 
 void process_cal_mode_raw11(struct core_state* state) {
+    // now that we have the flag, transfer data over;
+    cal_transfer_data(0b11);
     memcpy ( (void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE3_DATASIZE);
     // nextmode //debug
     cal_clear_df_flag();
@@ -186,7 +194,12 @@ void process_cal_mode_raw11(struct core_state* state) {
 
 void process_cal_zoom(struct core_state* state) {
     // for arnur to implement.
-       
+    cal_transfer_data(2);
+    // do FFTs
+    cal_clear_df_flag();
+    // correlate 
+    // accumulate
+    // send to CDI
 }
 
 
@@ -194,29 +207,30 @@ void process_cal_zoom(struct core_state* state) {
 void process_calibrator(struct core_state* state) {
  
     static int32_t hk=0;
-    static int32_t old_errors = 0;
+    static int32_t old_errors = 0xFF;
     static int32_t old_bitslicer_errors = 0; 
 
- 
- 
- 
+    //if we are not enabled, return
     if (!state->base.calibrator_enable) return;
+    // if we are still transferring, return
+    if (state->cdi_dispatch.cal_count <0x20) return;
+    
     struct calibrator_state* cal = &(state->cal);
-
-    bool new_data = cal_new_cal_ready();
-    if (new_data) debug_print("C");
-    int readout_mode = calib_get_readout_mode();
+    bool df_ready[4];
+    cal_new_cal_ready(df_ready);
+    int mode = cal->mode;
 
     // if readout mode is zoom, we just do a special processing
-    if (readout_mode == CAL_MODE_ZOOM) {
-        if (new_data) {
-            if (cal_df_dropped()) state->base.errors |= DF_CAL_DROPPED;
+    if (mode == CAL_MODE_ZOOM) {
+        debug_print("IMPLEMENT");
+        if (df_ready[2]) {
             process_cal_zoom(state);
         }
         return;
     }
 
 
+    
     cal->errors = calib_get_errors();
     if (old_errors != cal->errors) {
             debug_print("[ * CE ");
@@ -229,15 +243,25 @@ void process_calibrator(struct core_state* state) {
             debug_print("  * ]");
             old_errors = cal->errors;
     }
-        
+    
+    
     uint32_t bit_slicer_flags = calib_get_slicer_errors();
         
     if (bit_slicer_flags!= old_bitslicer_errors) {
-        debug_print("B");
+        debug_print("[ B");
         debug_print_dec(bit_slicer_flags);
+        /*for (int i=0; i<32; i++) {
+            if (bit_slicer_flags & (1<<i)) {
+                debug_print_dec(i);
+                debug_print(" ");
+            }
+        }*/
+        debug_print(" ]");
+
         old_bitslicer_errors = bit_slicer_flags;
     }
     
+    /*
     if ((bit_slicer_flags > 0) & (cal->mode >= CAL_MODE_BIT_SLICER_SETTLE) & (cal->auto_slice)) {        
         cal->mode = CAL_MODE_BIT_SLICER_SETTLE;
     }
@@ -286,89 +310,73 @@ void process_calibrator(struct core_state* state) {
             cal->mode = CAL_MODE_SNR_SETTLE;
         }
     }
-    
+    */    
     
     if (cal->mode == CAL_MODE_SNR_SETTLE) {
-        if (new_data) {
-            //assert (readout_mode == 0b11);
-            struct calibrator_metadata* out = process_cal_mode11 (state, CAL_MODE_RAW3);
-            debug_print("[SNR:");
-            debug_print_dec(out->SNR_min);
-            debug_print("|");
-            debug_print_dec(out->SNR_max );
-            debug_print("]");
-            if ((out->SNR_max/(1+out->SNR_min))>=3)  {
-                int diff = out->SNR_max - out->SNR_min;
-                cal->SNRon = out->SNR_min + diff*3/4;
-                cal->SNRoff = out->SNR_min + diff/4;
-                calibrator_set_SNR(cal);                
-                cal->mode = CAL_MODE_RUN;  // debug only!!!
-                set_readout_mode(cal,CAL_MODE_RAW3); // should be zero after fix                
-                //cal->mode = CAL_MODE_RUN;
-                debug_print("\r\n[ -> RUN]")
-                return; 
-            }            
+        if (df_ready[3]) {            
+            struct calibrator_metadata* out = process_cal_mode11 (state);
+            debug_print(" SNR:");
+
+            for (int ant=0; ant<4; ant++) {
+                if (out->SNR_min[ant]==0) {
+                    continue;
+                }
+                debug_print_dec(out->SNR_min[ant]);
+                debug_print(" ");
+                debug_print_dec(out->SNR_max[ant] );
+                if ((cal->antenna_mask >> ant ) && (out->SNR_max[ant]/(out->SNR_min[ant]) >= 15))  {
+                    int diff = out->SNR_max[ant] - out->SNR_min[ant];
+                    cal->SNRon = out->SNR_min[ant] + diff * 3 / 4;
+                    cal->SNRoff = out->SNR_min[ant] + diff / 8;
+                    calibrator_set_SNR(cal);                
+                    cal->mode = CAL_MODE_RUN;  
+                    debug_print("\r\n[ -> RUN]")
+                    return; 
+                }            
+            }
         }
     }
 
-    if (cal->mode == CAL_MODE_RUN) {
-        if (new_data) {
-            if (state->cdi_dispatch.cal_count <0x20) {
-                state->base.errors |= DF_CAL_DROPPED;
-                debug_print("!");
-                cal_clear_df_flag();
-                return;
-            }
-            if (cal_df_dropped()) state->base.errors |= DF_CAL_DROPPED;
-            if (readout_mode == CAL_MODE_RAW0) {
-                process_cal_mode00(state);
-                //set_readout_mode(CAL_MODE_RAW3);
-            } else {
-                if (hk%2==0) {
-                    process_cal_mode_raw11(state);
-                } else {
-                    struct calibrator_metadata* out = process_cal_mode11(state,CAL_MODE_RAW0);
-                    if (out->have_lock[0] + out->have_lock[1] + out->have_lock[2] + out->have_lock[3] == 0) {
-                        // we have lost lock, let's go back to SNR acquisition
-                        calib_set_SNR_lock_on(0xFFFFFF);
-                        cal->mode = CAL_MODE_SNR_SETTLE;
-                    } else {
-                        // we have lock, not let's take some real data
-                        //set_readout_mode(CAL_MODE_RAW0);
-                    }
-                }
-                hk++;                
-            }
-            
-        } else {
-            // if not new data and not transferring, let's look at the other side
-            if (0&(state->cdi_dispatch.cal_count>0x20)) {
-                if (readout_mode == CAL_MODE_RAW0) {
-                    set_readout_mode(cal,CAL_MODE_RAW3);
-                    
-                    
-                } else  {
-                    set_readout_mode(cal,CAL_MODE_RAW0);
-                }
+
+    if (mode == CAL_MODE_RUN) {
+        if (df_ready[0]) {
+            process_cal_mode00(state);
             return;
-            }
+        } 
+        if (df_ready[3]) {
+            process_cal_mode_raw11(state);
+            /* 
+            struct calibrator_metadata* out = process_cal_mode11(state,CAL_MODE_RAW0);
+            if (out->have_lock[0] + out->have_lock[1] + out->have_lock[2] + out->have_lock[3] == 0) {
+                // we have lost lock, let's go back to SNR acquisition
+                calib_set_SNR_lock_on(0xFFFFFF);
+                cal->mode = CAL_MODE_SNR_SETTLE;
+            */
+            return;
         }
     }
 
-    if (cal->mode == CAL_MODE_RAW0) {
-        if (new_data) {
-            if (state->cdi_dispatch.cal_count <0x20) {
-                debug_print("!");
-                cal_clear_df_flag();
-                return;
-            } 
-        if (cal_df_dropped()) state->base.errors |= DF_CAL_DROPPED;
-        process_cal_mode00(state);
+    if (mode == CAL_MODE_RAW0) {
+        if (df_ready[0]) {
+            process_cal_mode00(state);
+            return;
         }
     }
 
-    if (cal->mode == CAL_MODE_RAW3) {
-        if (new_data) process_cal_mode_raw11(state);
+
+    if ((mode == CAL_MODE_RAW1) || (mode == CAL_MODE_RAW2)) {
+        if (df_ready[mode]) {
+            process_cal_mode_01_10(state, mode);
+            return;
+        }
+    }
+
+
+    if (mode == CAL_MODE_RAW3) {
+        if (df_ready[3]) {
+            process_cal_mode_raw11(state);
+            return;
+        }
     }
 
 }

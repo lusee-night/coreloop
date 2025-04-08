@@ -11,7 +11,7 @@
 // Dumps all register values from the RFS into packet; Priority:  High     
 #define AppID_Registers_RB 0x0205
 
-// uC generater housekeeping; Priority:  High     
+// uC generated housekeeping; Priority:  High     
 #define AppID_uC_Housekeeping 0x0206
 
 // End of sequence; Priority:  High     
@@ -25,6 +25,9 @@
 
 // Regular hearbeat packet; Priority:  NONE     
 #define AppID_uC_Heartbeat 0x020A
+
+// Automatically restored saved state; Priority:  High     
+#define AppID_uC_Restored 0x020B
 
 // Used for Watchdog related telemetry packets; Priority:  xxxxx    
 #define AppID_Watchdog 0x020C

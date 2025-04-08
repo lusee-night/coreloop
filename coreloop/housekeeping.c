@@ -11,7 +11,7 @@
 
 
 void send_hello_packet(struct core_state* state) {
-    debug_print ("Sending hello packet.\n\r")
+    
     struct startup_hello *payload = (struct startup_hello*) (TLM_BUF);
     new_unique_packet_id(state);
     update_time(state);
@@ -25,7 +25,6 @@ void send_hello_packet(struct core_state* state) {
     payload->time_32 = state->base.time_32;
     payload->time_16 = state->base.time_16;
     cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Start, sizeof(struct startup_hello));
-    debug_print("done\n")
 }
 
 bool process_hearbeat(struct core_state* state) {
@@ -43,6 +42,15 @@ bool process_hearbeat(struct core_state* state) {
     payload->TVS_sensors[3] = state->base.TVS_sensors[3];
     payload->cdi_stats = state->cdi_stats;
     payload->errors = state->base.errors;
+    
+    // loop counters
+    state->base.loop_count_min = loop_count_min;
+    state->base.loop_count_max = loop_count_max;
+    payload->loop_count_min = loop_count_min;
+    payload->loop_count_max = loop_count_max;
+    loop_count_max = 0;
+    loop_count_min = UINT16_MAX;
+
     payload->magic[0] = 'B';
     payload->magic[1] = 'R';
     payload->magic[2] = 'N';

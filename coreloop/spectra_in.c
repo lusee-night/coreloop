@@ -29,14 +29,19 @@ bool transfer_from_df(struct core_state* state)
     uint16_t mask = 1;
     bool accept = true;
     //debug_print("Processing spectra...\n\r");
-    if ((state->base.reject_ratio>0) & (state->base.weight_previous>(get_Navg2(state)/2))) {
-        //debug_print("Check for outlier....")
+    if ((state->base.reject_ratio>0) & (state->base.weight>(get_Navg2(state)/2))) {
         uint32_t bad = 0;
         for (uint16_t sp = 0; sp< NSPECTRA_AUTO; sp++) {
             if (state->base.corr_products_mask & (mask)) {
                 for (uint16_t i = 0; i < NCHANNELS; i++) {
-                    int32_t val = *df_ptr;
-                    int32_t previous_val = *ddr_ptr_previous/state->base.weight_previous;
+                    int32_t val = (*df_ptr>> state->base.Navg2_shift);
+                    int32_t previous_val = *ddr_ptr_previous / state->base.weight;
+                    /*if ((i==1922) &&( sp==3)) {
+                        debug_print("\r\nval: ");
+                        debug_print_dec(val);
+                        debug_print(" previous_val: ");
+                        debug_print_dec(previous_val);
+                    }*/
                     if (abs(val-previous_val)>(previous_val/state->base.reject_ratio)) {
                         bad++;
                     }
@@ -46,7 +51,12 @@ bool transfer_from_df(struct core_state* state)
             } else {df_ptr+=NCHANNELS; ddr_ptr_previous+=NCHANNELS;}
             mask <<= 1;
         }   
-        if (bad > state->base.reject_maxbad)  accept = false;
+        state->base.num_bad_min_current = MIN(state->base.num_bad_min_current, bad);
+        state->base.num_bad_max_current = MAX(state->base.num_bad_max_current, bad);
+        if (bad > state->base.reject_maxbad)  {
+            accept = false;            
+            debug_print("X");
+        }
         // reinitialize the pointers
         df_ptr = (int32_t *)SPEC_BUF;
         mask = 1;
@@ -156,17 +166,30 @@ void process_spectrometer(struct core_state* state) {
             state->base.notch_overflow |= notch_owf;
 
             spec_clear_df_flag(); // Clear the flag to indicate that we have read the data
-            bool bit_slice_changed = bitslice_control(state);
-            if (bit_slice_changed) {
-                restart_spectrometer(state); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
-            }
+            
+            if (state->bitslicer_action_counter<BITSLICER_MAX_ACTION) { 
+                bool bit_slice_changed = bitslice_control(state);
 
+                if (bit_slice_changed) {
+                    (state->bitslicer_action_counter)++;
+                    restart_spectrometer(state); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
+                 } else {
+                    state ->bitslicer_action_counter = 0;
+                 }
+            } else {
+                state->base.errors |= DIGITAL_AGC_STUCK;
+            }
             // Check if we have reached filled up Stage 2 averaging
             // and if so, push things out to CDI
             if (state->avg_counter == get_Navg2(state)) {
                 state->avg_counter = 0;                
                 state->tick_tock = !state->tick_tock;
-                state->base.weight_previous = state->base.weight_current;
+                state->base.weight = state->base.weight_current;
+                state->base.num_bad_min = state->base.num_bad_min_current;
+                state->base.num_bad_max = state->base.num_bad_max_current;
+                // Reset the current values
+                state->base.num_bad_min_current = 0xFFFF;
+                state->base.num_bad_max_current = 0;
                 state->base.weight_current = 0;
                 // Now one by one, we will loop through the packets placed in DDR Memory
                 // For each channel, set the APID, send it to the SRAM

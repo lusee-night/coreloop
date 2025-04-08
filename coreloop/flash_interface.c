@@ -1,130 +1,104 @@
 #include "LuSEE_IO.h"
 #include "LuSEE_SPI.h"
-#include "LuSEE_Flash_cntrl.h"
 
-#include "lusee_commands.h"
-#include "spectrometer_interface.h"
+
+#include "lusee_appIds.h"
 #include "core_loop.h"
+#include "calibrator.h"
+#include "calibrator_interface.h"
 #include "flash_interface.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
 
-// FLASH constrol
-struct saved_core_state tmp_state;
-
 
 inline static uint32_t get_flash_addr (uint32_t slot) {
-    return slot*PAGES_PER_SLOT*256 + Flash_Recov_Region_1;
+    return slot*4096 + Flash_FS_Save;
 }
 
-
-void flash_state_clear(uint8_t slot) {
-   // need to clear just the first 4 bytes;
-    uint32_t flash_addr = get_flash_addr(slot);
-    SPI_4k_erase_step1(flash_addr);
-    mini_wait(2);
-    SPI_4k_erase_step2();
-    mini_wait(2);
-    SPI_4k_erase_step3();
+inline static uint32_t get_cal_flash_addr (uint32_t slot) {
+    return slot*4096 + Flash_CAL_Save;
 }
-
 
 
 
 void flash_state_store(uint8_t slot, struct core_state* state) {
-    debug_print("\r\nStoring state to slot ");
-    debug_print_dec(slot);
-    debug_print("\r\n");
-    tmp_state.in_use = 0xBEBEC;
-
-    tmp_state.state = *state;
-    /*uint8_t* b = (uint8_t *)(&tmp_state.state);
-    for (int i=0;i<sizeof(struct core_state);i++) b[i] = i%0xff;*/
-
-    tmp_state.CRC = CRC(&tmp_state.state,sizeof(struct core_state));
-    //debug_print("CRC:");
-    //debug_print_hex(tmp_state.CRC);
-    //debug_print("\r\n");
-    //print_buf(&tmp_state,sizeof(tmp_state));
+    // we will do this when spectrometer is off, so ok
+    struct saved_state *tostore = (struct saved_state *)(FLASH_WORK);
+    tostore->in_use = 0xBEBEC;
+    for (int i=0; i<CMD_BUFFER_SIZE; i++) {
+        tostore->cmd_arg_high[i] = state->cmd_arg_high[i];
+        tostore->cmd_arg_low[i] = state->cmd_arg_low[i];
+    }
+    tostore->cmd_ptr = state->cmd_ptr;
+    tostore->cmd_end = state->cmd_end;
+    tostore->CRC = CRC(tostore,sizeof(struct saved_state)-sizeof(uint32_t));
     uint32_t flash_addr = get_flash_addr(slot);
-    void* flash_buf = &tmp_state;
-    uint32_t flash_size = sizeof(tmp_state);
-    flash_state_clear(slot);
-    mini_wait(2);
-    while (flash_size>0) {
-        uint32_t tocpy = (flash_size<=256) ? flash_size : 256;
-        uint8_t *src = (uint8_t*) flash_buf;
-        uint8_t *tgt = (uint8_t*) SFL_WR_BUFF;
-        for (int i=0; i<tocpy; i++) tgt[i]=src[i];
-        mini_wait(2);
-        SPI_write_page_step1(flash_addr);
-        mini_wait(2);
-        SPI_write_page_step2();
-        mini_wait(2);
-        SPI_write_page_step3();
-        if (flash_size>256) flash_size-=256; else flash_size=0;
-        flash_addr+=256;
-        flash_buf+=256;
-    }
+    memcpy_to_flash(flash_addr, tostore, sizeof(struct saved_state));
 }
 
 
-void  Read_Flash_uC (uint32_t size, void** flash_addr, void** flash_buf) {
-    // cannot reuse flash_size, since this would trigger write in the interrupt!!
-    while (size>0) {
-        SPI_read_page(*flash_addr);  //opcode 03h  read page
-        uint32_t tocpy = (size<=256) ? size : 256;
-        memcpy (flash_buf, SFL_RD_BUFF, tocpy);
-        if (size>256) size-=256; else size=0;
-        (*flash_addr) += 256;
-        (*flash_buf) += 256;
-    }
-}
 
 
 bool flash_state_restore(uint8_t slot, struct core_state* state) {
-    // try to restore state from flash
-    // return true if successful 
-    //memset(&tmp_state, 0,  sizeof(tmp_state));
+    // we will do this when spectrometer is off, so ok
+    struct saved_state *tostore = (struct saved_state *)(FLASH_WORK);
     uint32_t flash_addr = get_flash_addr(slot);
-    void* flash_buf = &tmp_state;
-    Read_Flash_uC(sizeof(uint32_t),&flash_addr, &flash_buf); // first read just a little bit
-    //debug_print ("in use:")
-    //debug_print_hex (tmp_state.in_use);
-    //debug_print ("\r\n")
-    if (tmp_state.in_use == 0xBEBEC) {
-        debug_print("\r\nFound an occuped slot ");
-        debug_print_dec(slot);
-
-        uint32_t flash_addr = get_flash_addr(slot);
-        flash_buf = &tmp_state;
-        Read_Flash_uC(sizeof(tmp_state),&flash_addr, &flash_buf);
-        //print_buf(&tmp_state,sizeof(tmp_state));
-
-        uint32_t crc = CRC(&tmp_state.state,sizeof(struct core_state));
-        //debug_print_hex(tmp_state.CRC);
-        //debug_print (" ");
-        //debug_print_hex(crc);
-
-        if (crc == tmp_state.CRC) {
-         // VICTORY
-            debug_print("\r\nCRC match, buying ");
-            *state = tmp_state.state;
-            return true;
-        }
-        debug_print("\r\n CRC fail ?!");
-        state->base.errors |= FLASH_CRC_FAIL;
+    // read just a little bit to start with
+    memcpy_from_flash(tostore, flash_addr, 8);
+    if (tostore->in_use != 0xBEBEC) {
         return false;
-     }
+    }
+    memcpy_from_flash(tostore, flash_addr, sizeof(struct saved_state));
+    uint32_t crc = CRC(tostore,sizeof(struct saved_state)-sizeof(uint32_t));
+    if (crc == tostore->CRC) {
+        for (int i=0; i<CMD_BUFFER_SIZE; i++) {
+            state->cmd_arg_high[i] = tostore->cmd_arg_high[i];
+            state->cmd_arg_low[i] = tostore->cmd_arg_low[i];
+        }
+        state->cmd_ptr = tostore->cmd_ptr;
+        state->cmd_end = tostore->cmd_end;
+        return true;
+    } else {
+        state->base.errors |= FLASH_CRC_FAIL;
+    }
     return false;
  }
+
+void clear_current_slot (struct core_state* state) {
+
+    if (state->flash_slot != -1) {
+        debug_print("CLR ");
+        debug_print_dec(state->flash_slot)    
+        uint32_t flash_addr = get_flash_addr(state->flash_slot);
+        SPI_4k_erase(flash_addr);
+        state->flash_slot = -1;
+    }
+}
+
+void store_state (struct core_state* state) {
+    // first just make sure we delete 
+    clear_current_slot(state);
+    // get slote from timer to make sure it is random
+    uint16_t timer_time_16;
+    uint32_t timer_time_32;
+    spec_get_time(&timer_time_32, &timer_time_16);
+    state->flash_slot  = (timer_time_32 >> 4) % MAX_STATE_SLOTS;
+    debug_print("STR ");
+    debug_print_dec(state->flash_slot)    
+    flash_state_store(state->flash_slot, state);
+    debug_print("Stored sequence to slot ")
+    debug_print_dec(state->flash_slot);
+}
+
+
 
 void restore_state(struct core_state* state) {
     uint32_t arg1 = spec_read_uC_register(0);  // register contains argumed passed from bootloader
     if (arg1 == 1) {
         debug_print("Ignoring saved states\r\n");
+        state->flash_slot = -1;
         return;
     } else if (arg1==2) {
         // remove all slots
@@ -132,26 +106,62 @@ void restore_state(struct core_state* state) {
             debug_print("Deleting slot ");
             debug_print_dec(i);
             debug_print("\r\n");
-            flash_state_clear(i);
+            uint32_t flash_addr = get_flash_addr(i);
+            SPI_4k_erase(flash_addr);
         }
         return;
     }
 
-    state->flash_store_pointer = 0;
-    while (!flash_state_restore(state->flash_store_pointer, state)) {
-        state->flash_store_pointer++;
-        if (state->flash_store_pointer == MAX_STATE_SLOTS) {
-            // ideally start with a random store to avoid flash wear, but at this point we have nothing.
-            state->flash_store_pointer = 0;
+    state->flash_slot = 0;
+    while (!flash_state_restore(state->flash_slot, state)) {
+        state->flash_slot++;
+        if (state->flash_slot == MAX_STATE_SLOTS) {
+            state->flash_slot = -1;
             return;
         }
     }
-    debug_print("Restored existing state from slot ")
-    debug_print_dec(state->flash_store_pointer);
+    debug_print("Restored sequence from slot ")
+    debug_print_dec(state->flash_slot);
+    // now also send the appropriate CDI packet.
+    struct state_recover_notification* srn = (struct state_recover_notification*)TLM_BUF;
+    srn->slot = state->flash_slot;
+    srn->size = state->cmd_end - state->cmd_ptr;
+    cdi_dispatch_uC(&state->cdi_stats, AppID_uC_Restored, sizeof(*srn));
     debug_print("\r\n");
-    if (state->base.spectrometer_enable) {
-        RFS_start(state);
+}
+
+
+
+void flash_calweights_store(uint8_t slot) {
+    struct saved_calibrator_weights *tostore = (struct saved_calibrator_weights *)(FLASH_WORK);
+    tostore->in_use = 0xBABAC;
+    for (int i=0; i<512; i++) {
+        tostore->weights[i] = calib_get_weight(i);
     }
-    
+    tostore->CRC = CRC(&tostore->weights, 512*sizeof(uint16_t));
+    uint32_t flash_addr = get_cal_flash_addr(slot);
+    memcpy_to_flash(flash_addr, tostore, sizeof(struct saved_calibrator_weights));
+}
+
+bool flash_calweights_restore(uint8_t slot, bool just_check) {
+    struct saved_calibrator_weights *tostore = (struct saved_calibrator_weights *)(FLASH_WORK);
+    uint32_t flash_addr = get_cal_flash_addr(slot);
+    // read just a little bit to start with
+    memcpy_from_flash(tostore, flash_addr, 8);
+    if (tostore->in_use == 0xBABAC) {
+        memcpy_from_flash(tostore, flash_addr, sizeof(struct saved_calibrator_weights));
+        uint32_t crc = CRC(&tostore->weights, 512*sizeof(uint16_t));
+        if (crc == tostore->CRC) {
+            if (!just_check) {
+                for (int i=0; i<512; i++) {
+                    calib_set_weight(i, tostore->weights[i]);
+                }
+            }
+            debug_print("[FWR]")
+            return true;
+        }
+    }
+    debug_print("[FWR fail]");
+    return false;
 }
 

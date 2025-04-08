@@ -1,6 +1,17 @@
 
 # CHANGELOG
 
+### Version 3r0
+ * Implemented calibrator compatible with post-Eric FW
+ * Implemented loop counting in heartbeat
+ * Implemented watchdogs
+ * Implemented looping
+ * Removed gain changes when setting bitslicers
+ * Fixed a potential problem in auto bit-slicer, added fence
+ * Fixed rejection, aded num_bad_min and numb_bad_max to base, increased weights to 16 bit counters
+ * Added command to adopt automatically adjusted gains
+
+
 ## Version 2r03
  * Extended the heartbeat packet to include additional information, including cdi command received, error array and cdi packets/bytes sent.
  * Implemented wait for n-spectra command

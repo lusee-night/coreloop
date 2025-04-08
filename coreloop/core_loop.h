@@ -19,14 +19,11 @@
 #define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
-#define CMD_BUFFER_SIZE 128 // size of command buffer for 0x10 commands
-
-
-#define ADC_STAT_SAMPLES 16000
-
-#define MAX_STATE_SLOTS 64
-//consistent with 4k erases
-#define PAGES_PER_SLOT 256
+#define CMD_BUFFER_SIZE 512 // size of command buffer for 0x10 commands
+#define MAX_LOOPS 4   // how many nested loops we can do
+#define ADC_STAT_SAMPLES 16000 // how many samples we take when doign AGC statics/
+#define MAX_STATE_SLOTS 16  // 16 slots of 4k = 64k
+#define BITSLICER_MAX_ACTION 5  // how many iterations before we bitslicer stuck
 
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
@@ -34,7 +31,11 @@
 extern bool soft_reset_flag;
 // tap counter increased in the interrupt
 extern volatile uint64_t tap_counter;
+// TVS sensors averaged in timer interrupt
 extern volatile uint32_t TVS_sensors_avg[4];
+// loop count in timer interrupt
+extern volatile uint16_t loop_count_min, loop_count_max;
+
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
@@ -72,6 +73,7 @@ struct core_state_base {
     uint32_t time_32;
     uint16_t time_16;    
     uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
+    uint16_t loop_count_min, loop_count_max;
     // former sequencer state starts here
     uint8_t gain [NINPUT]; // this defines the commanded gain state (can be auto)
     uint16_t gain_auto_min[NINPUT];   
@@ -99,7 +101,12 @@ struct core_state_base {
     bool spectrometer_enable; // spectrometer_enable is true when FFT enegine is running
     bool calibrator_enable; // calibrator enable is true will enable calibrator with enabling the FFT engine.
     uint32_t rand_state;
-    uint8_t weight_previous, weight_current;
+    
+    uint16_t weight, weight_current;
+    uint16_t num_bad_min_current, num_bad_max_current; // actual number of bad bins in the previous integration
+    uint16_t num_bad_min, num_bad_max; // actual number of bad bins in the previous integration
+    
+
 };
 
 struct cdi_stats {
@@ -158,19 +165,33 @@ struct core_state {
     bool tick_tock;
     bool drop_df;
     uint32_t heartbeat_packet_count;
-    uint16_t flash_store_pointer;
+    int8_t flash_slot;
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
-    uint16_t cmd_start, cmd_end;
+    // pointeres to the beginning and end of commands, also used during sequence upload
+    uint16_t cmd_ptr, cmd_end;
+    // are we uploading -- if so block sequences
+    bool sequence_upload;
+    // for loops
+    uint8_t loop_depth; // how many nested loops
+    uint16_t loop_start[MAX_LOOPS];
+    uint8_t loop_count[MAX_LOOPS];
     uint32_t cmd_counter;
     uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
     uint16_t reg_address; // address of the register to be written (for commands that do that)
     int32_t reg_value; // value to be written to the register
+    int8_t bitslicer_action_counter;  // counting how many times in a row we have changed bit slicer to prevent infinite loop
 };
 
-struct saved_core_state {
+struct saved_state {
     uint32_t in_use;
-    struct core_state state;
+    uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
+    uint16_t cmd_ptr, cmd_end;
     uint32_t CRC;
+};
+
+struct state_recover_notification {
+    uint32_t slot;
+    uint32_t size;
 };
 
 struct end_of_sequence {
@@ -194,6 +215,7 @@ struct heartbeat {
     uint32_t time_32;
     uint16_t time_16;
     uint16_t TVS_sensors[4];
+    uint16_t loop_count_min, loop_count_max;
     struct cdi_stats cdi_stats;
     uint32_t errors;
     char magic[6];

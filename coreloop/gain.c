@@ -13,11 +13,12 @@ void update_spec_gains(struct core_state* state) {
 void set_route(struct core_state* state, uint8_t ch, uint8_t arg_low) {
     state->base.route[ch].plus = arg_low & 0b111;
     state->base.route[ch].minus = ((arg_low & 0b111000) >> 3);
-    uint8_t gain = ((arg_low & 0b11000000) >> 6);
+    
     spec_set_route(ch, state->base.route[ch].plus, state->base.route[ch].minus);
+    /* uint8_t gain = ((arg_low & 0b11000000) >> 6);
     state->base.gain[ch] = gain;
     state->base.actual_gain[ch] = gain;
-    spec_set_gain(ch, state->base.actual_gain[ch]);
+    spec_set_gain(ch, state->base.actual_gain[ch]); */
 }
 
 
@@ -33,22 +34,21 @@ bool analog_gain_control(struct core_state* state) {
         if (cmax > get_gain_auto_max(state, i)) {
             if (state->base.actual_gain[i] > GAIN_LOW) {
                 state->base.actual_gain[i] --;
-                state->base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
+                state->base.errors |= ((ANALOG_AGC_ACTION_CH0) << i);
                 gains_changed = true;
             } else {
-                state->base.errors |= (ANALOG_AGC_TOO_HIGH_CH1 <<i);
+                state->base.errors |= (ANALOG_AGC_TOO_HIGH_CH0 <<i);
             }
         } else if (cmax < state->base.gain_auto_min[i]) {
             if (state->base.actual_gain[i] < GAIN_HIGH) {
                 state->base.actual_gain[i] ++;
-                state->base.errors |= ((ANALOG_AGC_ACTION_CH1) << i);
+                state->base.errors |= ((ANALOG_AGC_ACTION_CH0) << i);
                 gains_changed = true;
             } else {
-                state->base.errors |= (ANALOG_AGC_TOO_LOW_CH1 << i);
-            }
+                state->base.errors |= (ANALOG_AGC_TOO_LOW_CH0 << i);            
         }
+        }   
     }
-
     if (gains_changed) update_spec_gains(state);
     return gains_changed;
 }
@@ -85,7 +85,7 @@ bool bitslice_control(struct core_state* state) {
     for (int i = 0; i < 4; i++) {
         if (state->base.bitslice[i] != 0xFF) continue; // Don't do anything unless bitslice is auto
         uint8_t keep = 32-state->leading_zeros_max[i];
-        if (keep>(state->base.bitslice_keep_bits+1)) {
+        if ((keep>(state->base.bitslice_keep_bits+1)) && ( state->base.actual_bitslice[i] != 0x1F)) {
             // we're keeping more bits than we should (with buffer of 1)
             // slicer should be increased
             state->base.actual_bitslice[i] += (keep-state->base.bitslice_keep_bits);
@@ -93,15 +93,18 @@ bool bitslice_control(struct core_state* state) {
                 state->base.actual_bitslice[i] = 0x1F;
             }
             bitslice_changed = true;
+            state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
         } else if (keep<(state->base.bitslice_keep_bits-1)) {
             // we're keeping fewer bits than we should (with buffer of 1)
             // slicer should be decreased
             state->base.actual_bitslice[i] -= MIN(state->base.bitslice_keep_bits-keep, state->base.actual_bitslice[i]);
             bitslice_changed = true;
+            state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
         }
     }
     if (bitslice_changed) {
 
+        
         uint8_t b1 = state->base.actual_bitslice[0];
         uint8_t b2 = state->base.actual_bitslice[1];
         uint8_t b3 = state->base.actual_bitslice[2];
@@ -119,8 +122,16 @@ bool bitslice_control(struct core_state* state) {
         if (state->base.bitslice[13] == 0xFF) state->base.actual_bitslice[13]= (b2+b4)/2-1;
         if (state->base.bitslice[14] == 0xFF) state->base.actual_bitslice[14]= (b3+b4)/2-1;
         if (state->base.bitslice[15] == 0xFF) state->base.actual_bitslice[15]= (b3+b4)/2-1;
+
+        debug_print ("\r\nDAGC: ");
+        debug_print_dec(b1);
+        debug_print(" ");
+        debug_print_dec(b2);
+        debug_print(" ");
+        debug_print_dec(b3);
+        debug_print(" ");
+        debug_print_dec(b4);
     }
 
     return bitslice_changed;
 }
-

@@ -6,6 +6,7 @@ struct timespec time_start, time_now;
 
 void* DDR3_BASE_ADDR;
 void *SPEC_TICK, *SPEC_TOCK, *TR_SPEC_TICK, *TR_SPEC_TOCK;
+void *FLASH_WORK;
 void *CAL_DF, *CAL_DATA;
 int g_core_timer_0;
 

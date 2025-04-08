@@ -43,33 +43,35 @@
 
 | 0x2M | Name                       |  Description                                       |
 |------|----------------------------|----------------------------------------------------|                             
-| 0x20 | RFS_SEQ_START              | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
-| 0x21 | RFS_SEQ_END                | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
-| 0x22 | RFS_SEQ_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
-| 0x23 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 (see below)
-| 0x24 | RFS_SET_LOOP_END           | Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
-| 0x25 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. |
-| 0x26 | RFS_SET_FLASH_CLR          | Clear flash to prevent restarting old sequence
+| 0x20 | RFS_SET_SEQ_BEGIN          | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
+| 0x21 | RFS_SET_SEQ_END            | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
+| 0x22 | RFS_SET_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
+| 0x23 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 repetitions. If zero, infinite repetitions
+| 0x24 | RFS_SET_LOOP_NEXT          | Marks end of repeatitions 
+| 0x25 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. (so we know we are done in tests) |
+| 0x26 | RFS_SET_FLASH_CLR          | Clear flash to prevent restarting old sequence 
+
 
 ### 0x3X Gain Settings and Bit slicing
 
 | 0x3M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x30 | RFS_SET_GAIN_ANA_SET  |set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
-| 0x31 | RFS_SET_GAIN_ANA_CFG_MIN | automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
-| 0x32 | RFS_SET_GAIN_ANA_CFG_MULT | automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
-| 0x33 | RFS_SET_BITSLICE_LOW | Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
-| 0x34 | RFS_SET_BITSLICE_HIGH | Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
-| 0x35 | RFS_SET_BITSLICE_AUTO | Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
+| 0x30 | RFS_SET_GAIN_ANA_SET  |set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A. If not A it will also set actual gains, otherwise just arm AGC
+| 0x31 | RFS_SET_GAIN_ADOPT    | for every channel that is enabled with first four bits: if gain=A, take actual_gain and put it into gain (i.e. move from automatic gain to what we currently have)
+| 0x32 | RFS_SET_GAIN_ANA_CFG_MIN | automatic analog gains setting, min ADC. Low 2 bits are channels, remaming bits will be multiplied by 16 (1024 max val)
+| 0x33 | RFS_SET_GAIN_ANA_CFG_MULT | automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
+| 0x34 | RFS_SET_BITSLICE_LOW | Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
+| 0x35 | RFS_SET_BITSLICE_HIGH | Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
+| 0x36 | RFS_SET_BITSLICE_AUTO | Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
 
 ### 0x4X Signal Routing Settings
 
 | 0x4M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus, bits 7-8 are direct gain
-| 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 2
-| 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 3
-| 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 4
+| 0x40 | RFS_SET_ROUTE_SET1   | set routing for ADC channels 0 bits 0-2 are minus, bits 3-6 are plus
+| 0x41 | RFS_SET_ROUTE_SET2   | set routing for ADC channels 1 bits 0-2 are minus, bits 3-6 are plus
+| 0x42 | RFS_SET_ROUTE_SET3   | set routing for ADC channels 2
+| 0x43 | RFS_SET_ROUTE_SET4   | set routing for ADC channels 3
 | 0x44 | RFS_SET_ADC_SPECIAL  | set ADCs into a special model (0 = disable , 1 = ramp, 2= zeros, 3 = ones) |
 
 
@@ -77,7 +79,7 @@
 
 | 0x5M | Name           |  Description                                       |
 |------|----------------|----------------------------------------------------|                             
-| 0x50 | RFS_SET_AVG_SET       | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager, higher 4 bits is for Stage2 averager. So B9 means 2^9 stage1 averaging and 2^11 stage2 averaging
+| 0x50 | RFS_SET_AVG_SET       | set averaging bit shifts. Lower 4 bits of DD is for Stage1 averager MINUS 8 (new in 0x300), higher 4 bits is for Stage2 averager. So B1 means 2^9 stage1 averaging and 2^11 stage2 averaging
 | 0x51 | RFS_SET_AVG_FREQ      | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
 | 0x52 | RFS_SET_AVG_NOTCH     | set notch averaging, 0 = disabled, 2=x4, 4=x16, 6=x64, needs to be even.  Add 16 if you want to disable subtraction (but want to run calibrator)
 | 0x53 | RFS_SET_AVG_SET_HI    | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
@@ -117,15 +119,23 @@
 | 0x77 | RFS_SET_CAL_SNR_ON_HIGH   | SNR required to get a lock
 | 0x78 | RFS_SET_CAL_SNR_OFF       | SNR required to drop from a lock 
 | 0x79 | RFS_SET_CAL_NSETTLE       | Nsettle
-| 0x7A | RFS_SET_CAL_CORRA         | Famouse CoRRA settinh
-| 0x7B | RFS_SET_CAL_CORRB         | Even more famous CorrB setting
-| 0x7C | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
-| 0x7D | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
-| 0x7E | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
-| 0x7F | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
-| 0x80 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
-| 0x81 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
-| 0x82 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.1
+| 0x7A | RFS_SET_CAL_CORRA_LSB     | Famous CoRRA setting
+| 0x7B | RFS_SET_CAL_CORRA_MSB     | Famous CoRRA setting (upper 8 bits, commits)
+| 0x7C | RFS_SET_CAL_CORRB_LSB     | Even more famous CorrB setting
+| 0x7D | RFS_SET_CAL_CORRB_MSB     | Even more famous CorrB setting (upper 8 bits, commits)
+| 0x7E | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
+| 0x7F | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
+| 0x80 | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
+| 0x81 | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
+| 0x82 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
+| 0x83 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
+| 0x84 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.
+| 0x85 | RFS_SET_CAL_DDRIFT_GUARD  | Set delta drift guard. 1 = 25 units of cordic angle 
+| 0x86 | RFS_SET_CAL_GPHASE_GUARD  | Set gphase guard. 1=2000 units of cordic angle 
+| 0x87 | RFS_SET_CAL_WSAVE        | Store the weight set into one of the 16 slots specified in arg_low 
+| 0x88 | RFS_SET_CAL_WLOAD      | Restore the weight set 
+
+
 
 ### 0x9X spectral zoom functionality 
 
@@ -134,19 +144,8 @@ input ADC channel using 0x90 command below
 
 | 0x9M | Name                 |  Description                                       |
 |------|----------------------|----------------------------------------------------|                             
-| 0x90 | RFS_SET_ZOOM_CH      | Set zoom channels to use. Bits 0-1 for CH1 and 1-2 for ch2. 
-
-
-
-| Seqeunce | Command | Effect
-|----------|---------|----------
-| 0 | 0xA100 | infinite repetitions
-| 1 | 0xA202 | 2 cycles
-| 2 | 0x50B9 | 40 second integration
-| 3 | 0x5200 | no frequency integration
-| 4 | 0xA301 | do it once
-| 5 | 0x0A9  | 20 second intgratoin
-| 6 | 0x5201 | x2 frequency integration
-| 7 | 0xA302 | Do it twice
+| 0x90 | RFS_SET_ZOOM_CH      | Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
+| 0x91 | RFS_SET_ZOOM_NFFT    | Set number of 64 point FFTs to do before processing next channel |
+| 0x92 | RFS_SET_ZOOM_NAVG    | log 2 averaging (of NFFT chunks) before spitting out data
 
 
