@@ -2,14 +2,16 @@
 # CHANGELOG
 
 ### Version 3r0
- * Implemented calibrator compatible with post-Eric FW
+ * Implemented basic calibrator compatible with post-Eric FW
  * Implemented loop counting in heartbeat
- * Implemented watchdogs
+ * Implemented watchdogs and a testing routine
  * Implemented looping
  * Removed gain changes when setting bitslicers
  * Fixed a potential problem in auto bit-slicer, added fence
  * Fixed rejection, aded num_bad_min and numb_bad_max to base, increased weights to 16 bit counters
  * Added command to adopt automatically adjusted gains
+ * Added ability to have 16+4 bit outputs
+ * Added different way to average 32 bits: 32+8 bits and floats
 
 
 ## Version 2r03

@@ -14,7 +14,7 @@
 bool process_watchdogs (struct core_state* state) {
     
     if (state->watchdog.watchdogs_enabled) {
-        feed_uC_watchdog();
+        spec_feed_uC_watchdog();
         uint8_t tripped = spec_watchdog_tripped();
 
         if (tripped > 0) {
@@ -32,9 +32,6 @@ bool process_watchdogs (struct core_state* state) {
 
             cmd_soft_reset(0, state);
             
-            // Reset the triggered flag so it can trip again
-            spec_clear_watchdog_tripped();
-
             return true;
         }
     }
