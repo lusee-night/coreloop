@@ -35,8 +35,6 @@ bool process_cdi(struct core_state* state)
     #ifdef NOTREAL
     cdi_fill_command_buffer();
     #endif
-
-
     
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) {
         // if there are no new commands, then the buffer is empty and we should agree
@@ -219,10 +217,10 @@ bool process_cdi(struct core_state* state)
             spec_reg_write(state->reg_address, state->reg_value);
             break;
 
-	    case RFS_SET_ENABLE_WATCHDOGS:
+        case RFS_SET_ENABLE_WATCHDOGS:
             state->watchdog.watchdogs_enabled = arg_low;
-	        spec_enable_watchdogs(arg_low);
-	        break;
+            spec_enable_watchdogs(arg_low);
+            break;
 
         case RFS_SET_SEQ_OVER: 
             state->request_eos = arg_low;

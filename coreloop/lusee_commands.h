@@ -113,13 +113,16 @@
 #define RFS_SEQ_BREAK  0x22 
 
 // Marks beginning of a loop with ARG1 (see below)
-#define RFS_SET_LOOP_START  0x22 
+#define RFS_SET_LOOP_START  0x23 
 
 // Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
-#define RFS_SET_LOOP_END  0x23 
+#define RFS_SET_LOOP_END  0x24 
 
 // Send the sequence over command once all buffers are empty.
-#define RFS_SET_SEQ_OVER  0x24 
+#define RFS_SET_SEQ_OVER  0x25 
+
+// Clear flash to prevent restarting old sequence
+#define RFS_SET_FLASH_CLR  0x26 
 
 // set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 #define RFS_SET_GAIN_ANA_SET  0x30 

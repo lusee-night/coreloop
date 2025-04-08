@@ -63,7 +63,8 @@ void spec_set_spectrometer_enable(bool on);
 void spec_enable_watchdogs(uint8_t enable);
 // Return value if watchdog trips
 uint8_t spec_watchdog_tripped(void);
-// 
+// Resets watchdog for next interval
+void spec_clear_watchdog_tripped(void);
 void feed_uC_watchdog(void);
 
 

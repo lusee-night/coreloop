@@ -3,8 +3,9 @@
 
 #include "core_loop.h"
 #include <stdint.h>
+#include <stdbool.h>
 
-void process_watchdogs(struct core_state* state);
+bool process_watchdogs(struct core_state* state);
 
 #endif
 

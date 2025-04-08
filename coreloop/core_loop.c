@@ -13,6 +13,8 @@
 #include "lusee_appIds.h"
 #include "watchdogs.h"
 
+// #define NOTREAL
+
 // thing that are touched in the interrupt need to be proclaimed volatile
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
@@ -137,10 +139,11 @@ void core_loop(struct core_state* state)
         // Check if we have a new CDI command and process it.
         // If this functions returns true, it means we got the time-to-die command
         if (process_cdi(state)) break;
-        process_watchdogs(state);
+        if (process_watchdogs(state)) break;
         process_spectrometer(state);
         process_calibrator(state);
         process_gain_range(state);
+        if (soft_reset_flag) break;
         // we always process just one CDI interfacing things
         // compiler 
         if (cdi_ready()) {

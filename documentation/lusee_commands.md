@@ -46,10 +46,10 @@
 | 0x20 | RFS_SEQ_START              | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
 | 0x21 | RFS_SEQ_END                | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
 | 0x22 | RFS_SEQ_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
-| 0x22 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 (see below)
-| 0x23 | RFS_SET_LOOP_END           | Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
-| 0x24 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. |
-
+| 0x23 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 (see below)
+| 0x24 | RFS_SET_LOOP_END           | Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
+| 0x25 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. |
+| 0x26 | RFS_SET_FLASH_CLR          | Clear flash to prevent restarting old sequence
 
 ### 0x3X Gain Settings and Bit slicing
 

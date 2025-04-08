@@ -9,8 +9,9 @@
 #include "lusee_commands.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
-void process_watchdogs (struct core_state* state) {
+bool process_watchdogs (struct core_state* state) {
     
     if (state->watchdog.watchdogs_enabled) {
         feed_uC_watchdog();
@@ -30,6 +31,11 @@ void process_watchdogs (struct core_state* state) {
             cdi_dispatch_uC(&(state->cdi_stats), AppID_Watchdog, sizeof(struct watchdog_packet));
 
             cmd_soft_reset(0, state);
+            
+            // Reset the triggered flag so it can trip again
+            spec_clear_watchdog_tripped();
+
+            return true;
         }
     }
 
@@ -41,34 +47,9 @@ void process_watchdogs (struct core_state* state) {
         if (state->base.spectrometer_enable) RFS_stop(state);
     }   
     for (int i=0; i<4; i++) state->base.TVS_sensors[i] = TVS_sensors_avg[i];
+
+    return false;
 }
 
-
-//// Main watchdog handling logic
-//uint8_t check_and_handle_watchdogs(struct core_state* state) {
-//    // Check if watchdogs are enabled
-//    if (!state->base.watchdogs_enabled)
-//        return 0;
-//
-//    // Check for a watchdog trip
-//    uint8_t tripped = spec_watchdog_tripped();
-//
-//    if (tripped != 0) {
-//        
-//        // CDI Buffer?
-//        cdi_dispatch(AppID_Watchdog, 1);  // 1 byte payload
-//
-//        // increment a packet ID counter (if needed)
-//        state->unique_packet_id++;
-//
-//        // Perform a soft reset
-//        cmd_soft_reset(0);
-//
-//        // Exit main loop
-//        return 1;
-//    }
-//
-//    return 0;
-//}
 
 #endif

@@ -237,7 +237,8 @@ void core_loop(struct core_state*);
 bool process_cdi(struct core_state*);
 
 // process watchdogs and temperature alarms
-void process_watchdogs (struct core_state*);
+#include <stdbool.h>
+bool process_watchdogs (struct core_state*);
 void cmd_soft_reset(uint8_t arg, struct core_state* state);
 
 // starts / stops / restarts the spectrometer
