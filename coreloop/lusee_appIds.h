@@ -29,6 +29,9 @@
 // Automatically restored saved state; Priority:  High     
 #define AppID_uC_Restored 0x020B
 
+// Used for Watchdog related telemetry packets; Priority:  xxxxx    
+#define AppID_Watchdog 0x020C
+
 // x = 0..F for 16 correlations; Priority:  High     
 #define AppID_MetaData 0x020F
 

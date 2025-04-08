@@ -26,16 +26,17 @@
 
 ### 0x1X - further basic commands
 
-| 0x1M | Name               |  Description                                          |
-|------|--------------------|------------------------------------------------------|                             
-| 0x11 | RFS_SET_CDI_FW_DLY | Control the underlying FW interpacket delay (1.28ms) |
-| 0x12 | RFS_SET_CDI_SW_DLY | Control the delay between spectral packets           |
-| 0x13 | RFS_SET_WR_ADR_LSB | This writes a register through uC. First command resets value to zero
-| 0x14 | RFS_SET_WR_ADR_MSB | ADR writes adreres, VAL writes value from LSB to MSB
-| 0x15 | RFS_SET_WR_VAL_0   | Val bits 0-7
-| 0x16 | RFS_SET_WR_VAL_1   | Val bits 8-15
-| 0x17 | RFS_SET_WR_VAL_2   | Val bits 16-23
-| 0x18 | RFS_SET_WR_VAL_3   | Val bits 24-32. This triggers the actual register write
+| 0x1M | Name                       |  Description                                          |
+|------|----------------------------|------------------------------------------------------|                             
+| 0x11 | RFS_SET_CDI_FW_DLY         | Control the underlying FW interpacket delay (1.28ms) |
+| 0x12 | RFS_SET_CDI_SW_DLY         | Control the delay between spectral packets           |
+| 0x13 | RFS_SET_WR_ADR_LSB         | This writes a register through uC. First command resets value to zero
+| 0x14 | RFS_SET_WR_ADR_MSB         | ADR writes adreres, VAL writes value from LSB to MSB
+| 0x15 | RFS_SET_WR_VAL_0           | Val bits 0-7
+| 0x16 | RFS_SET_WR_VAL_1           | Val bits 8-15
+| 0x17 | RFS_SET_WR_VAL_2           | Val bits 16-23
+| 0x18 | RFS_SET_WR_VAL_3           | Val bits 24-32 
+| 0x19 | RFS_SET_ENABLE_WATCHDOGS   | Enables or disables the watchdogs. Accepts a single byte argument.
 
 
 ### 0x2X Program flow control
@@ -49,6 +50,7 @@
 | 0x24 | RFS_SET_LOOP_NEXT          | Marks end of repeatitions 
 | 0x25 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. (so we know we are done in tests) |
 | 0x26 | RFS_SET_FLASH_CLR          | Clear flash to prevent restarting old sequence 
+
 
 ### 0x3X Gain Settings and Bit slicing
 

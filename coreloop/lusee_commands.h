@@ -97,8 +97,11 @@
 // Val bits 16-23
 #define RFS_SET_WR_VAL_2  0x17 
 
-// Val bits 24-32. This triggers the actual register write
+// Val bits 24-32
 #define RFS_SET_WR_VAL_3  0x18 
+
+// Enables or disables the watchdogs. Accepts a single byte argument.
+#define RFS_SET_ENABLE_WATCHDOGS  0x19 
 
 // RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
 #define RFS_SET_SEQ_BEGIN  0x20 

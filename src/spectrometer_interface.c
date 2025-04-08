@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <time.h>
 #include "LuSEE_IO.h"
+#include <stdbool.h>
+#include "core_loop.h" // for tap_counter
 
 const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
@@ -30,6 +32,8 @@ uint8_t channel_gain[NINPUT];
 
 #define N_BOOT_REGISTERS 16
 uint32_t boot_registers[N_BOOT_REGISTERS];
+
+uint8_t watchdog_enabled = 0;
 
 // Mapping of channels to cross-correlations
 const int ch_ant1[] = {0,1,2,3, 0,0,  0,0,  0,0,  1,1,  1,1, 2, 2};
@@ -197,8 +201,43 @@ void spec_set_avg1 (uint8_t Navg1_shift) {
     Navg1 = (1 << Navg1_shift);
     printf ("NAVg1 set to %i\n",Navg1);
 }
+//enables watchdogs
+
+static bool watchdogs_enabled = false;
+static bool watchdog_triggered = false;
+static uint64_t watchdog_start_tick = 0;
+static const uint64_t WATCHDOG_TICK_THRESHOLD = 600;  // ~6 second
+
+void spec_enable_watchdogs(uint8_t enable) {
+    watchdogs_enabled = (enable > 0);
+    watchdog_triggered = false;
+    watchdog_start_tick = tap_counter;  // reset start tick
+}
+
+uint8_t spec_watchdog_tripped(void) {
+    if (!watchdogs_enabled) {
+        return 0;
+    }
+
+    uint64_t ticks_elapsed = tap_counter - watchdog_start_tick;
+
+    if (ticks_elapsed > WATCHDOG_TICK_THRESHOLD) {
+        watchdog_triggered = true;
+        printf("[watchdog] TRIPPED at tick %lu\n", tap_counter);
+    }
+    
+    return watchdog_triggered ? 1 : 0;
+}
+
+void spec_clear_watchdog_tripped(void) {
+    watchdog_triggered = false;
+    watchdog_start_tick = tap_counter;  // reset for the next interval
+}
 
 
+
+
+void feed_uC_watchdog(void) {}
 
 void spec_trigger_ADC_stat(uint16_t Nsamples) {
     adc_trigger = true;
@@ -314,3 +353,9 @@ void spec_set_fw_cdi_delay(uint32_t delay) {}
  void spec_reg_write(uint16_t reg, uint32_t value) {}
  
  void spec_notch_disable_subtraction(bool disable) {}
+
+
+
+
+
+

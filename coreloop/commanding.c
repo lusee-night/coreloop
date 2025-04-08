@@ -36,7 +36,6 @@ bool process_cdi(struct core_state* state)
     #ifdef NOTREAL
     cdi_fill_command_buffer();
     #endif
-
     
     if (!cdi_new_command(&cmd, &arg_high, &arg_low)) {
         // if there are no new commands, then the buffer is empty and we should agree
@@ -224,6 +223,10 @@ bool process_cdi(struct core_state* state)
             state->reg_value = (state->reg_value & 0x00FFFFFF) + (arg_low << 24);
             spec_reg_write(state->reg_address, state->reg_value);
             break;
+
+        case RFS_SET_ENABLE_WATCHDOGS:
+            state->watchdog.watchdogs_enabled = arg_low;
+            spec_enable_watchdogs(arg_low);
 
         case RFS_SET_LOOP_START:
             if (state->loop_depth < MAX_LOOPS) {
