@@ -87,7 +87,7 @@
 | 0x55 | RFS_SET_OUTPUT_FORMAT | set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
 | 0x56 | RFS_SET_PRODMASK_LOW  | set the output correlation mask products 0-7 (autocorrelations are 4 LSB) 
 | 0x57 | RFS_SET_PRODMASK_HIGH | set the output correlation mask products 8-15
-
+| 0x58 | RFS_SET_AVG_MODE      | set averaging mode. Valid values are 0 (use int32, divide immediately), 1 (use 40 bits, postpone division) and 2 (use floats)
 
 ### 0x6X Rejection and time averaging
 

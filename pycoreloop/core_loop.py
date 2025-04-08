@@ -1,31 +1,29 @@
 r"""Wrapper for core_loop.h
 
 Generated with:
-/home/gtspeedie/.local/bin/ctypesgen ../coreloop/core_loop.h ../coreloop/calibrator.h
+/home/anigmetov/code/uncrater/venv/bin/ctypesgen ../coreloop/core_loop.h ../coreloop/calibrator.h
 
 Do not modify this file.
 """
 
 __docformat__ = "restructuredtext"
 
-# Begin preamble for Python
+# Begin preamble for Python v(3, 2)
 
-import ctypes
-import sys
-from ctypes import *  # noqa: F401, F403
+import ctypes, os, sys
+from ctypes import *
 
-_int_types = (ctypes.c_int16, ctypes.c_int32)
+_int_types = (c_int16, c_int32)
 if hasattr(ctypes, "c_int64"):
-    # Some builds of ctypes apparently do not have ctypes.c_int64
+    # Some builds of ctypes apparently do not have c_int64
     # defined; it's a pretty good bet that these builds do not
     # have 64-bit pointers.
-    _int_types += (ctypes.c_int64,)
+    _int_types += (c_int64,)
 for t in _int_types:
-    if ctypes.sizeof(t) == ctypes.sizeof(ctypes.c_size_t):
+    if sizeof(t) == sizeof(c_size_t):
         c_ptrdiff_t = t
 del t
 del _int_types
-
 
 
 class UserString:
@@ -60,6 +58,12 @@ class UserString:
 
     def __hash__(self):
         return hash(self.data)
+
+    def __cmp__(self, string):
+        if isinstance(string, UserString):
+            return cmp(self.data, string.data)
+        else:
+            return cmp(self.data, string)
 
     def __le__(self, string):
         if isinstance(string, UserString):
@@ -332,11 +336,11 @@ class MutableString(UserString):
         return self
 
 
-class String(MutableString, ctypes.Union):
+class String(MutableString, Union):
 
-    _fields_ = [("raw", ctypes.POINTER(ctypes.c_char)), ("data", ctypes.c_char_p)]
+    _fields_ = [("raw", POINTER(c_char)), ("data", c_char_p)]
 
-    def __init__(self, obj=b""):
+    def __init__(self, obj=""):
         if isinstance(obj, (bytes, UserString)):
             self.data = bytes(obj)
         else:
@@ -348,7 +352,7 @@ class String(MutableString, ctypes.Union):
     def from_param(cls, obj):
         # Convert None or 0
         if obj is None or obj == 0:
-            return cls(ctypes.POINTER(ctypes.c_char)())
+            return cls(POINTER(c_char)())
 
         # Convert from String
         elif isinstance(obj, String):
@@ -363,19 +367,19 @@ class String(MutableString, ctypes.Union):
             return cls(obj.encode())
 
         # Convert from c_char_p
-        elif isinstance(obj, ctypes.c_char_p):
+        elif isinstance(obj, c_char_p):
             return obj
 
-        # Convert from POINTER(ctypes.c_char)
-        elif isinstance(obj, ctypes.POINTER(ctypes.c_char)):
+        # Convert from POINTER(c_char)
+        elif isinstance(obj, POINTER(c_char)):
             return obj
 
         # Convert from raw pointer
         elif isinstance(obj, int):
-            return cls(ctypes.cast(obj, ctypes.POINTER(ctypes.c_char)))
+            return cls(cast(obj, POINTER(c_char)))
 
-        # Convert from ctypes.c_char array
-        elif isinstance(obj, ctypes.c_char * len(obj)):
+        # Convert from c_char array
+        elif isinstance(obj, c_char * len(obj)):
             return obj
 
         # Convert from object
@@ -395,12 +399,12 @@ def ReturnString(obj, func=None, arguments=None):
 # primitive datatypes.
 #
 # Non-primitive return values wrapped with UNCHECKED won't be
-# typechecked, and will be converted to ctypes.c_void_p.
+# typechecked, and will be converted to c_void_p.
 def UNCHECKED(type):
     if hasattr(type, "_type_") and isinstance(type._type_, str) and type._type_ != "P":
         return type
     else:
-        return ctypes.c_void_p
+        return c_void_p
 
 
 # ctypes doesn't have direct support for variadic functions, so we have to write
@@ -444,9 +448,6 @@ _libdirs = []
 
 # Begin loader
 
-"""
-Load libraries - appropriately for all our supported platforms
-"""
 # ----------------------------------------------------------------------------
 # Copyright (c) 2008 David James
 # Copyright (c) 2006-2008 Alex Holkner
@@ -481,34 +482,24 @@ Load libraries - appropriately for all our supported platforms
 # POSSIBILITY OF SUCH DAMAGE.
 # ----------------------------------------------------------------------------
 
+import os.path, re, sys, glob
+import platform
 import ctypes
 import ctypes.util
-import glob
-import os.path
-import platform
-import re
-import sys
 
 
 def _environ_path(name):
-    """Split an environment variable into a path-like list elements"""
     if name in os.environ:
         return os.environ[name].split(":")
-    return []
+    else:
+        return []
 
 
-class LibraryLoader:
-    """
-    A base class For loading of libraries ;-)
-    Subclasses load libraries for specific platforms.
-    """
-
+class LibraryLoader(object):
     # library names formatted specifically for platforms
     name_formats = ["%s"]
 
-    class Lookup:
-        """Looking up calling conventions for a platform"""
-
+    class Lookup(object):
         mode = ctypes.DEFAULT_MODE
 
         def __init__(self, path):
@@ -516,7 +507,6 @@ class LibraryLoader:
             self.access = dict(cdecl=ctypes.CDLL(path, self.mode))
 
         def get(self, name, calling_convention="cdecl"):
-            """Return the given name according to the selected calling convention"""
             if calling_convention not in self.access:
                 raise LookupError(
                     "Unknown calling convention '{}' for function '{}'".format(
@@ -526,7 +516,6 @@ class LibraryLoader:
             return getattr(self.access[calling_convention], name)
 
         def has(self, name, calling_convention="cdecl"):
-            """Return True if this given calling convention finds the given 'name'"""
             if calling_convention not in self.access:
                 return False
             return hasattr(self.access[calling_convention], name)
@@ -542,10 +531,9 @@ class LibraryLoader:
         paths = self.getpaths(libname)
 
         for path in paths:
-            # noinspection PyBroadException
             try:
                 return self.Lookup(path)
-            except Exception:  # pylint: disable=broad-except
+            except:
                 pass
 
         raise ImportError("Could not load %s." % libname)
@@ -563,16 +551,9 @@ class LibraryLoader:
                     # dir_i should be absolute already
                     yield os.path.join(dir_i, fmt % libname)
 
-            # check if this code is even stored in a physical file
-            try:
-                this_file = __file__
-            except NameError:
-                this_file = None
-
             # then we search the directory where the generated python interface is stored
-            if this_file is not None:
-                for fmt in self.name_formats:
-                    yield os.path.abspath(os.path.join(os.path.dirname(__file__), fmt % libname))
+            for fmt in self.name_formats:
+                yield os.path.abspath(os.path.join(os.path.dirname(__file__), fmt % libname))
 
             # now, use the ctypes tools to try to find the library
             for fmt in self.name_formats:
@@ -588,8 +569,7 @@ class LibraryLoader:
             for fmt in self.name_formats:
                 yield os.path.abspath(os.path.join(os.path.curdir, fmt % libname))
 
-    def getplatformpaths(self, _libname):  # pylint: disable=no-self-use
-        """Return all the library paths available in this platform"""
+    def getplatformpaths(self, libname):
         return []
 
 
@@ -597,8 +577,6 @@ class LibraryLoader:
 
 
 class DarwinLibraryLoader(LibraryLoader):
-    """Library loader for MacOS"""
-
     name_formats = [
         "lib%s.dylib",
         "lib%s.so",
@@ -610,10 +588,6 @@ class DarwinLibraryLoader(LibraryLoader):
     ]
 
     class Lookup(LibraryLoader.Lookup):
-        """
-        Looking up library files for this platform (Darwin aka MacOS)
-        """
-
         # Darwin requires dlopen to be called with mode RTLD_GLOBAL instead
         # of the default RTLD_LOCAL.  Without this, you end up with
         # libraries not being loadable, resulting in "Symbol not found"
@@ -624,14 +598,13 @@ class DarwinLibraryLoader(LibraryLoader):
         if os.path.pathsep in libname:
             names = [libname]
         else:
-            names = [fmt % libname for fmt in self.name_formats]
+            names = [format % libname for format in self.name_formats]
 
-        for directory in self.getdirs(libname):
+        for dir in self.getdirs(libname):
             for name in names:
-                yield os.path.join(directory, name)
+                yield os.path.join(dir, name)
 
-    @staticmethod
-    def getdirs(libname):
+    def getdirs(self, libname):
         """Implements the dylib search as specified in Apple documentation:
 
         http://developer.apple.com/documentation/DeveloperTools/Conceptual/
@@ -644,11 +617,7 @@ class DarwinLibraryLoader(LibraryLoader):
 
         dyld_fallback_library_path = _environ_path("DYLD_FALLBACK_LIBRARY_PATH")
         if not dyld_fallback_library_path:
-            dyld_fallback_library_path = [
-                os.path.expanduser("~/lib"),
-                "/usr/local/lib",
-                "/usr/lib",
-            ]
+            dyld_fallback_library_path = [os.path.expanduser("~/lib"), "/usr/local/lib", "/usr/lib"]
 
         dirs = []
 
@@ -657,9 +626,8 @@ class DarwinLibraryLoader(LibraryLoader):
         else:
             dirs.extend(_environ_path("LD_LIBRARY_PATH"))
             dirs.extend(_environ_path("DYLD_LIBRARY_PATH"))
-            dirs.extend(_environ_path("LD_RUN_PATH"))
 
-        if hasattr(sys, "frozen") and getattr(sys, "frozen") == "macosx_app":
+        if hasattr(sys, "frozen") and sys.frozen == "macosx_app":
             dirs.append(os.path.join(os.environ["RESOURCEPATH"], "..", "Frameworks"))
 
         dirs.extend(dyld_fallback_library_path)
@@ -671,60 +639,50 @@ class DarwinLibraryLoader(LibraryLoader):
 
 
 class PosixLibraryLoader(LibraryLoader):
-    """Library loader for POSIX-like systems (including Linux)"""
-
     _ld_so_cache = None
 
     _include = re.compile(r"^\s*include\s+(?P<pattern>.*)")
 
-    name_formats = ["lib%s.so", "%s.so", "%s"]
-
     class _Directories(dict):
-        """Deal with directories"""
-
         def __init__(self):
-            dict.__init__(self)
             self.order = 0
 
         def add(self, directory):
-            """Add a directory to our current set of directories"""
             if len(directory) > 1:
                 directory = directory.rstrip(os.path.sep)
             # only adds and updates order if exists and not already in set
             if not os.path.exists(directory):
                 return
-            order = self.setdefault(directory, self.order)
-            if order == self.order:
+            o = self.setdefault(directory, self.order)
+            if o == self.order:
                 self.order += 1
 
         def extend(self, directories):
-            """Add a list of directories to our set"""
-            for a_dir in directories:
-                self.add(a_dir)
+            for d in directories:
+                self.add(d)
 
         def ordered(self):
-            """Sort the list of directories"""
-            return (i[0] for i in sorted(self.items(), key=lambda d: d[1]))
+            return (i[0] for i in sorted(self.items(), key=lambda D: D[1]))
 
     def _get_ld_so_conf_dirs(self, conf, dirs):
         """
-        Recursive function to help parse all ld.so.conf files, including proper
+        Recursive funtion to help parse all ld.so.conf files, including proper
         handling of the `include` directive.
         """
 
         try:
-            with open(conf) as fileobj:
-                for dirname in fileobj:
-                    dirname = dirname.strip()
-                    if not dirname:
+            with open(conf) as f:
+                for D in f:
+                    D = D.strip()
+                    if not D:
                         continue
 
-                    match = self._include.match(dirname)
-                    if not match:
-                        dirs.add(dirname)
+                    m = self._include.match(D)
+                    if not m:
+                        dirs.add(D)
                     else:
-                        for dir2 in glob.glob(match.group("pattern")):
-                            self._get_ld_so_conf_dirs(dir2, dirs)
+                        for D2 in glob.glob(m.group("pattern")):
+                            self._get_ld_so_conf_dirs(D2, dirs)
         except IOError:
             pass
 
@@ -739,7 +697,7 @@ class PosixLibraryLoader(LibraryLoader):
         directories = self._Directories()
         for name in (
             "LD_LIBRARY_PATH",
-            "SHLIB_PATH",  # HP-UX
+            "SHLIB_PATH",  # HPUX
             "LIBPATH",  # OS/2, AIX
             "LIBRARY_PATH",  # BE/OS
         ):
@@ -765,11 +723,8 @@ class PosixLibraryLoader(LibraryLoader):
                 # Assume Intel/AMD x86 compat
                 unix_lib_dirs_list += ["/lib/i386-linux-gnu", "/usr/lib/i386-linux-gnu"]
             elif bitage.startswith("64"):
-                # Assume Intel/AMD x86 compatible
-                unix_lib_dirs_list += [
-                    "/lib/x86_64-linux-gnu",
-                    "/usr/lib/x86_64-linux-gnu",
-                ]
+                # Assume Intel/AMD x86 compat
+                unix_lib_dirs_list += ["/lib/x86_64-linux-gnu", "/usr/lib/x86_64-linux-gnu"]
             else:
                 # guess...
                 unix_lib_dirs_list += glob.glob("/lib/*linux-gnu")
@@ -777,10 +732,10 @@ class PosixLibraryLoader(LibraryLoader):
 
         cache = {}
         lib_re = re.compile(r"lib(.*)\.s[ol]")
-        # ext_re = re.compile(r"\.s[ol]$")
-        for our_dir in directories.ordered():
+        ext_re = re.compile(r"\.s[ol]$")
+        for dir in directories.ordered():
             try:
-                for path in glob.glob("%s/*.s[ol]*" % our_dir):
+                for path in glob.glob("%s/*.s[ol]*" % dir):
                     file = os.path.basename(path)
 
                     # Index by filename
@@ -814,13 +769,9 @@ class PosixLibraryLoader(LibraryLoader):
 
 
 class WindowsLibraryLoader(LibraryLoader):
-    """Library loader for Microsoft Windows"""
-
     name_formats = ["%s.dll", "lib%s.dll", "%slib.dll", "%s"]
 
     class Lookup(LibraryLoader.Lookup):
-        """Lookup class for Windows libraries..."""
-
         def __init__(self, path):
             super(WindowsLibraryLoader.Lookup, self).__init__(path)
             self.access["stdcall"] = ctypes.windll.LoadLibrary(path)
@@ -847,10 +798,10 @@ def add_library_search_dirs(other_dirs):
     If library paths are relative, convert them to absolute with respect to this
     file's directory
     """
-    for path in other_dirs:
-        if not os.path.isabs(path):
-            path = os.path.abspath(path)
-        load_library.other_dirs.append(path)
+    for F in other_dirs:
+        if not os.path.isabs(F):
+            F = os.path.abspath(F)
+        load_library.other_dirs.append(F)
 
 
 del loaderclass
@@ -863,23 +814,7 @@ add_library_search_dirs([])
 
 # No modules
 
-__uint8_t = c_ubyte# /usr/include/x86_64-linux-gnu/bits/types.h: 38
-
-__uint16_t = c_ushort# /usr/include/x86_64-linux-gnu/bits/types.h: 40
-
-__uint32_t = c_uint# /usr/include/x86_64-linux-gnu/bits/types.h: 42
-
-__uint64_t = c_ulong# /usr/include/x86_64-linux-gnu/bits/types.h: 45
-
-uint8_t = __uint8_t# /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h: 24
-
-uint16_t = __uint16_t# /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h: 25
-
-uint32_t = __uint32_t# /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h: 26
-
-uint64_t = __uint64_t# /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h: 27
-
-# /home/gtspeedie/coreloop/coreloop/spectrometer_interface.h: 47
+# /home/anigmetov/code/coreloop/coreloop/spectrometer_interface.h: 47
 class struct_ADC_stat(Structure):
     pass
 
@@ -896,21 +831,20 @@ struct_ADC_stat.__slots__ = [
 struct_ADC_stat._fields_ = [
     ('min', c_int16),
     ('max', c_int16),
-    ('valid_count', uint32_t),
-    ('invalid_count_max', uint32_t),
-    ('invalid_count_min', uint32_t),
-    ('sumv', uint64_t),
-    ('sumv2', uint64_t),
+    ('valid_count', c_uint32),
+    ('invalid_count_max', c_uint32),
+    ('invalid_count_min', c_uint32),
+    ('sumv', c_uint64),
+    ('sumv2', c_uint64),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 34
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 36
 class struct_calibrator_state(Structure):
     pass
 
 struct_calibrator_state._pack_ = 1
 struct_calibrator_state.__slots__ = [
     'mode',
-    'readout_mode',
     'Navg2',
     'Navg3',
     'drift_guard',
@@ -922,6 +856,8 @@ struct_calibrator_state.__slots__ = [
     'Nsettle',
     'delta_drift_corA',
     'delta_drift_corB',
+    'ddrift_guard',
+    'gphase_guard',
     'pfb_index',
     'weight_ndx',
     'auto_slice',
@@ -935,37 +871,44 @@ struct_calibrator_state.__slots__ = [
     'errors',
     'zoom_ch1',
     'zoom_ch2',
+    'zoom_Nfft',
+    'zoom_prod',
+    'zoom_Navg',
 ]
 struct_calibrator_state._fields_ = [
-    ('mode', uint8_t),
-    ('readout_mode', uint8_t),
-    ('Navg2', uint8_t),
-    ('Navg3', uint8_t),
-    ('drift_guard', uint8_t),
-    ('drift_step', uint8_t),
-    ('antenna_mask', uint8_t),
-    ('notch_index', uint8_t),
-    ('SNRon', uint32_t),
-    ('SNRoff', uint32_t),
-    ('Nsettle', uint32_t),
-    ('delta_drift_corA', uint32_t),
-    ('delta_drift_corB', uint32_t),
-    ('pfb_index', uint16_t),
-    ('weight_ndx', uint16_t),
+    ('mode', c_uint8),
+    ('Navg2', c_uint8),
+    ('Navg3', c_uint8),
+    ('drift_guard', c_uint8),
+    ('drift_step', c_uint8),
+    ('antenna_mask', c_uint8),
+    ('notch_index', c_uint8),
+    ('SNRon', c_uint32),
+    ('SNRoff', c_uint32),
+    ('Nsettle', c_uint32),
+    ('delta_drift_corA', c_uint32),
+    ('delta_drift_corB', c_uint32),
+    ('ddrift_guard', c_uint32),
+    ('gphase_guard', c_uint32),
+    ('pfb_index', c_uint16),
+    ('weight_ndx', c_uint16),
     ('auto_slice', c_bool),
-    ('powertop_slice', uint8_t),
-    ('delta_powerbot_slice', uint8_t),
-    ('sum1_slice', uint8_t),
-    ('sum2_slice', uint8_t),
-    ('sd2_slice', uint8_t),
-    ('prod1_slice', uint8_t),
-    ('prod2_slice', uint8_t),
-    ('errors', uint32_t),
-    ('zoom_ch1', uint32_t),
-    ('zoom_ch2', uint32_t),
+    ('powertop_slice', c_uint8),
+    ('delta_powerbot_slice', c_uint8),
+    ('sum1_slice', c_uint8),
+    ('sum2_slice', c_uint8),
+    ('sd2_slice', c_uint8),
+    ('prod1_slice', c_uint8),
+    ('prod2_slice', c_uint8),
+    ('errors', c_uint32),
+    ('zoom_ch1', c_uint8),
+    ('zoom_ch2', c_uint8),
+    ('zoom_Nfft', c_uint8),
+    ('zoom_prod', c_uint8),
+    ('zoom_Navg', c_uint8),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 57
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 62
 class struct_calibrator_metadata(Structure):
     pass
 
@@ -983,23 +926,39 @@ struct_calibrator_metadata.__slots__ = [
     'error_regs',
 ]
 struct_calibrator_metadata._fields_ = [
-    ('version', uint16_t),
-    ('unique_packet_id', uint32_t),
-    ('time_32', uint32_t),
-    ('time_16', uint16_t),
-    ('have_lock', uint16_t * int(4)),
+    ('version', c_uint16),
+    ('unique_packet_id', c_uint32),
+    ('time_32', c_uint32),
+    ('time_16', c_uint16),
+    ('have_lock', c_uint16 * int(4)),
     ('state', struct_calibrator_state),
-    ('SNR_max', c_int),
-    ('SNR_min', c_int),
+    ('SNR_max', c_int * int(4)),
+    ('SNR_min', c_int * int(4)),
     ('drift', c_int32 * int(1024)),
-    ('error_regs', uint32_t * int(30)),
+    ('error_regs', c_uint32 * int(30)),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 143
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 75
+class struct_saved_calibrator_weights(Structure):
+    pass
+
+struct_saved_calibrator_weights._pack_ = 1
+struct_saved_calibrator_weights.__slots__ = [
+    'in_use',
+    'CRC',
+    'weights',
+]
+struct_saved_calibrator_weights._fields_ = [
+    ('in_use', c_uint32),
+    ('CRC', c_uint32),
+    ('weights', c_uint16 * int(512)),
+]
+
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 159
 class struct_core_state(Structure):
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 71
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 84
 for _lib in _libs.values():
     if not _lib.has("set_calibrator", "cdecl"):
         continue
@@ -1008,7 +967,7 @@ for _lib in _libs.values():
     set_calibrator.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 72
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 85
 for _lib in _libs.values():
     if not _lib.has("calibrator_set_SNR", "cdecl"):
         continue
@@ -1017,7 +976,7 @@ for _lib in _libs.values():
     calibrator_set_SNR.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 73
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 86
 for _lib in _libs.values():
     if not _lib.has("calibrator_slice_init", "cdecl"):
         continue
@@ -1026,7 +985,7 @@ for _lib in _libs.values():
     calibrator_slice_init.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 74
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 87
 for _lib in _libs.values():
     if not _lib.has("calibrator_set_slices", "cdecl"):
         continue
@@ -1035,16 +994,16 @@ for _lib in _libs.values():
     calibrator_set_slices.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 75
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 88
 for _lib in _libs.values():
     if not _lib.has("process_cal_mode11", "cdecl"):
         continue
     process_cal_mode11 = _lib.get("process_cal_mode11", "cdecl")
-    process_cal_mode11.argtypes = [POINTER(struct_core_state), uint32_t]
+    process_cal_mode11.argtypes = [POINTER(struct_core_state)]
     process_cal_mode11.restype = POINTER(struct_calibrator_metadata)
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 34
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 31
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1052,49 +1011,73 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 36
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 33
 for _lib in _libs.values():
     try:
-        tap_counter = (uint64_t).in_dll(_lib, "tap_counter")
+        tap_counter = (c_uint64).in_dll(_lib, "tap_counter")
         break
     except:
         pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 37
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 35
 for _lib in _libs.values():
     try:
-        TVS_sensors_avg = (uint32_t * int(4)).in_dll(_lib, "TVS_sensors_avg")
+        TVS_sensors_avg = (c_uint32 * int(4)).in_dll(_lib, "TVS_sensors_avg")
         break
     except:
         pass
 
-enum_gain_state = c_int# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 37
+for _lib in _libs.values():
+    try:
+        loop_count_min = (c_uint16).in_dll(_lib, "loop_count_min")
+        break
+    except:
+        pass
 
-GAIN_LOW = 0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 37
+for _lib in _libs.values():
+    try:
+        loop_count_max = (c_uint16).in_dll(_lib, "loop_count_max")
+        break
+    except:
+        pass
 
-GAIN_MED = (GAIN_LOW + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+enum_gain_state = c_int# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 41
 
-GAIN_HIGH = (GAIN_MED + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+GAIN_LOW = 0# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 41
 
-GAIN_DISABLE = (GAIN_HIGH + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+GAIN_MED = (GAIN_LOW + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 41
 
-GAIN_AUTO = (GAIN_DISABLE + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+GAIN_HIGH = (GAIN_MED + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 41
 
-enum_output_format = c_int# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+GAIN_DISABLE = (GAIN_HIGH + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 41
 
-OUTPUT_32BIT = 0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+GAIN_AUTO = (GAIN_DISABLE + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 41
 
-OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+enum_output_format = c_int# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_32BIT = 0# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_10_PLUS_6 = (OUTPUT_16BIT_FLOAT1 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_4_TO_5 = (OUTPUT_16BIT_10_PLUS_6 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_SHARED_LZ = (OUTPUT_16BIT_4_TO_5 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_16BIT_10_PLUS_6 = (OUTPUT_16BIT_FLOAT1 + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 48
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 56
+OUTPUT_16BIT_4_TO_5 = (OUTPUT_16BIT_10_PLUS_6 + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 48
+
+OUTPUT_16BIT_SHARED_LZ = (OUTPUT_16BIT_4_TO_5 + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 48
+
+enum_averaging_mode = c_int# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 57
+
+AVG_INT32 = 0# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 57
+
+AVG_INT_40_BITS = (AVG_INT32 + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 57
+
+AVG_FLOAT = (AVG_INT_40_BITS + 1)# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 57
+
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 64
 class struct_route_state(Structure):
     pass
 
@@ -1104,11 +1087,11 @@ struct_route_state.__slots__ = [
     'minus',
 ]
 struct_route_state._fields_ = [
-    ('plus', uint8_t),
-    ('minus', uint8_t),
+    ('plus', c_uint8),
+    ('minus', c_uint8),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 60
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 68
 class struct_time_counters(Structure):
     pass
 
@@ -1120,13 +1103,13 @@ struct_time_counters.__slots__ = [
     'cdi_dispatch_counter',
 ]
 struct_time_counters._fields_ = [
-    ('heartbeat_counter', uint64_t),
-    ('resettle_counter', uint64_t),
-    ('cdi_wait_counter', uint64_t),
-    ('cdi_dispatch_counter', uint64_t),
+    ('heartbeat_counter', c_uint64),
+    ('resettle_counter', c_uint64),
+    ('cdi_wait_counter', c_uint64),
+    ('cdi_dispatch_counter', c_uint64),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 70
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 78
 class struct_core_state_base(Structure):
     pass
 
@@ -1136,6 +1119,8 @@ struct_core_state_base.__slots__ = [
     'time_32',
     'time_16',
     'TVS_sensors',
+    'loop_count_min',
+    'loop_count_max',
     'gain',
     'gain_auto_min',
     'gain_auto_mult',
@@ -1154,6 +1139,7 @@ struct_core_state_base.__slots__ = [
     'tr_start',
     'tr_stop',
     'tr_avg_shift',
+    'averaging_mode',
     'errors',
     'corr_products_mask',
     'actual_gain',
@@ -1164,47 +1150,58 @@ struct_core_state_base.__slots__ = [
     'spectrometer_enable',
     'calibrator_enable',
     'rand_state',
-    'weight_previous',
+    'weight',
     'weight_current',
+    'num_bad_min_current',
+    'num_bad_max_current',
+    'num_bad_min',
+    'num_bad_max',
 ]
 struct_core_state_base._fields_ = [
-    ('uC_time', uint64_t),
-    ('time_32', uint32_t),
-    ('time_16', uint16_t),
-    ('TVS_sensors', uint16_t * int(4)),
-    ('gain', uint8_t * int(4)),
-    ('gain_auto_min', uint16_t * int(4)),
-    ('gain_auto_mult', uint16_t * int(4)),
+    ('uC_time', c_uint64),
+    ('time_32', c_uint32),
+    ('time_16', c_uint16),
+    ('TVS_sensors', c_uint16 * int(4)),
+    ('loop_count_min', c_uint16),
+    ('loop_count_max', c_uint16),
+    ('gain', c_uint8 * int(4)),
+    ('gain_auto_min', c_uint16 * int(4)),
+    ('gain_auto_mult', c_uint16 * int(4)),
     ('route', struct_route_state * int(4)),
-    ('Navg1_shift', uint8_t),
-    ('Navg2_shift', uint8_t),
-    ('notch', uint8_t),
-    ('Navgf', uint8_t),
-    ('hi_frac', uint8_t),
-    ('med_frac', uint8_t),
-    ('bitslice', uint8_t * int(16)),
-    ('bitslice_keep_bits', uint8_t),
-    ('format', uint8_t),
-    ('reject_ratio', uint8_t),
-    ('reject_maxbad', uint8_t),
-    ('tr_start', uint16_t),
-    ('tr_stop', uint16_t),
-    ('tr_avg_shift', uint16_t),
-    ('errors', uint32_t),
-    ('corr_products_mask', uint16_t),
-    ('actual_gain', uint8_t * int(4)),
-    ('actual_bitslice', uint8_t * int(16)),
-    ('spec_overflow', uint16_t),
-    ('notch_overflow', uint16_t),
+    ('Navg1_shift', c_uint8),
+    ('Navg2_shift', c_uint8),
+    ('notch', c_uint8),
+    ('Navgf', c_uint8),
+    ('hi_frac', c_uint8),
+    ('med_frac', c_uint8),
+    ('bitslice', c_uint8 * int(16)),
+    ('bitslice_keep_bits', c_uint8),
+    ('format', c_uint8),
+    ('reject_ratio', c_uint8),
+    ('reject_maxbad', c_uint8),
+    ('tr_start', c_uint16),
+    ('tr_stop', c_uint16),
+    ('tr_avg_shift', c_uint16),
+    ('averaging_mode', c_uint8),
+    ('errors', c_uint32),
+    ('corr_products_mask', c_uint16),
+    ('actual_gain', c_uint8 * int(4)),
+    ('actual_bitslice', c_uint8 * int(16)),
+    ('spec_overflow', c_uint16),
+    ('notch_overflow', c_uint16),
     ('ADC_stat', struct_ADC_stat * int(4)),
     ('spectrometer_enable', c_bool),
     ('calibrator_enable', c_bool),
-    ('rand_state', uint32_t),
-    ('weight_previous', uint8_t),
-    ('weight_current', uint8_t),
+    ('rand_state', c_uint32),
+    ('weight', c_uint16),
+    ('weight_current', c_uint16),
+    ('num_bad_min_current', c_uint16),
+    ('num_bad_max_current', c_uint16),
+    ('num_bad_min', c_uint16),
+    ('num_bad_max', c_uint16),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 105
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 121
 class struct_cdi_stats(Structure):
     pass
 
@@ -1215,12 +1212,12 @@ struct_cdi_stats.__slots__ = [
     'cdi_bytes_sent',
 ]
 struct_cdi_stats._fields_ = [
-    ('cdi_total_command_count', uint32_t),
-    ('cdi_packets_sent', uint32_t),
-    ('cdi_bytes_sent', uint64_t),
+    ('cdi_total_command_count', c_uint32),
+    ('cdi_packets_sent', c_uint32),
+    ('cdi_bytes_sent', c_uint64),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 111
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 127
 class struct_delayed_cdi_sending(Structure):
     pass
 
@@ -1242,23 +1239,23 @@ struct_delayed_cdi_sending.__slots__ = [
     'cal_packet_size',
 ]
 struct_delayed_cdi_sending._fields_ = [
-    ('appId', uint32_t),
-    ('tr_appId', uint32_t),
-    ('int_counter', uint16_t),
-    ('format', uint8_t),
-    ('prod_count', uint8_t),
-    ('tr_count', uint8_t),
-    ('cal_count', uint8_t),
-    ('Nfreq', uint16_t),
-    ('Navgf', uint16_t),
-    ('packet_id', uint32_t),
-    ('cal_packet_id', uint32_t),
-    ('cal_appId', uint32_t),
-    ('cal_size', uint32_t),
-    ('cal_packet_size', uint32_t),
+    ('appId', c_uint32),
+    ('tr_appId', c_uint32),
+    ('int_counter', c_uint16),
+    ('format', c_uint8),
+    ('prod_count', c_uint8),
+    ('tr_count', c_uint8),
+    ('cal_count', c_uint8),
+    ('Nfreq', c_uint16),
+    ('Navgf', c_uint16),
+    ('packet_id', c_uint32),
+    ('cal_packet_id', c_uint32),
+    ('cal_appId', c_uint32),
+    ('cal_size', c_uint32),
+    ('cal_packet_size', c_uint32),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 128
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 144
 class struct_watchdog_config(Structure):
     pass
 
@@ -1268,11 +1265,11 @@ struct_watchdog_config.__slots__ = [
     'watchdogs_enabled',
 ]
 struct_watchdog_config._fields_ = [
-    ('FPGA_max_temp', uint8_t),
-    ('watchdogs_enabled', uint8_t),
+    ('FPGA_max_temp', c_uint8),
+    ('watchdogs_enabled', c_uint8),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 136
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 152
 class struct_watchdog_packet(Structure):
     pass
 
@@ -1283,9 +1280,9 @@ struct_watchdog_packet.__slots__ = [
     'tripped',
 ]
 struct_watchdog_packet._fields_ = [
-    ('unique_packet_id', uint16_t),
-    ('uC_time', uint64_t),
-    ('tripped', uint8_t),
+    ('unique_packet_id', c_uint16),
+    ('uC_time', c_uint64),
+    ('tripped', c_uint8),
 ]
 
 struct_core_state._pack_ = 1
@@ -1309,15 +1306,22 @@ struct_core_state.__slots__ = [
     'tick_tock',
     'drop_df',
     'heartbeat_packet_count',
-    'flash_store_pointer',
+    'flash_slot',
     'cmd_arg_high',
     'cmd_arg_low',
-    'cmd_start',
+    'cmd_ptr',
     'cmd_end',
+    'sequence_upload',
+    'loop_depth',
+    'loop_start',
+    'loop_count',
     'cmd_counter',
     'dispatch_delay',
     'reg_address',
     'reg_value',
+    'bitslicer_action_counter',
+    'fft_time',
+    'fft_computed',
 ]
 struct_core_state._fields_ = [
     ('base', struct_core_state_base),
@@ -1326,47 +1330,74 @@ struct_core_state._fields_ = [
     ('cdi_dispatch', struct_delayed_cdi_sending),
     ('timing', struct_time_counters),
     ('watchdog', struct_watchdog_config),
-    ('cdi_wait_spectra', uint16_t),
-    ('avg_counter', uint16_t),
-    ('unique_packet_id', uint32_t),
-    ('leading_zeros_min', uint8_t * int(16)),
-    ('leading_zeros_max', uint8_t * int(16)),
-    ('housekeeping_request', uint8_t),
-    ('range_adc', uint8_t),
-    ('resettle', uint8_t),
-    ('request_waveform', uint8_t),
-    ('request_eos', uint8_t),
+    ('cdi_wait_spectra', c_uint16),
+    ('avg_counter', c_uint16),
+    ('unique_packet_id', c_uint32),
+    ('leading_zeros_min', c_uint8 * int(16)),
+    ('leading_zeros_max', c_uint8 * int(16)),
+    ('housekeeping_request', c_uint8),
+    ('range_adc', c_uint8),
+    ('resettle', c_uint8),
+    ('request_waveform', c_uint8),
+    ('request_eos', c_uint8),
     ('tick_tock', c_bool),
     ('drop_df', c_bool),
-    ('heartbeat_packet_count', uint32_t),
-    ('flash_store_pointer', uint16_t),
-    ('cmd_arg_high', uint8_t * int(128)),
-    ('cmd_arg_low', uint8_t * int(128)),
-    ('cmd_start', uint16_t),
-    ('cmd_end', uint16_t),
-    ('cmd_counter', uint32_t),
-    ('dispatch_delay', uint16_t),
-    ('reg_address', uint16_t),
+    ('heartbeat_packet_count', c_uint32),
+    ('flash_slot', c_int8),
+    ('cmd_arg_high', c_uint8 * int(512)),
+    ('cmd_arg_low', c_uint8 * int(512)),
+    ('cmd_ptr', c_uint16),
+    ('cmd_end', c_uint16),
+    ('sequence_upload', c_bool),
+    ('loop_depth', c_uint8),
+    ('loop_start', c_uint16 * int(4)),
+    ('loop_count', c_uint8 * int(4)),
+    ('cmd_counter', c_uint32),
+    ('dispatch_delay', c_uint16),
+    ('reg_address', c_uint16),
     ('reg_value', c_int32),
+    ('bitslicer_action_counter', c_int8),
+    ('fft_time', c_uint32),
+    ('fft_computed', c_bool),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 170
-class struct_saved_core_state(Structure):
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 196
+class struct_saved_state(Structure):
     pass
 
-struct_saved_core_state._pack_ = 1
-struct_saved_core_state.__slots__ = [
+struct_saved_state._pack_ = 1
+struct_saved_state.__slots__ = [
     'in_use',
-    'state',
+    'cmd_arg_high',
+    'cmd_arg_low',
+    'cmd_ptr',
+    'cmd_end',
     'CRC',
 ]
-struct_saved_core_state._fields_ = [
-    ('in_use', uint32_t),
-    ('state', struct_core_state),
-    ('CRC', uint32_t),
+struct_saved_state._fields_ = [
+    ('in_use', c_uint32),
+    ('cmd_arg_high', c_uint8 * int(512)),
+    ('cmd_arg_low', c_uint8 * int(512)),
+    ('cmd_ptr', c_uint16),
+    ('cmd_end', c_uint16),
+    ('CRC', c_uint32),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 176
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 203
+class struct_state_recover_notification(Structure):
+    pass
+
+struct_state_recover_notification._pack_ = 1
+struct_state_recover_notification.__slots__ = [
+    'slot',
+    'size',
+]
+struct_state_recover_notification._fields_ = [
+    ('slot', c_uint32),
+    ('size', c_uint32),
+]
+
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 208
 class struct_end_of_sequence(Structure):
     pass
 
@@ -1376,11 +1407,11 @@ struct_end_of_sequence.__slots__ = [
     'eos_arg',
 ]
 struct_end_of_sequence._fields_ = [
-    ('unique_packet_id', uint32_t),
-    ('eos_arg', uint32_t),
+    ('unique_packet_id', c_uint32),
+    ('eos_arg', c_uint32),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 181
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 213
 class struct_startup_hello(Structure):
     pass
 
@@ -1396,17 +1427,17 @@ struct_startup_hello.__slots__ = [
     'time_16',
 ]
 struct_startup_hello._fields_ = [
-    ('SW_version', uint32_t),
-    ('FW_Version', uint32_t),
-    ('FW_ID', uint32_t),
-    ('FW_Date', uint32_t),
-    ('FW_Time', uint32_t),
-    ('unique_packet_id', uint32_t),
-    ('time_32', uint32_t),
-    ('time_16', uint16_t),
+    ('SW_version', c_uint32),
+    ('FW_Version', c_uint32),
+    ('FW_ID', c_uint32),
+    ('FW_Date', c_uint32),
+    ('FW_Time', c_uint32),
+    ('unique_packet_id', c_uint32),
+    ('time_32', c_uint32),
+    ('time_16', c_uint16),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 192
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 224
 class struct_heartbeat(Structure):
     pass
 
@@ -1416,21 +1447,27 @@ struct_heartbeat.__slots__ = [
     'time_32',
     'time_16',
     'TVS_sensors',
+    'loop_count_min',
+    'loop_count_max',
     'cdi_stats',
     'errors',
+    'fft_time',
     'magic',
 ]
 struct_heartbeat._fields_ = [
-    ('packet_count', uint32_t),
-    ('time_32', uint32_t),
-    ('time_16', uint16_t),
-    ('TVS_sensors', uint16_t * int(4)),
+    ('packet_count', c_uint32),
+    ('time_32', c_uint32),
+    ('time_16', c_uint16),
+    ('TVS_sensors', c_uint16 * int(4)),
+    ('loop_count_min', c_uint16),
+    ('loop_count_max', c_uint16),
     ('cdi_stats', struct_cdi_stats),
-    ('errors', uint32_t),
+    ('errors', c_uint32),
+    ('fft_time', c_uint32),
     ('magic', c_char * int(6)),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 203
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 237
 class struct_meta_data(Structure):
     pass
 
@@ -1441,12 +1478,12 @@ struct_meta_data.__slots__ = [
     'base',
 ]
 struct_meta_data._fields_ = [
-    ('version', uint16_t),
-    ('unique_packet_id', uint32_t),
+    ('version', c_uint16),
+    ('unique_packet_id', c_uint32),
     ('base', struct_core_state_base),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 209
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 243
 class struct_housekeeping_data_base(Structure):
     pass
 
@@ -1458,13 +1495,13 @@ struct_housekeeping_data_base.__slots__ = [
     'housekeeping_type',
 ]
 struct_housekeeping_data_base._fields_ = [
-    ('version', uint16_t),
-    ('unique_packet_id', uint32_t),
-    ('errors', uint32_t),
-    ('housekeeping_type', uint16_t),
+    ('version', c_uint16),
+    ('unique_packet_id', c_uint32),
+    ('errors', c_uint32),
+    ('housekeeping_type', c_uint16),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 216
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 250
 class struct_housekeeping_data_0(Structure):
     pass
 
@@ -1478,7 +1515,7 @@ struct_housekeeping_data_0._fields_ = [
     ('core_state', struct_core_state),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 221
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 255
 class struct_housekeeping_data_1(Structure):
     pass
 
@@ -1491,10 +1528,10 @@ struct_housekeeping_data_1.__slots__ = [
 struct_housekeeping_data_1._fields_ = [
     ('base', struct_housekeeping_data_base),
     ('ADC_stat', struct_ADC_stat * int(4)),
-    ('actual_gain', uint8_t * int(4)),
+    ('actual_gain', c_uint8 * int(4)),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 231
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 265
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1502,7 +1539,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 234
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 268
 for _lib in _libs.values():
     if not _lib.has("core_loop", "cdecl"):
         continue
@@ -1511,7 +1548,7 @@ for _lib in _libs.values():
     core_loop.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 237
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 271
 for _lib in _libs.values():
     if not _lib.has("process_cdi", "cdecl"):
         continue
@@ -1520,7 +1557,7 @@ for _lib in _libs.values():
     process_cdi.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 241
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 275
 for _lib in _libs.values():
     if not _lib.has("process_watchdogs", "cdecl"):
         continue
@@ -1529,16 +1566,16 @@ for _lib in _libs.values():
     process_watchdogs.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 242
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 276
 for _lib in _libs.values():
     if not _lib.has("cmd_soft_reset", "cdecl"):
         continue
     cmd_soft_reset = _lib.get("cmd_soft_reset", "cdecl")
-    cmd_soft_reset.argtypes = [uint8_t, POINTER(struct_core_state)]
+    cmd_soft_reset.argtypes = [c_uint8, POINTER(struct_core_state)]
     cmd_soft_reset.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 245
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 279
 for _lib in _libs.values():
     if not _lib.has("RFS_stop", "cdecl"):
         continue
@@ -1547,7 +1584,7 @@ for _lib in _libs.values():
     RFS_stop.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 246
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 280
 for _lib in _libs.values():
     if not _lib.has("RFS_start", "cdecl"):
         continue
@@ -1556,7 +1593,7 @@ for _lib in _libs.values():
     RFS_start.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 247
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 281
 for _lib in _libs.values():
     if not _lib.has("restart_spectrometer", "cdecl"):
         continue
@@ -1565,70 +1602,70 @@ for _lib in _libs.values():
     restart_spectrometer.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 250
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 284
 for _lib in _libs.values():
     if not _lib.has("get_Navg1", "cdecl"):
         continue
     get_Navg1 = _lib.get("get_Navg1", "cdecl")
     get_Navg1.argtypes = [POINTER(struct_core_state)]
-    get_Navg1.restype = uint16_t
+    get_Navg1.restype = c_uint16
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 251
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 285
 for _lib in _libs.values():
     if not _lib.has("get_Navg2", "cdecl"):
         continue
     get_Navg2 = _lib.get("get_Navg2", "cdecl")
     get_Navg2.argtypes = [POINTER(struct_core_state)]
-    get_Navg2.restype = uint16_t
+    get_Navg2.restype = c_uint16
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 252
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 286
 for _lib in _libs.values():
     if not _lib.has("get_Nfreq", "cdecl"):
         continue
     get_Nfreq = _lib.get("get_Nfreq", "cdecl")
     get_Nfreq.argtypes = [POINTER(struct_core_state)]
-    get_Nfreq.restype = uint16_t
+    get_Nfreq.restype = c_uint16
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 253
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 287
 for _lib in _libs.values():
     if not _lib.has("get_tr_avg", "cdecl"):
         continue
     get_tr_avg = _lib.get("get_tr_avg", "cdecl")
     get_tr_avg.argtypes = [POINTER(struct_core_state)]
-    get_tr_avg.restype = uint16_t
+    get_tr_avg.restype = c_uint16
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 254
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 288
 for _lib in _libs.values():
     if not _lib.has("get_gain_auto_max", "cdecl"):
         continue
     get_gain_auto_max = _lib.get("get_gain_auto_max", "cdecl")
     get_gain_auto_max.argtypes = [POINTER(struct_core_state), c_int]
-    get_gain_auto_max.restype = uint16_t
+    get_gain_auto_max.restype = c_uint16
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 255
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 289
 for _lib in _libs.values():
     if not _lib.has("get_tr_length", "cdecl"):
         continue
     get_tr_length = _lib.get("get_tr_length", "cdecl")
     get_tr_length.argtypes = [POINTER(struct_core_state)]
-    get_tr_length.restype = uint32_t
+    get_tr_length.restype = c_uint32
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 259
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 293
 for _lib in _libs.values():
     if not _lib.has("set_route", "cdecl"):
         continue
     set_route = _lib.get("set_route", "cdecl")
-    set_route.argtypes = [POINTER(struct_core_state), uint8_t, uint8_t]
+    set_route.argtypes = [POINTER(struct_core_state), c_uint8, c_uint8]
     set_route.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 262
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 296
 for _lib in _libs.values():
     if not _lib.has("update_spec_gains", "cdecl"):
         continue
@@ -1637,7 +1674,7 @@ for _lib in _libs.values():
     update_spec_gains.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 265
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 299
 for _lib in _libs.values():
     if not _lib.has("trigger_ADC_stat", "cdecl"):
         continue
@@ -1646,7 +1683,7 @@ for _lib in _libs.values():
     trigger_ADC_stat.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 268
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 302
 for _lib in _libs.values():
     if not _lib.has("reset_errormasks", "cdecl"):
         continue
@@ -1655,7 +1692,7 @@ for _lib in _libs.values():
     reset_errormasks.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 271
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 305
 for _lib in _libs.values():
     if not _lib.has("update_time", "cdecl"):
         continue
@@ -1664,7 +1701,7 @@ for _lib in _libs.values():
     update_time.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 274
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 308
 for _lib in _libs.values():
     if not _lib.has("process_spectrometer", "cdecl"):
         continue
@@ -1673,7 +1710,7 @@ for _lib in _libs.values():
     process_spectrometer.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 277
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 311
 for _lib in _libs.values():
     if not _lib.has("transfer_to_cdi", "cdecl"):
         continue
@@ -1682,7 +1719,7 @@ for _lib in _libs.values():
     transfer_to_cdi.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 279
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 313
 for _lib in _libs.values():
     if not _lib.has("process_delayed_cdi_dispatch", "cdecl"):
         continue
@@ -1691,7 +1728,7 @@ for _lib in _libs.values():
     process_delayed_cdi_dispatch.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 282
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 316
 for _lib in _libs.values():
     if not _lib.has("process_gain_range", "cdecl"):
         continue
@@ -1700,7 +1737,7 @@ for _lib in _libs.values():
     process_gain_range.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 283
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 317
 for _lib in _libs.values():
     if not _lib.has("bitslice_control", "cdecl"):
         continue
@@ -1709,7 +1746,7 @@ for _lib in _libs.values():
     bitslice_control.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 286
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 320
 for _lib in _libs.values():
     if not _lib.has("set_spectrometer", "cdecl"):
         continue
@@ -1718,7 +1755,7 @@ for _lib in _libs.values():
     set_spectrometer.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 287
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 321
 for _lib in _libs.values():
     if not _lib.has("default_state", "cdecl"):
         continue
@@ -1727,16 +1764,16 @@ for _lib in _libs.values():
     default_state.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 290
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 324
 for _lib in _libs.values():
     if not _lib.has("debug_helper", "cdecl"):
         continue
     debug_helper = _lib.get("debug_helper", "cdecl")
-    debug_helper.argtypes = [uint8_t, POINTER(struct_core_state)]
+    debug_helper.argtypes = [c_uint8, POINTER(struct_core_state)]
     debug_helper.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 291
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 325
 for _lib in _libs.values():
     if not _lib.has("cdi_not_implemented", "cdecl"):
         continue
@@ -1745,7 +1782,7 @@ for _lib in _libs.values():
     cdi_not_implemented.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 295
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 329
 for _lib in _libs.values():
     if not _lib.has("send_hello_packet", "cdecl"):
         continue
@@ -1754,7 +1791,7 @@ for _lib in _libs.values():
     send_hello_packet.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 296
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 330
 for _lib in _libs.values():
     if not _lib.has("process_hearbeat", "cdecl"):
         continue
@@ -1763,7 +1800,7 @@ for _lib in _libs.values():
     process_hearbeat.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 297
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 331
 for _lib in _libs.values():
     if not _lib.has("process_housekeeping", "cdecl"):
         continue
@@ -1772,7 +1809,7 @@ for _lib in _libs.values():
     process_housekeeping.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 300
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 334
 for _lib in _libs.values():
     if not _lib.has("process_eos", "cdecl"):
         continue
@@ -1781,16 +1818,16 @@ for _lib in _libs.values():
     process_eos.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 303
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 337
 for _lib in _libs.values():
     if not _lib.has("cdi_dispatch_uC", "cdecl"):
         continue
     cdi_dispatch_uC = _lib.get("cdi_dispatch_uC", "cdecl")
-    cdi_dispatch_uC.argtypes = [POINTER(struct_cdi_stats), uint16_t, uint32_t]
+    cdi_dispatch_uC.argtypes = [POINTER(struct_cdi_stats), c_uint16, c_uint32]
     cdi_dispatch_uC.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 306
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 340
 for _lib in _libs.values():
     if not _lib.has("delayed_cdi_dispatch_done", "cdecl"):
         continue
@@ -1799,7 +1836,7 @@ for _lib in _libs.values():
     delayed_cdi_dispatch_done.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 309
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 343
 for _lib in _libs.values():
     if not _lib.has("calibrator_default_state", "cdecl"):
         continue
@@ -1808,16 +1845,16 @@ for _lib in _libs.values():
     calibrator_default_state.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 310
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 344
 for _lib in _libs.values():
     if not _lib.has("calib_set_mode", "cdecl"):
         continue
     calib_set_mode = _lib.get("calib_set_mode", "cdecl")
-    calib_set_mode.argtypes = [POINTER(struct_core_state), uint8_t]
+    calib_set_mode.argtypes = [POINTER(struct_core_state), c_uint8]
     calib_set_mode.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 311
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 345
 for _lib in _libs.values():
     if not _lib.has("process_calibrator", "cdecl"):
         continue
@@ -1826,7 +1863,7 @@ for _lib in _libs.values():
     process_calibrator.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 312
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 346
 for _lib in _libs.values():
     if not _lib.has("dispatch_calibrator_data", "cdecl"):
         continue
@@ -1835,16 +1872,16 @@ for _lib in _libs.values():
     dispatch_calibrator_data.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 322
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 356
 for _lib in _libs.values():
     if not _lib.has("mini_wait", "cdecl"):
         continue
     mini_wait = _lib.get("mini_wait", "cdecl")
-    mini_wait.argtypes = [uint32_t]
+    mini_wait.argtypes = [c_uint32]
     mini_wait.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 326
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 360
 for _lib in _libs.values():
     if not _lib.has("timer_start", "cdecl"):
         continue
@@ -1853,70 +1890,70 @@ for _lib in _libs.values():
     timer_start.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 329
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 363
 for _lib in _libs.values():
     if not _lib.has("timer_stop", "cdecl"):
         continue
     timer_stop = _lib.get("timer_stop", "cdecl")
     timer_stop.argtypes = []
-    timer_stop.restype = uint32_t
+    timer_stop.restype = c_uint32
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 333
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 367
 for _lib in _libs.values():
     if not _lib.has("encode_12plus4", "cdecl"):
         continue
     encode_12plus4 = _lib.get("encode_12plus4", "cdecl")
     encode_12plus4.argtypes = [c_int32]
-    encode_12plus4.restype = uint16_t
+    encode_12plus4.restype = c_uint16
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 334
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 368
 for _lib in _libs.values():
     if not _lib.has("decode_12plus4", "cdecl"):
         continue
     decode_12plus4 = _lib.get("decode_12plus4", "cdecl")
-    decode_12plus4.argtypes = [uint16_t]
+    decode_12plus4.argtypes = [c_uint16]
     decode_12plus4.restype = c_int32
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 337
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 371
 for _lib in _libs.values():
     if not _lib.has("encode_10plus6", "cdecl"):
         continue
     encode_10plus6 = _lib.get("encode_10plus6", "cdecl")
     encode_10plus6.argtypes = [c_int32]
-    encode_10plus6.restype = uint16_t
+    encode_10plus6.restype = c_uint16
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 338
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 372
 for _lib in _libs.values():
     if not _lib.has("decode_10plus6", "cdecl"):
         continue
     decode_10plus6 = _lib.get("decode_10plus6", "cdecl")
-    decode_10plus6.argtypes = [uint16_t]
+    decode_10plus6.argtypes = [c_uint16]
     decode_10plus6.restype = c_int32
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 344
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 378
 for _lib in _libs.values():
     if not _lib.has("encode_shared_lz_positive", "cdecl"):
         continue
     encode_shared_lz_positive = _lib.get("encode_shared_lz_positive", "cdecl")
-    encode_shared_lz_positive.argtypes = [POINTER(uint32_t), POINTER(c_ubyte), c_int]
+    encode_shared_lz_positive.argtypes = [POINTER(c_uint32), POINTER(c_ubyte), c_int]
     encode_shared_lz_positive.restype = c_int
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 345
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 379
 for _lib in _libs.values():
     if not _lib.has("decode_shared_lz_positive", "cdecl"):
         continue
     decode_shared_lz_positive = _lib.get("decode_shared_lz_positive", "cdecl")
-    decode_shared_lz_positive.argtypes = [POINTER(c_ubyte), POINTER(uint32_t), c_int]
+    decode_shared_lz_positive.argtypes = [POINTER(c_ubyte), POINTER(c_uint32), c_int]
     decode_shared_lz_positive.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 351
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 385
 for _lib in _libs.values():
     if not _lib.has("encode_shared_lz_signed", "cdecl"):
         continue
@@ -1925,7 +1962,7 @@ for _lib in _libs.values():
     encode_shared_lz_signed.restype = c_int
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 352
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 386
 for _lib in _libs.values():
     if not _lib.has("decode_shared_lz_signed", "cdecl"):
         continue
@@ -1934,34 +1971,34 @@ for _lib in _libs.values():
     decode_shared_lz_signed.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 355
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 389
 for _lib in _libs.values():
     if not _lib.has("encode_4_into_5", "cdecl"):
         continue
     encode_4_into_5 = _lib.get("encode_4_into_5", "cdecl")
-    encode_4_into_5.argtypes = [POINTER(c_int32), POINTER(uint16_t)]
+    encode_4_into_5.argtypes = [POINTER(c_int32), POINTER(c_uint16)]
     encode_4_into_5.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 356
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 390
 for _lib in _libs.values():
     if not _lib.has("decode_5_into_4", "cdecl"):
         continue
     decode_5_into_4 = _lib.get("decode_5_into_4", "cdecl")
-    decode_5_into_4.argtypes = [POINTER(c_int16), POINTER(c_int32)]
+    decode_5_into_4.argtypes = [POINTER(c_uint16), POINTER(c_int32)]
     decode_5_into_4.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 359
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 393
 for _lib in _libs.values():
     if not _lib.has("CRC", "cdecl"):
         continue
     CRC = _lib.get("CRC", "cdecl")
     CRC.argtypes = [POINTER(None), c_size_t]
-    CRC.restype = uint32_t
+    CRC.restype = c_uint32
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 362
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 396
 for _lib in _libs.values():
     if not _lib.has("fft_precompute_tables", "cdecl"):
         continue
@@ -1970,158 +2007,150 @@ for _lib in _libs.values():
     fft_precompute_tables.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 363
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 397
 for _lib in _libs.values():
     if not _lib.has("fft", "cdecl"):
         continue
     fft = _lib.get("fft", "cdecl")
-    fft.argtypes = [POINTER(uint32_t), POINTER(uint32_t)]
+    fft.argtypes = [POINTER(c_uint32), POINTER(c_uint32)]
     fft.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 7
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 7
 try:
-    VERSION_ID = 0x00000300
+    VERSION_ID = 768
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 11
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 21
 try:
-    CAL_MODE_RAW0 = 0b00
+    CAL_MODE_BIT_SLICER_SETTLE = 16
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 13
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 23
 try:
-    CAL_MODE_RAW1 = 0b01
+    CAL_MODE_SNR_SETTLE = 32
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 15
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 25
 try:
-    CAL_MODE_RAW3 = 0b11
+    CAL_MODE_RUN = 48
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 19
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 27
 try:
-    CAL_MODE_BIT_SLICER_SETTLE = 0x10
+    CAL_MODE_BLIND = 64
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 21
+# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 29
 try:
-    CAL_MODE_SNR_SETTLE = 0x20
+    CAL_MODE_ZOOM = 80
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 23
-try:
-    CAL_MODE_RUN = 0x30
-except:
-    pass
-
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 25
-try:
-    CAL_MODE_BLIND = 0x40
-except:
-    pass
-
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 27
-try:
-    CAL_MODE_ZOOM = 0x50
-except:
-    pass
-
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 19
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 19
 try:
     DISPATCH_DELAY = 6
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 20
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 20
 try:
     RESETTLE_DELAY = 5
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 21
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 21
 try:
     HEARTBEAT_DELAY = 1024
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 22
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 22
 try:
-    CMD_BUFFER_SIZE = 128
+    CMD_BUFFER_SIZE = 512
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 25
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 23
+try:
+    MAX_LOOPS = 4
+except:
+    pass
+
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 24
 try:
     ADC_STAT_SAMPLES = 16000
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 27
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 25
 try:
-    MAX_STATE_SLOTS = 64
+    MAX_STATE_SLOTS = 16
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 29
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 26
 try:
-    PAGES_PER_SLOT = 256
+    BITSLICER_MAX_ACTION = 5
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 319
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 353
 def MAX(x, y):
     return (x > y) and x or y
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 320
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 354
 def MIN(x, y):
     return (x < y) and x or y
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 321
+# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 355
 def IS_NEG(x):
     return (x < 0) and 1 or 0
 
-calibrator_state = struct_calibrator_state# /home/gtspeedie/coreloop/coreloop/calibrator.h: 34
+calibrator_state = struct_calibrator_state# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 36
 
-calibrator_metadata = struct_calibrator_metadata# /home/gtspeedie/coreloop/coreloop/calibrator.h: 57
+calibrator_metadata = struct_calibrator_metadata# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 62
 
-core_state = struct_core_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 143
+saved_calibrator_weights = struct_saved_calibrator_weights# /home/anigmetov/code/coreloop/coreloop/calibrator.h: 75
 
-route_state = struct_route_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 56
+core_state = struct_core_state# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 159
 
-time_counters = struct_time_counters# /home/gtspeedie/coreloop/coreloop/core_loop.h: 60
+route_state = struct_route_state# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 64
 
-core_state_base = struct_core_state_base# /home/gtspeedie/coreloop/coreloop/core_loop.h: 70
+time_counters = struct_time_counters# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 68
 
-cdi_stats = struct_cdi_stats# /home/gtspeedie/coreloop/coreloop/core_loop.h: 105
+core_state_base = struct_core_state_base# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 78
 
-delayed_cdi_sending = struct_delayed_cdi_sending# /home/gtspeedie/coreloop/coreloop/core_loop.h: 111
+cdi_stats = struct_cdi_stats# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 121
 
-watchdog_config = struct_watchdog_config# /home/gtspeedie/coreloop/coreloop/core_loop.h: 128
+delayed_cdi_sending = struct_delayed_cdi_sending# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 127
 
-watchdog_packet = struct_watchdog_packet# /home/gtspeedie/coreloop/coreloop/core_loop.h: 136
+watchdog_config = struct_watchdog_config# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 144
 
-saved_core_state = struct_saved_core_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 170
+watchdog_packet = struct_watchdog_packet# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 152
 
-end_of_sequence = struct_end_of_sequence# /home/gtspeedie/coreloop/coreloop/core_loop.h: 176
+saved_state = struct_saved_state# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 196
 
-startup_hello = struct_startup_hello# /home/gtspeedie/coreloop/coreloop/core_loop.h: 181
+state_recover_notification = struct_state_recover_notification# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 203
 
-heartbeat = struct_heartbeat# /home/gtspeedie/coreloop/coreloop/core_loop.h: 192
+end_of_sequence = struct_end_of_sequence# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 208
 
-meta_data = struct_meta_data# /home/gtspeedie/coreloop/coreloop/core_loop.h: 203
+startup_hello = struct_startup_hello# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 213
 
-housekeeping_data_base = struct_housekeeping_data_base# /home/gtspeedie/coreloop/coreloop/core_loop.h: 209
+heartbeat = struct_heartbeat# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 224
 
-housekeeping_data_0 = struct_housekeeping_data_0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 216
+meta_data = struct_meta_data# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 237
 
-housekeeping_data_1 = struct_housekeeping_data_1# /home/gtspeedie/coreloop/coreloop/core_loop.h: 221
+housekeeping_data_base = struct_housekeeping_data_base# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 243
+
+housekeeping_data_0 = struct_housekeeping_data_0# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 250
+
+housekeeping_data_1 = struct_housekeeping_data_1# /home/anigmetov/code/coreloop/coreloop/core_loop.h: 255
 
 # No inserted files
 

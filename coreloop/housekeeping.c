@@ -11,7 +11,7 @@
 
 
 void send_hello_packet(struct core_state* state) {
-    
+
     struct startup_hello *payload = (struct startup_hello*) (TLM_BUF);
     new_unique_packet_id(state);
     update_time(state);
@@ -42,7 +42,7 @@ bool process_hearbeat(struct core_state* state) {
     payload->TVS_sensors[3] = state->base.TVS_sensors[3];
     payload->cdi_stats = state->cdi_stats;
     payload->errors = state->base.errors;
-    
+
     // loop counters
     state->base.loop_count_min = loop_count_min;
     state->base.loop_count_max = loop_count_max;
@@ -50,6 +50,8 @@ bool process_hearbeat(struct core_state* state) {
     payload->loop_count_max = loop_count_max;
     loop_count_max = 0;
     loop_count_min = UINT16_MAX;
+
+    payload->fft_time = state->fft_time;
 
     payload->magic[0] = 'B';
     payload->magic[1] = 'R';
@@ -104,7 +106,7 @@ bool process_housekeeping(struct core_state* state) {
 }
 
 bool process_eos(struct core_state* state) {
-    if (state->request_eos == 0) return false; 
+    if (state->request_eos == 0) return false;
     // now we need to make sure absolutely everything is done
     if (!delayed_cdi_dispatch_done(state)) return false;
     // these two shouldn't really matter, since they get executed in one go
