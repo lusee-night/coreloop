@@ -54,6 +54,13 @@ enum output_format {
     OUTPUT_16BIT_SHARED_LZ
 };
 
+enum averaging_mode {
+    AVG_INT32,
+    AVG_INT_40_BITS,
+    AVG_FLOAT
+};
+
+
 struct route_state {
     uint8_t plus, minus;  // we route "plus" - "minus". if minus is FF, it is ground;
 };
@@ -71,12 +78,12 @@ struct time_counters {
 struct core_state_base {
     uint64_t uC_time;
     uint32_t time_32;
-    uint16_t time_16;    
+    uint16_t time_16;
     uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
     uint16_t loop_count_min, loop_count_max;
     // former sequencer state starts here
     uint8_t gain [NINPUT]; // this defines the commanded gain state (can be auto)
-    uint16_t gain_auto_min[NINPUT];   
+    uint16_t gain_auto_min[NINPUT];
     uint16_t gain_auto_mult[NINPUT];
     struct route_state route[NINPUT];
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
@@ -91,21 +98,23 @@ struct core_state_base {
     uint16_t tr_start, tr_stop, tr_avg_shift; // time resolved start, stop and averaging
     // former sequencer state ends here
 
+    uint8_t averaging_mode; // perform stage 2 averaging using int32, 40 bit encoding or float
+
     uint32_t errors;
     uint16_t corr_products_mask; // which of 16 products to be used, starting with LSB
     uint8_t actual_gain[NINPUT]; // this defines the actual gain state (can only be low, med, high);
     uint8_t actual_bitslice[NSPECTRA];
     uint16_t spec_overflow;  // mean specta overflow mask
     uint16_t notch_overflow; // notch filter overflow mask
-    struct ADC_stat ADC_stat[4];    
+    struct ADC_stat ADC_stat[4];
     bool spectrometer_enable; // spectrometer_enable is true when FFT enegine is running
     bool calibrator_enable; // calibrator enable is true will enable calibrator with enabling the FFT engine.
     uint32_t rand_state;
-    
+
     uint16_t weight, weight_current;
     uint16_t num_bad_min_current, num_bad_max_current; // actual number of bad bins in the previous integration
     uint16_t num_bad_min, num_bad_max; // actual number of bad bins in the previous integration
-    
+
 
 };
 
@@ -142,7 +151,7 @@ struct core_state {
     struct core_state_base base;
     struct cdi_stats cdi_stats;
     struct calibrator_state cal;
-    // A number be utility values 
+    // A number be utility values
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
     struct watchdog_config watchdog;
@@ -152,7 +161,7 @@ struct core_state {
     uint8_t leading_zeros_min[NSPECTRA];
     uint8_t leading_zeros_max[NSPECTRA];
     uint8_t housekeeping_request;
-    uint8_t range_adc, resettle, request_waveform, request_eos; 
+    uint8_t range_adc, resettle, request_waveform, request_eos;
     bool tick_tock;
     bool drop_df;
     uint32_t heartbeat_packet_count;
@@ -171,6 +180,8 @@ struct core_state {
     uint16_t reg_address; // address of the register to be written (for commands that do that)
     int32_t reg_value; // value to be written to the register
     int8_t bitslicer_action_counter;  // counting how many times in a row we have changed bit slicer to prevent infinite loop
+    uint32_t fft_time;
+    bool fft_computed;
 };
 
 struct saved_state {
@@ -209,18 +220,19 @@ struct heartbeat {
     uint16_t loop_count_min, loop_count_max;
     struct cdi_stats cdi_stats;
     uint32_t errors;
+    uint32_t fft_time;
     char magic[6];
 };
 
 // metadata payload, compatible with core_state
 struct meta_data {
-    uint16_t version; 
+    uint16_t version;
     uint32_t unique_packet_id;
     struct core_state_base base;
 };
 
 struct housekeeping_data_base {
-    uint16_t version; 
+    uint16_t version;
     uint32_t unique_packet_id;
     uint32_t errors;
     uint16_t housekeeping_type;
@@ -308,7 +320,7 @@ bool process_hearbeat(struct core_state*);
 bool process_housekeeping(struct core_state*);
 
 // create end-of-sequence packet
-bool process_eos(struct core_state*); 
+bool process_eos(struct core_state*);
 
 // cdi dispatch with counting
 void cdi_dispatch_uC (struct cdi_stats* cdi_stats, uint16_t appID, uint32_t length);
@@ -364,7 +376,7 @@ void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size
 
 // encode/decode 4 int32_t values into 5 int16_t values: first one for shift info
 void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out);
-void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out);
+void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);

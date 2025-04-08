@@ -1,31 +1,29 @@
 r"""Wrapper for core_loop_errors.h
 
 Generated with:
-/u/home/anze/anaconda3/bin/ctypesgen ../coreloop/core_loop_errors.h
+/home/anigmetov/code/uncrater/venv/bin/ctypesgen ../coreloop/core_loop_errors.h
 
 Do not modify this file.
 """
 
 __docformat__ = "restructuredtext"
 
-# Begin preamble for Python
+# Begin preamble for Python v(3, 2)
 
-import ctypes
-import sys
-from ctypes import *  # noqa: F401, F403
+import ctypes, os, sys
+from ctypes import *
 
-_int_types = (ctypes.c_int16, ctypes.c_int32)
+_int_types = (c_int16, c_int32)
 if hasattr(ctypes, "c_int64"):
-    # Some builds of ctypes apparently do not have ctypes.c_int64
+    # Some builds of ctypes apparently do not have c_int64
     # defined; it's a pretty good bet that these builds do not
     # have 64-bit pointers.
-    _int_types += (ctypes.c_int64,)
+    _int_types += (c_int64,)
 for t in _int_types:
-    if ctypes.sizeof(t) == ctypes.sizeof(ctypes.c_size_t):
+    if sizeof(t) == sizeof(c_size_t):
         c_ptrdiff_t = t
 del t
 del _int_types
-
 
 
 class UserString:
@@ -60,6 +58,12 @@ class UserString:
 
     def __hash__(self):
         return hash(self.data)
+
+    def __cmp__(self, string):
+        if isinstance(string, UserString):
+            return cmp(self.data, string.data)
+        else:
+            return cmp(self.data, string)
 
     def __le__(self, string):
         if isinstance(string, UserString):
@@ -332,11 +336,11 @@ class MutableString(UserString):
         return self
 
 
-class String(MutableString, ctypes.Union):
+class String(MutableString, Union):
 
-    _fields_ = [("raw", ctypes.POINTER(ctypes.c_char)), ("data", ctypes.c_char_p)]
+    _fields_ = [("raw", POINTER(c_char)), ("data", c_char_p)]
 
-    def __init__(self, obj=b""):
+    def __init__(self, obj=""):
         if isinstance(obj, (bytes, UserString)):
             self.data = bytes(obj)
         else:
@@ -348,7 +352,7 @@ class String(MutableString, ctypes.Union):
     def from_param(cls, obj):
         # Convert None or 0
         if obj is None or obj == 0:
-            return cls(ctypes.POINTER(ctypes.c_char)())
+            return cls(POINTER(c_char)())
 
         # Convert from String
         elif isinstance(obj, String):
@@ -363,19 +367,19 @@ class String(MutableString, ctypes.Union):
             return cls(obj.encode())
 
         # Convert from c_char_p
-        elif isinstance(obj, ctypes.c_char_p):
+        elif isinstance(obj, c_char_p):
             return obj
 
-        # Convert from POINTER(ctypes.c_char)
-        elif isinstance(obj, ctypes.POINTER(ctypes.c_char)):
+        # Convert from POINTER(c_char)
+        elif isinstance(obj, POINTER(c_char)):
             return obj
 
         # Convert from raw pointer
         elif isinstance(obj, int):
-            return cls(ctypes.cast(obj, ctypes.POINTER(ctypes.c_char)))
+            return cls(cast(obj, POINTER(c_char)))
 
-        # Convert from ctypes.c_char array
-        elif isinstance(obj, ctypes.c_char * len(obj)):
+        # Convert from c_char array
+        elif isinstance(obj, c_char * len(obj)):
             return obj
 
         # Convert from object
@@ -395,12 +399,12 @@ def ReturnString(obj, func=None, arguments=None):
 # primitive datatypes.
 #
 # Non-primitive return values wrapped with UNCHECKED won't be
-# typechecked, and will be converted to ctypes.c_void_p.
+# typechecked, and will be converted to c_void_p.
 def UNCHECKED(type):
     if hasattr(type, "_type_") and isinstance(type._type_, str) and type._type_ != "P":
         return type
     else:
-        return ctypes.c_void_p
+        return c_void_p
 
 
 # ctypes doesn't have direct support for variadic functions, so we have to write
@@ -444,9 +448,6 @@ _libdirs = []
 
 # Begin loader
 
-"""
-Load libraries - appropriately for all our supported platforms
-"""
 # ----------------------------------------------------------------------------
 # Copyright (c) 2008 David James
 # Copyright (c) 2006-2008 Alex Holkner
@@ -481,34 +482,24 @@ Load libraries - appropriately for all our supported platforms
 # POSSIBILITY OF SUCH DAMAGE.
 # ----------------------------------------------------------------------------
 
+import os.path, re, sys, glob
+import platform
 import ctypes
 import ctypes.util
-import glob
-import os.path
-import platform
-import re
-import sys
 
 
 def _environ_path(name):
-    """Split an environment variable into a path-like list elements"""
     if name in os.environ:
         return os.environ[name].split(":")
-    return []
+    else:
+        return []
 
 
-class LibraryLoader:
-    """
-    A base class For loading of libraries ;-)
-    Subclasses load libraries for specific platforms.
-    """
-
+class LibraryLoader(object):
     # library names formatted specifically for platforms
     name_formats = ["%s"]
 
-    class Lookup:
-        """Looking up calling conventions for a platform"""
-
+    class Lookup(object):
         mode = ctypes.DEFAULT_MODE
 
         def __init__(self, path):
@@ -516,7 +507,6 @@ class LibraryLoader:
             self.access = dict(cdecl=ctypes.CDLL(path, self.mode))
 
         def get(self, name, calling_convention="cdecl"):
-            """Return the given name according to the selected calling convention"""
             if calling_convention not in self.access:
                 raise LookupError(
                     "Unknown calling convention '{}' for function '{}'".format(
@@ -526,7 +516,6 @@ class LibraryLoader:
             return getattr(self.access[calling_convention], name)
 
         def has(self, name, calling_convention="cdecl"):
-            """Return True if this given calling convention finds the given 'name'"""
             if calling_convention not in self.access:
                 return False
             return hasattr(self.access[calling_convention], name)
@@ -542,10 +531,9 @@ class LibraryLoader:
         paths = self.getpaths(libname)
 
         for path in paths:
-            # noinspection PyBroadException
             try:
                 return self.Lookup(path)
-            except Exception:  # pylint: disable=broad-except
+            except:
                 pass
 
         raise ImportError("Could not load %s." % libname)
@@ -563,16 +551,9 @@ class LibraryLoader:
                     # dir_i should be absolute already
                     yield os.path.join(dir_i, fmt % libname)
 
-            # check if this code is even stored in a physical file
-            try:
-                this_file = __file__
-            except NameError:
-                this_file = None
-
             # then we search the directory where the generated python interface is stored
-            if this_file is not None:
-                for fmt in self.name_formats:
-                    yield os.path.abspath(os.path.join(os.path.dirname(__file__), fmt % libname))
+            for fmt in self.name_formats:
+                yield os.path.abspath(os.path.join(os.path.dirname(__file__), fmt % libname))
 
             # now, use the ctypes tools to try to find the library
             for fmt in self.name_formats:
@@ -588,8 +569,7 @@ class LibraryLoader:
             for fmt in self.name_formats:
                 yield os.path.abspath(os.path.join(os.path.curdir, fmt % libname))
 
-    def getplatformpaths(self, _libname):  # pylint: disable=no-self-use
-        """Return all the library paths available in this platform"""
+    def getplatformpaths(self, libname):
         return []
 
 
@@ -597,8 +577,6 @@ class LibraryLoader:
 
 
 class DarwinLibraryLoader(LibraryLoader):
-    """Library loader for MacOS"""
-
     name_formats = [
         "lib%s.dylib",
         "lib%s.so",
@@ -610,10 +588,6 @@ class DarwinLibraryLoader(LibraryLoader):
     ]
 
     class Lookup(LibraryLoader.Lookup):
-        """
-        Looking up library files for this platform (Darwin aka MacOS)
-        """
-
         # Darwin requires dlopen to be called with mode RTLD_GLOBAL instead
         # of the default RTLD_LOCAL.  Without this, you end up with
         # libraries not being loadable, resulting in "Symbol not found"
@@ -624,14 +598,13 @@ class DarwinLibraryLoader(LibraryLoader):
         if os.path.pathsep in libname:
             names = [libname]
         else:
-            names = [fmt % libname for fmt in self.name_formats]
+            names = [format % libname for format in self.name_formats]
 
-        for directory in self.getdirs(libname):
+        for dir in self.getdirs(libname):
             for name in names:
-                yield os.path.join(directory, name)
+                yield os.path.join(dir, name)
 
-    @staticmethod
-    def getdirs(libname):
+    def getdirs(self, libname):
         """Implements the dylib search as specified in Apple documentation:
 
         http://developer.apple.com/documentation/DeveloperTools/Conceptual/
@@ -644,11 +617,7 @@ class DarwinLibraryLoader(LibraryLoader):
 
         dyld_fallback_library_path = _environ_path("DYLD_FALLBACK_LIBRARY_PATH")
         if not dyld_fallback_library_path:
-            dyld_fallback_library_path = [
-                os.path.expanduser("~/lib"),
-                "/usr/local/lib",
-                "/usr/lib",
-            ]
+            dyld_fallback_library_path = [os.path.expanduser("~/lib"), "/usr/local/lib", "/usr/lib"]
 
         dirs = []
 
@@ -657,9 +626,8 @@ class DarwinLibraryLoader(LibraryLoader):
         else:
             dirs.extend(_environ_path("LD_LIBRARY_PATH"))
             dirs.extend(_environ_path("DYLD_LIBRARY_PATH"))
-            dirs.extend(_environ_path("LD_RUN_PATH"))
 
-        if hasattr(sys, "frozen") and getattr(sys, "frozen") == "macosx_app":
+        if hasattr(sys, "frozen") and sys.frozen == "macosx_app":
             dirs.append(os.path.join(os.environ["RESOURCEPATH"], "..", "Frameworks"))
 
         dirs.extend(dyld_fallback_library_path)
@@ -671,60 +639,50 @@ class DarwinLibraryLoader(LibraryLoader):
 
 
 class PosixLibraryLoader(LibraryLoader):
-    """Library loader for POSIX-like systems (including Linux)"""
-
     _ld_so_cache = None
 
     _include = re.compile(r"^\s*include\s+(?P<pattern>.*)")
 
-    name_formats = ["lib%s.so", "%s.so", "%s"]
-
     class _Directories(dict):
-        """Deal with directories"""
-
         def __init__(self):
-            dict.__init__(self)
             self.order = 0
 
         def add(self, directory):
-            """Add a directory to our current set of directories"""
             if len(directory) > 1:
                 directory = directory.rstrip(os.path.sep)
             # only adds and updates order if exists and not already in set
             if not os.path.exists(directory):
                 return
-            order = self.setdefault(directory, self.order)
-            if order == self.order:
+            o = self.setdefault(directory, self.order)
+            if o == self.order:
                 self.order += 1
 
         def extend(self, directories):
-            """Add a list of directories to our set"""
-            for a_dir in directories:
-                self.add(a_dir)
+            for d in directories:
+                self.add(d)
 
         def ordered(self):
-            """Sort the list of directories"""
-            return (i[0] for i in sorted(self.items(), key=lambda d: d[1]))
+            return (i[0] for i in sorted(self.items(), key=lambda D: D[1]))
 
     def _get_ld_so_conf_dirs(self, conf, dirs):
         """
-        Recursive function to help parse all ld.so.conf files, including proper
+        Recursive funtion to help parse all ld.so.conf files, including proper
         handling of the `include` directive.
         """
 
         try:
-            with open(conf) as fileobj:
-                for dirname in fileobj:
-                    dirname = dirname.strip()
-                    if not dirname:
+            with open(conf) as f:
+                for D in f:
+                    D = D.strip()
+                    if not D:
                         continue
 
-                    match = self._include.match(dirname)
-                    if not match:
-                        dirs.add(dirname)
+                    m = self._include.match(D)
+                    if not m:
+                        dirs.add(D)
                     else:
-                        for dir2 in glob.glob(match.group("pattern")):
-                            self._get_ld_so_conf_dirs(dir2, dirs)
+                        for D2 in glob.glob(m.group("pattern")):
+                            self._get_ld_so_conf_dirs(D2, dirs)
         except IOError:
             pass
 
@@ -739,7 +697,7 @@ class PosixLibraryLoader(LibraryLoader):
         directories = self._Directories()
         for name in (
             "LD_LIBRARY_PATH",
-            "SHLIB_PATH",  # HP-UX
+            "SHLIB_PATH",  # HPUX
             "LIBPATH",  # OS/2, AIX
             "LIBRARY_PATH",  # BE/OS
         ):
@@ -765,11 +723,8 @@ class PosixLibraryLoader(LibraryLoader):
                 # Assume Intel/AMD x86 compat
                 unix_lib_dirs_list += ["/lib/i386-linux-gnu", "/usr/lib/i386-linux-gnu"]
             elif bitage.startswith("64"):
-                # Assume Intel/AMD x86 compatible
-                unix_lib_dirs_list += [
-                    "/lib/x86_64-linux-gnu",
-                    "/usr/lib/x86_64-linux-gnu",
-                ]
+                # Assume Intel/AMD x86 compat
+                unix_lib_dirs_list += ["/lib/x86_64-linux-gnu", "/usr/lib/x86_64-linux-gnu"]
             else:
                 # guess...
                 unix_lib_dirs_list += glob.glob("/lib/*linux-gnu")
@@ -777,10 +732,10 @@ class PosixLibraryLoader(LibraryLoader):
 
         cache = {}
         lib_re = re.compile(r"lib(.*)\.s[ol]")
-        # ext_re = re.compile(r"\.s[ol]$")
-        for our_dir in directories.ordered():
+        ext_re = re.compile(r"\.s[ol]$")
+        for dir in directories.ordered():
             try:
-                for path in glob.glob("%s/*.s[ol]*" % our_dir):
+                for path in glob.glob("%s/*.s[ol]*" % dir):
                     file = os.path.basename(path)
 
                     # Index by filename
@@ -814,13 +769,9 @@ class PosixLibraryLoader(LibraryLoader):
 
 
 class WindowsLibraryLoader(LibraryLoader):
-    """Library loader for Microsoft Windows"""
-
     name_formats = ["%s.dll", "lib%s.dll", "%slib.dll", "%s"]
 
     class Lookup(LibraryLoader.Lookup):
-        """Lookup class for Windows libraries..."""
-
         def __init__(self, path):
             super(WindowsLibraryLoader.Lookup, self).__init__(path)
             self.access["stdcall"] = ctypes.windll.LoadLibrary(path)
@@ -847,10 +798,10 @@ def add_library_search_dirs(other_dirs):
     If library paths are relative, convert them to absolute with respect to this
     file's directory
     """
-    for path in other_dirs:
-        if not os.path.isabs(path):
-            path = os.path.abspath(path)
-        load_library.other_dirs.append(path)
+    for F in other_dirs:
+        if not os.path.isabs(F):
+            F = os.path.abspath(F)
+        load_library.other_dirs.append(F)
 
 
 del loaderclass
@@ -863,163 +814,163 @@ add_library_search_dirs([])
 
 # No modules
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 6
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 6
 try:
     CDI_COMMAND_UNKNOWN = 1
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 8
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 8
 try:
     CDI_COMMAND_BAD = 2
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 10
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 10
 try:
     CDI_COMMAND_BAD_ARGS = 4
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 12
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 12
 try:
     CDI_COMMAND_LOST = 8
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 14
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 14
 try:
     CDI_COMMAND_BUFFER_OVERFLOW = 16
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 16
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 16
 try:
     ANALOG_AGC_TOO_HIGH_CH0 = 32
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 17
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 17
 try:
     ANALOG_AGC_TOO_HIGH_CH1 = 64
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 18
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 18
 try:
     ANALOG_AGC_TOO_HIGH_CH2 = 128
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 19
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 19
 try:
     ANALOG_AGC_TOO_HIGH_CH3 = 256
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 21
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 21
 try:
     ANALOG_AGC_TOO_LOW_CH0 = 512
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 22
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 22
 try:
     ANALOG_AGC_TOO_LOW_CH1 = 1024
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 23
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 23
 try:
     ANALOG_AGC_TOO_LOW_CH2 = 2048
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 24
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 24
 try:
     ANALOG_AGC_TOO_LOW_CH3 = 4096
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 26
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 26
 try:
     ANALOG_AGC_ACTION_CH0 = (1 << 13)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 27
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 27
 try:
     ANALOG_AGC_ACTION_CH1 = (1 << 14)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 28
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 28
 try:
     ANALOG_AGC_ACTION_CH2 = (1 << 15)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 29
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 29
 try:
     ANALOG_AGC_ACTION_CH3 = (1 << 16)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 31
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 31
 try:
     DF_SPECTRA_DROPPED = (1 << 17)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 32
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 32
 try:
     DF_CAL_DROPPED = (1 << 18)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 33
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 33
 try:
     FLASH_CRC_FAIL = (1 << 19)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 34
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 34
 try:
     FPGA_TEMP_HIGH = (1 << 20)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 36
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 36
 try:
     DIGITAL_AGC_ACTION_CH0 = (1 << 21)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 37
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 37
 try:
     DIGITAL_AGC_ACTION_CH1 = (1 << 22)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 38
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 38
 try:
     DIGITAL_AGC_ACTION_CH2 = (1 << 23)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 39
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 39
 try:
     DIGITAL_AGC_ACTION_CH3 = (1 << 24)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 40
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 40
 try:
     DIGITAL_AGC_STUCK = (1 < 25)
 except:
     pass
 
-# /fast/lusee/coreloop/coreloop/core_loop_errors.h: 44
+# /home/anigmetov/code/coreloop/coreloop/core_loop_errors.h: 44
 try:
     INTERNAL_ERROR = (1 << 31)
 except:
