@@ -36,14 +36,7 @@ bool process_cdi(struct core_state* state)
     #ifdef NOTREAL
     cdi_fill_command_buffer();
     #endif
-    if (!cdi_new_command(&cmd, &arg_high, &arg_low)) {
-        // if there are no new commands, then the buffer is empty and we should agree
-        // on the total number of commands received.
-        if (state->cmd_counter != cdi_command_count()) {
-            state->base.errors |= CDI_COMMAND_LOST;
-            state->cmd_counter = cdi_command_count();
-        }
-    } else {
+    if (cdi_new_command(&cmd, &arg_high, &arg_low)) {
         // process incoming commands
         state->cmd_counter++;
         debug_print ("[>>");

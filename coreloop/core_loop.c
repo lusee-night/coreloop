@@ -27,6 +27,7 @@ volatile uint32_t TVS_sensors_avg[4];
 uint32_t TVS_sensors[4];
 // overall peformance, numbers of loops per second.
 volatile uint16_t loop_count, loop_count_min, loop_count_max;
+volatile uint16_t loop_count_min_latch, loop_count_max_latch;
 
 
 
@@ -84,7 +85,7 @@ void core_init_state(struct core_state* state){
     state->watchdog.FPGA_max_temp = 90;
     spec_enable_watchdogs(0);
     state->watchdog.watchdogs_enabled = false;
-    state->cmd_counter = cdi_command_count();
+    state->cmd_counter = 0;
     state->cdi_stats.cdi_packets_sent = 0;
     state->cdi_stats.cdi_bytes_sent = 0;
 
@@ -154,7 +155,7 @@ void core_loop(struct core_state* state)
     // restore state from flash if unscheduled reset occured
     restore_state(state);
     #endif
-
+    
     spec_write_uC_register(0,0);
     spec_write_uC_register(1,0);
     for (;;)
@@ -216,15 +217,21 @@ uint8_t MSYS_EI5_IRQHandler(void)
     uint16_t sensors[4];
     spec_get_TVS(sensors);
     for (int i=0; i<4; i++) TVS_sensors[i] += sensors[i];
-    if (tap_counter%128 == 0) {
-        TVS_sensors_avg[0] = (TVS_sensors[0] >> 6);
-        TVS_sensors_avg[1] = (TVS_sensors[1] >> 6);
-        TVS_sensors_avg[2] = (TVS_sensors[2] >> 6);
-        TVS_sensors_avg[3] = (TVS_sensors[3] >> 4);
+    if (tap_counter%TVS_AVG == 0) {
+        TVS_sensors_avg[0] = (TVS_sensors[0] >> TVS_AVG_VSHIFT);
+        TVS_sensors_avg[1] = (TVS_sensors[1] >> TVS_AVG_VSHIFT);
+        TVS_sensors_avg[2] = (TVS_sensors[2] >> TVS_AVG_VSHIFT);
+        TVS_sensors_avg[3] = (TVS_sensors[3] >> TVS_AVG_TSHIFT);
         for (int i=0; i<4; i++) TVS_sensors[i] = 0;
         if (loop_count>loop_count_max) loop_count_max = loop_count;
         if (loop_count<loop_count_min) loop_count_min = loop_count;
         loop_count = 0;
+    }
+    if (tap_counter%LOOP_COUNT_RST == 0) {
+        loop_count_min_latch = loop_count_min;
+        loop_count_max_latch = loop_count_max;
+        loop_count_min = UINT16_MAX;
+        loop_count_max = 0;
     }
 
 
@@ -243,7 +250,7 @@ void update_time(struct core_state* state) {
     state->base.time_16 = sec16;
     state->base.rand_state += sec32;
     state->base.uC_time = tap_counter;
-    state->cdi_stats.cdi_total_command_count = cdi_total_command_count();
+    state->cdi_stats.cdi_total_command_count = state->cmd_counter;
 }
 
 // return batch size for stage 1 averaging

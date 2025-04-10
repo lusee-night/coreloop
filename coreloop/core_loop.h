@@ -25,6 +25,11 @@
 #define MAX_STATE_SLOTS 16  // 16 slots of 4k = 64k
 #define BITSLICER_MAX_ACTION 5  // how many iterations before we bitslicer stuck
 
+#define TVS_AVG 128 // number of clock ticks before we average TVS
+#define TVS_AVG_VSHIFT 6 // shift for V sensors
+#define TVS_AVG_TSHIFT 4 // shift for T sensor
+
+#define LOOP_COUNT_RST 1024 // number of clock ticks before we reset loop count
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
 // flag to tell main we are doing a soft reset
@@ -34,7 +39,7 @@ extern volatile uint64_t tap_counter;
 // TVS sensors averaged in timer interrupt
 extern volatile uint32_t TVS_sensors_avg[4];
 // loop count in timer interrupt
-extern volatile uint16_t loop_count_min, loop_count_max;
+extern volatile uint16_t loop_count_min_latch, loop_count_max_latch;
 
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
@@ -226,10 +231,8 @@ struct heartbeat {
     uint32_t time_32;
     uint16_t time_16;
     uint16_t TVS_sensors[4];
-    uint16_t loop_count_min, loop_count_max;
     struct cdi_stats cdi_stats;
     uint32_t errors;
-    uint32_t fft_time;
     char magic[6];
 };
 
