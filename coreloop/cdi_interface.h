@@ -1,5 +1,4 @@
 //
-// Created by jrsyp on 8/7/2024.
 //
 
 #ifndef LN_CORELOOP_CDI_INTERFACE_H
@@ -19,6 +18,9 @@ bool cdi_new_command(uint8_t *cmd, uint8_t *arg_high, uint8_t *arg_low );
 
 // returns the number of commands received
 uint32_t cdi_command_count();
+
+// returns the total number of commands received
+uint32_t cdi_total_command_count();
 
 // returns true if the CDI is ready to accept new data  (i.e. write to staging area and dispatching it)
 bool cdi_ready();

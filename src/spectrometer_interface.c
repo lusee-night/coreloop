@@ -165,13 +165,6 @@ void spec_not_implemented() {
 // RFS_SET_RESET  Reset default configuration (system configuration as after boot)
 void spec_set_reset() {};
 
-// RFS_SET_STORE Stores current configuration
-void spec_store() {spec_not_implemented();};
-
-// RFS_SET_RECALL  Recalls configuration from previous store 
-void spec_recall() {spec_not_implemented();};
-
-
 // set gain of channel ch to gain
 void spec_set_gain(uint8_t ch, uint8_t gain) {
     printf("Setting gain of channel %d to %d\n", ch, gain);
@@ -264,7 +257,7 @@ void spec_request_waveform(uint8_t ch, int dly) {
                 TLM_BUF_INT16[i] = var >= 0 ? var : UINT14_MAX + var;
             }
         }
-        cdi_dispatch(AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
+        cdi_dispatch (AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
     }
 }
 
@@ -317,3 +310,6 @@ void spec_set_fw_cdi_delay(uint32_t delay) {}
 
  uint32_t spec_read_uC_register(uint8_t num) {return boot_registers[num];}
  void spec_write_uC_register(uint8_t num, uint32_t value) {boot_registers[num] = value;}
+
+ void spec_reg_write(uint16_t reg, uint32_t value) {}
+ 

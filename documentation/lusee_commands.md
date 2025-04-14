@@ -6,20 +6,20 @@
 
 | 0x0M | Name                |  Description                                       |
 |------|---------------------|----------------------------------------------------|                             
-| 0x00 | RFS_SET_STOP        | wait mode - disable data taking                         |                              | 
-| 0x01 | RFS_SET_START       | Start data acquisition. To start anything setup by 0x1x or 0x2x                        | 
-| 0x02 | RFS_SET_RESET       | Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs                            |
-| 0x03 | RFS_SET_STORE       | Stores current configuration                                                           |
-| 0x04 | RFS_SET_RECALL      | Recalls configuration from previous store                                              |
+| 0x00 | RFS_SET_STOP        | Stop data acquisition.                             |                               
+| 0x01 | RFS_SET_START       | Start data acquisition.                            | 
+| 0x02 | RFS_SET_RESET       | Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs  0x10 init and mark program begin                                                                                      |
+| 0x03 | RFS_SET_TEMP_ALARM  | Sets the value of temperature alarm (in Celsius)                                       |
+| 0x04 | RFS_SET_WAIT_SPECTRA | Waits until ARG spectra are taken (stage 3)                                           | 
 | 0x05 | RFS_SET_HK_REQ      | Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;        |
 | 0x06 | RFS_SET_DISABLE_ADC | Set ADC mode: optionally disable ADCs (bits 0-3 in arg)                                |
 | 0x07 | RFS_SET_RANGE_ADC   | Autorange ADC and then set an ADC packet                                               |
 | 0x08 | RFS_SET_WAVEFORM    | Request ADC waform arg contains channel number                                         |
-| 0x09 | RFS_SET_WAIT_TICKS  | Wait arg number of ticks (10ms) before processing next CMD (careful with 64 buffer!)   |
-| 0x0A | RFS_SET_WAIT_SECS   | Wait arg number of seconds before processing next CMD (careful with 64 buffer!)        |
-| 0x0B | RFS_SET_WAIT_MINS   | Wait arg number of mins before processing next CMD (careful with 64 buffer!)        |
-| 0x0C | RFS_SET_WAIT_HRS    | Wait arg number of mins before processing next CMD (careful with 64 buffer!)        |
-| 0x0D | RFS_SET_DEBUG       | Debug command (used only in debugging)
+| 0x09 | RFS_SET_WAIT_TICKS  | Wait arg number of ticks (10ms) before processing next CMD                             |
+| 0x0A | RFS_SET_WAIT_SECS   | Wait arg number of seconds before processing next CMD                                  |
+| 0x0B | RFS_SET_WAIT_MINS   | Wait arg number of mins before processing next CMD                                     |
+| 0x0C | RFS_SET_WAIT_HRS    | Wait arg number of mins before processing next CMD                                     |
+| 0x0D | RFS_SET_DEBUG       | Debug command (used only in debugging)                                                 |
 | 0x0E | RFS_SET_HEARTBEAT   | Enable (arg>1) and disable (arg=0) heartbeat.                                          |
 | 0x0F | RFS_SET_TIME_TO_DIE | prepare for power cut -- mode announcing power cut 5 seconds after issue               |
 
@@ -30,14 +30,24 @@
 |------|--------------------|------------------------------------------------------|                             
 | 0x11 | RFS_SET_CDI_FW_DLY | Control the underlying FW interpacket delay (1.28ms) |
 | 0x12 | RFS_SET_CDI_SW_DLY | Control the delay between spectral packets           |
+| 0x13 | RFS_SET_WR_ADR_LSB | This writes a register through uC. First command resets value to zero
+| 0x14 | RFS_SET_WR_ADR_MSB | ADR writes adreres, VAL writes value from LSB to MSB
+| 0x15 | RFS_SET_WR_VAL_0   | Val bits 0-7
+| 0x16 | RFS_SET_WR_VAL_1   | Val bits 8-15
+| 0x17 | RFS_SET_WR_VAL_2   | Val bits 16-23
+| 0x18 | RFS_SET_WR_VAL_3   | Val bits 24-32. This triggers the actual register write
 
 
-### 0x2X Stored sequencer modes
+### 0x2X Program flow control
 
-| 0x2M | Name               |  Description                                       |
-|------|--------------------|----------------------------------------------------|                             
-| 0x20 | RFS_SET_LOAD_FL    | Load sequencer mode from flash                     |
-| 0x21 | RFS_SET_STORE_FL   | Store sequencer mode into flash                    |
+| 0x2M | Name                       |  Description                                       |
+|------|----------------------------|----------------------------------------------------|                             
+| 0x20 | RFS_SEQ_START              | RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
+| 0x21 | RFS_SEQ_END                | RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
+| 0x22 | RFS_SEQ_BREAK              | RFS_SPECIAL only! Breaks execution of the sequence.  
+| 0x22 | RFS_SET_LOOP_START         | Marks beginning of a loop with ARG1 (see below)
+| 0x23 | RFS_SET_LOOP_END           | Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
+| 0x24 | RFS_SET_SEQ_OVER           | Send the sequence over command once all buffers are empty. |
 
 
 ### 0x3X Gain Settings and Bit slicing
@@ -70,7 +80,7 @@
 | 0x51 | RFS_SET_AVG_FREQ      | set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected) 
 | 0x52 | RFS_SET_AVG_NOTCH     | set notch averaging, 0 = disabled, 1=x4, 2=x16, 3=x64, 4=x256 
 | 0x53 | RFS_SET_AVG_SET_HI    | set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
-| 0x54 | RFS_SET_AVG_SET_MID  | set medium priority fraction, low priority is 1-high-medium
+| 0x54 | RFS_SET_AVG_SET_MID   | set medium priority fraction, low priority is 1-high-medium
 | 0x55 | RFS_SET_OUTPUT_FORMAT | set the output format: 0 - full 32 bits resolution; 1 4+16 bits with update packets
 | 0x56 | RFS_SET_PRODMASK_LOW  | set the output correlation mask products 0-7 (autocorrelations are 4 LSB) 
 | 0x57 | RFS_SET_PRODMASK_HIGH | set the output correlation mask products 8-15
@@ -94,27 +104,39 @@
 
 ### 0x7X Calibration Settings
 
-| 0x7M | Name           |  Description                                       |
-|------|----------------|----------------------------------------------------|                             
-| 0x70 | RFS_SET_CAL_FRAC_SET | set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
-| 0x71 | RFS_SET_CAL_MAX_SET  | set max drift guard in units of 0.1ppm
-| 0x72 | RFS_SET_CAL_LOCK_SET | set lock drift guard in units of 0.01ppm
-| 0x73 | RFS_SET_CAL_SNR_SET  | set snr required for lock 
-| 0x74 | RFS_SET_CAL_BIN_ST   | set starting bin (/(2*4)) 
-| 0x75 | RFS_SET_CAL_BIN_EN   | set end bin (/(2*4))
-| 0x76 | RFS_SET_CAL_ANT_MASK   | set antenna mask as the lower 4 bits. 0x00001111 = all antennas enabled
+| 0x7M | Name                      |  Description                                       |
+|------|---------------------------|----------------------------------------------------|                             
+| 0x70 | RFS_SET_CAL_ENABLE        | Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
+| 0x71 | RFS_SET_CAL_AVG           | bits 0-1 Nac, bits 2-5 Nac2 
+| 0x72 | RFS_SET_CAL_NINDEX        | Set the notch index (2 by default for 50+100xn kHz)
+| 0x73 | RFS_SET_CAL_DRIFT_GUARD   | Set drift guard in units of 0.1 ppm
+| 0x74 | RFS_SET_CAL_DRIFT_STEP    | Sets drift stepping in units of 0.01ppm
+| 0x75 | RFS_SET_CAL_ANT_EN        | bits 0-3 = antenna mask
+| 0x76 | RFS_SET_CAL_SNR_ON        | SNR required to get a lock
+| 0x77 | RFS_SET_CAL_SNR_ON_HIGH   | SNR required to get a lock
+| 0x78 | RFS_SET_CAL_SNR_OFF       | SNR required to drop from a lock 
+| 0x79 | RFS_SET_CAL_NSETTLE       | Nsettle
+| 0x7A | RFS_SET_CAL_CORRA         | Famouse CoRRA settinh
+| 0x7B | RFS_SET_CAL_CORRB         | Even more famous CorrB setting
+| 0x7C | RFS_SET_CAL_WEIGHT_NDX_LO | Start setting weights. Set the ndx (0-255)
+| 0x7D | RFS_SET_CAL_WEIGHT_NDX_HI | Start setting weights. Set the ndx+256
+| 0x7E | RFS_SET_CAL_WEIGHT_VAL    | Sets weigth and advances index
+| 0x7F | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
+| 0x80 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
+| 0x81 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
 
-### 0x8X spectral zoom functionality 
 
-| 0x8M | Name                 |  Description                                       |
+### 0x9X spectral zoom functionality 
+
+| 0x9M | Name                 |  Description                                       |
 |------|----------------------|----------------------------------------------------|                             
-| 0x80 | RFS_SET_ZOOM_EN      | enable zoom channel
-| 0x81 | RFS_SET_ZOOM_SET1    | set zoom 1 input channel 
-| 0x82 | RFS_SET_ZOOM_SET1_LO | set zoom 1 spectral channel low bits 
-| 0x83 | RFS_SET_ZOOM_SET1_HI | set zoom 1 spectral channel high bits
-| 0x84 | RFS_SET_ZOOM_SET2    | set zoom 2 input channel 
-| 0x85 | RFS_SET_ZOOM_SET2_LO | set zoom 2 spectral channel# low bits 
-| 0x86 | RFS_SET_ZOOM_SET2_HI | set zoom 2 spectral channel# high bits
+| 0x90 | RFS_SET_ZOOM_EN      | enable zoom channel
+| 0x91 | RFS_SET_ZOOM_SET1    | set zoom 1 input channel 
+| 0x92 | RFS_SET_ZOOM_SET1_LO | set zoom 1 spectral channel low bits 
+| 0x93 | RFS_SET_ZOOM_SET1_HI | set zoom 1 spectral channel high bits
+| 0x94 | RFS_SET_ZOOM_SET2    | set zoom 2 input channel 
+| 0x95 | RFS_SET_ZOOM_SET2_LO | set zoom 2 spectral channel# low bits 
+| 0x96 | RFS_SET_ZOOM_SET2_HI | set zoom 2 spectral channel# high bits
 
 ### 0x8X - 0xFX reserved for future use
 

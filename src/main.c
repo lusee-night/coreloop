@@ -57,8 +57,6 @@ int main(int argc, char *argv[]) {
         raiseError("Must specify mode -m: f or file for file mode, p or port for port mode\n", argv);
     }
 
-    spectrometer_init();
-    cdi_init();
     DDR3_init();
     clock_gettime(CLOCK_REALTIME, &time_start);
     soft_reset_flag = 0;

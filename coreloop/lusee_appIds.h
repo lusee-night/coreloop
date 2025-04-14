@@ -14,8 +14,8 @@
 // uC generater housekeeping; Priority:  High     
 #define AppID_uC_Housekeeping 0x0206
 
-// Calibrator detected with meta data; Priority:  High     
-#define AppID_Calibrator_Detect 0x0207
+// End of sequence; Priority:  High     
+#define AppID_End_Of_Sequence 0x0207
 
 // Data from the bootloader; Priority:  High     
 #define AppID_uC_Bootloader 0x0208
@@ -25,9 +25,6 @@
 
 // Regular hearbeat packet; Priority:  NONE     
 #define AppID_uC_Heartbeat 0x020A
-
-// For sequencer with a limited number of steps; Priority:  High     
-#define AppID_uC_Sequencer_complete 0x020B
 
 // x = 0..F for 16 correlations; Priority:  High     
 #define AppID_MetaData 0x020F
@@ -53,8 +50,17 @@
 // Spectral zoom-in spectra; Priority:  High     
 #define AppID_ZoomSpectra 0x0270
 
-// Calibrator data; Priority:  High     
-#define AppID_Calibrator_Data 0x0280
+// Calibrator metadata packet; Priority:  High     
+#define AppID_Calibrator_MetaData 0x0280
+
+// Calibrator main payload (x3); Priority:  High     
+#define AppID_Calibrator_Data 0x0281
+
+// Calibrator raw PFB (8 packets for 4 x R/I); Priority:  High     
+#define AppID_Calibrator_RawPFB 0x0284
+
+// Calibrator debug data (8 packets); Priority:  High     
+#define AppID_Calibrator_Debug 0x028C
 
 // Very low priority, not expected to be normally downloaded; Priority:  VeryLow  
 #define AppID_SpectraVeryLow 0x02D0

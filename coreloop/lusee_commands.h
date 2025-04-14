@@ -22,23 +22,26 @@
 // Wait for 0.1s x argument (intercepted by commander)
 #define CTRL_WAIT  0xE0 
 
+// Wait until you see EOS (intercepted by commander)
+#define CTRL_WAIT_EOS  0xE1 
+
 
 
 // RFS Settings commands
-// wait mode - disable data taking
+// Stop data acquisition.
 #define RFS_SET_STOP  0x00 
 
-// Start data acquisition. To start anything setup by 0x1x or 0x2x
+// Start data acquisition.
 #define RFS_SET_START  0x01 
 
-// Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs
+// Soft reset, if arg == 0: restore stored cfg, 01 = ignore stored cfg, 02 = delete all stored cfgs  0x10 init and mark program begin
 #define RFS_SET_RESET  0x02 
 
-// Stores current configuration
-#define RFS_SET_STORE  0x03 
+// Sets the value of temperature alarm (in Celsius)
+#define RFS_SET_TEMP_ALARM  0x03 
 
-// Recalls configuration from previous store
-#define RFS_SET_RECALL  0x04 
+// Waits until ARG spectra are taken (stage 3)
+#define RFS_SET_WAIT_SPECTRA  0x04 
 
 // Return housekeeping data, ARG = 0 -- full housekeeping; ARG = 1 ADC statistics;
 #define RFS_SET_HK_REQ  0x05 
@@ -52,16 +55,16 @@
 // Request ADC waform arg contains channel number
 #define RFS_SET_WAVEFORM  0x08 
 
-// Wait arg number of ticks (10ms) before processing next CMD (careful with 64 buffer!)
+// Wait arg number of ticks (10ms) before processing next CMD
 #define RFS_SET_WAIT_TICKS  0x09 
 
-// Wait arg number of seconds before processing next CMD (careful with 64 buffer!)
+// Wait arg number of seconds before processing next CMD
 #define RFS_SET_WAIT_SECS  0x0A 
 
-// Wait arg number of mins before processing next CMD (careful with 64 buffer!)
+// Wait arg number of mins before processing next CMD
 #define RFS_SET_WAIT_MINS  0x0B 
 
-// Wait arg number of mins before processing next CMD (careful with 64 buffer!)
+// Wait arg number of mins before processing next CMD
 #define RFS_SET_WAIT_HRS  0x0C 
 
 // Debug command (used only in debugging)
@@ -79,11 +82,41 @@
 // Control the delay between spectral packets
 #define RFS_SET_CDI_SW_DLY  0x12 
 
-// Load sequencer mode from flash
-#define RFS_SET_LOAD_FL  0x20 
+// This writes a register through uC. First command resets value to zero
+#define RFS_SET_WR_ADR_LSB  0x13 
 
-// Store sequencer mode into flash
-#define RFS_SET_STORE_FL  0x21 
+// ADR writes adreres, VAL writes value from LSB to MSB
+#define RFS_SET_WR_ADR_MSB  0x14 
+
+// Val bits 0-7
+#define RFS_SET_WR_VAL_0  0x15 
+
+// Val bits 8-15
+#define RFS_SET_WR_VAL_1  0x16 
+
+// Val bits 16-23
+#define RFS_SET_WR_VAL_2  0x17 
+
+// Val bits 24-32. This triggers the actual register write
+#define RFS_SET_WR_VAL_3  0x18 
+
+// RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
+#define RFS_SEQ_START  0x20 
+
+// RFS_SPECIAL only! Marks end of the sequence. If ARG>0, sequence will be stored to flash and recovered on reboot
+#define RFS_SEQ_END  0x21 
+
+// RFS_SPECIAL only! Breaks execution of the sequence.
+#define RFS_SET_SEQ_BREAK  0x22 
+
+// Marks beginning of a loop with ARG1 (see below)
+#define RFS_SET_LOOP_START  0x22 
+
+// Marks end of repeatitions with (ARG<<8 + ARG). If 0 => infinite loop (broken by 0x11)
+#define RFS_SET_LOOP_END  0x23 
+
+// Send the sequence over command once all buffers are empty.
+#define RFS_SET_SEQ_OVER  0x24 
 
 // set analog gains, DD is 4x2 bits for for channels, each 2 bits encodeds L, M, H, A
 #define RFS_SET_GAIN_ANA_SET  0x30 
@@ -160,47 +193,80 @@
 // frequency averaging
 #define RFS_SET_TR_AVG_SHIFT  0x65 
 
-// set averaging fractions for calibration signal acquisition. Same as 0x50, but note that not all values are valid
-#define RFS_SET_CAL_FRAC_SET  0x70 
+// Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
+#define RFS_SET_CAL_ENABLE  0x70 
 
-// set max drift guard in units of 0.1ppm
-#define RFS_SET_CAL_MAX_SET  0x71 
+// bits 0-1 Nac, bits 2-5 Nac2
+#define RFS_SET_CAL_AVG  0x71 
 
-// set lock drift guard in units of 0.01ppm
-#define RFS_SET_CAL_LOCK_SET  0x72 
+// Set the notch index (2 by default for 50+100xn kHz)
+#define RFS_SET_CAL_NINDEX  0x72 
 
-// set snr required for lock
-#define RFS_SET_CAL_SNR_SET  0x73 
+// Set drift guard in units of 0.1 ppm
+#define RFS_SET_CAL_DRIFT_GUARD  0x73 
 
-// set starting bin (/(2*4))
-#define RFS_SET_CAL_BIN_ST  0x74 
+// Sets drift stepping in units of 0.01ppm
+#define RFS_SET_CAL_DRIFT_STEP  0x74 
 
-// set end bin (/(2*4))
-#define RFS_SET_CAL_BIN_EN  0x75 
+// bits 0-3 = antenna mask
+#define RFS_SET_CAL_ANT_EN  0x75 
 
-// set antenna mask as the lower 4 bits. 0x00001111 = all antennas enabled
-#define RFS_SET_CAL_ANT_MASK  0x76 
+// SNR required to get a lock
+#define RFS_SET_CAL_SNR_ON  0x76 
+
+// SNR required to get a lock
+#define RFS_SET_CAL_SNR_ON_HIGH  0x77 
+
+// SNR required to drop from a lock
+#define RFS_SET_CAL_SNR_OFF  0x78 
+
+// Nsettle
+#define RFS_SET_CAL_NSETTLE  0x79 
+
+// Famouse CoRRA settinh
+#define RFS_SET_CAL_CORRA  0x7A 
+
+// Even more famous CorrB setting
+#define RFS_SET_CAL_CORRB  0x7B 
+
+// Start setting weights. Set the ndx (0-255)
+#define RFS_SET_CAL_WEIGHT_NDX_LO  0x7C 
+
+// Start setting weights. Set the ndx+256
+#define RFS_SET_CAL_WEIGHT_NDX_HI  0x7D 
+
+// Sets weigth and advances index
+#define RFS_SET_CAL_WEIGHT_VAL  0x7E 
+
+// set all weights to zero.
+#define RFS_SET_CAL_WEIGHT_ZERO  0x7F 
+
+// set PFB NDX (8 LSB bits)
+#define RFS_SET_CAL_PFB_NDX_LO  0x80 
+
+// set PFB NDX (3 MSB bits)
+#define RFS_SET_CAL_PFB_NDX_HI  0x81 
 
 // enable zoom channel
-#define RFS_SET_ZOOM_EN  0x80 
+#define RFS_SET_ZOOM_EN  0x90 
 
 // set zoom 1 input channel
-#define RFS_SET_ZOOM_SET1  0x81 
+#define RFS_SET_ZOOM_SET1  0x91 
 
 // set zoom 1 spectral channel low bits
-#define RFS_SET_ZOOM_SET1_LO  0x82 
+#define RFS_SET_ZOOM_SET1_LO  0x92 
 
 // set zoom 1 spectral channel high bits
-#define RFS_SET_ZOOM_SET1_HI  0x83 
+#define RFS_SET_ZOOM_SET1_HI  0x93 
 
 // set zoom 2 input channel
-#define RFS_SET_ZOOM_SET2  0x84 
+#define RFS_SET_ZOOM_SET2  0x94 
 
 // set zoom 2 spectral channel# low bits
-#define RFS_SET_ZOOM_SET2_LO  0x85 
+#define RFS_SET_ZOOM_SET2_LO  0x95 
 
 // set zoom 2 spectral channel# high bits
-#define RFS_SET_ZOOM_SET2_HI  0x86 
+#define RFS_SET_ZOOM_SET2_HI  0x96 
 
 // enable (DD>0), disable sequencer  (DD=0)
 #define RFS_SET_SEQ_EN  0xA0 

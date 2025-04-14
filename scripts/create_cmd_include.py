@@ -1,6 +1,8 @@
 # we will convert the ../documentation/commands.md to a C header file
 #
 #
+import sys
+
 
 of = open("coreloop/lusee_commands.h", "w")
 ofp = open ("pycoreloop/lusee_commands.py", 'w')
@@ -27,11 +29,16 @@ def process_md(fname):
         line = line.split('|')
         if len(line)<4:
             continue
-        offset, name, desc = line[1:4]
-        name = name.strip()
-        desc = desc.strip()
-        if desc[-1]=='\n':
-            desc = desc[:-1]
+        try:
+            offset, name, desc = line[1:4]
+            name = name.strip()
+            desc = desc.strip()
+            if desc[-1]=='\n':
+                desc = desc[:-1]
+        except:
+            print ('Trouble parsing line:', line, file=sys.stderr)
+            sys.exit(1)
+
         print (offset, name, desc)
         if offset[:3] != " 0x":
             continue

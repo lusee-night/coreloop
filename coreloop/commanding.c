@@ -1,5 +1,6 @@
 #include "lusee_commands.h"
 #include "spectrometer_interface.h"
+#include "calibrator_interface.h"
 #include "cdi_interface.h"
 #include "core_loop.h"
 #include <stdlib.h>
@@ -46,17 +47,17 @@ bool process_cdi(struct core_state* state)
     } else {
         // process incoming commands 
         state->cmd_counter++;
-        debug_print ("\r\nGot new CDI command: cmd = ");
+        debug_print ("[>>");
         debug_print_hex(cmd);
-        debug_print(", arg_hi = ");
         debug_print_hex(arg_high);
-        debug_print(", arg_lo = ");
         debug_print_hex(arg_low);
-        debug_print("  ");
+        debug_print("]");
 
         if (cmd == RFS_SPECIAL) {
             if (arg_high == RFS_SET_RESET) {
                 cmd_soft_reset(arg_low, state);
+                return true;
+            } else if (arg_high == RFS_SET_TIME_TO_DIE) {
                 return true;
             } else {
                 cdi_not_implemented("RFS_SPECIAL");
@@ -81,28 +82,27 @@ bool process_cdi(struct core_state* state)
     }
 
 
-    if (cdi_wait_counter>tap_counter) return false; //not taking any commands while in the CDI wait state
+    if (state->timing.cdi_wait_counter>tap_counter) return false; //not taking any commands while in the CDI wait state
+    if (state->cdi_wait_spectra>0) return false; // not taking any command while waitig for spectra.
     if (state->cmd_start == state->cmd_end) return false; // no new commands
  
     // finally process the command in the line
     state->cmd_start = (state->cmd_start + 1) % CMD_BUFFER_SIZE;
     arg_low = state->cmd_arg_low[state->cmd_start];
     arg_high = state->cmd_arg_high[state->cmd_start];
-    debug_print ("\r\nProcessing CDI command: cmd = ");
+    debug_print ("[>*");
     debug_print_hex(cmd);
-    debug_print(", arg_hi = ");
     debug_print_hex(arg_high);
-    debug_print(", arg_lo = ");
     debug_print_hex(arg_low);
-    debug_print("\r\n");
+    debug_print("]");
 
     switch (arg_high) {
         case RFS_SET_START:
             if (!state->base.spectrometer_enable) {
                 RFS_start(state);
                 if (!(arg_low & 1)) {
-                    flash_store_pointer = tap_counter%MAX_STATE_SLOTS;
-                    flash_state_store(flash_store_pointer, state);
+                    state->flash_store_pointer = tap_counter%MAX_STATE_SLOTS;
+                    flash_state_store(state->flash_store_pointer, state);
                 } else {
                     debug_print ("Not storing flash state->\r\n");
                 }
@@ -112,51 +112,54 @@ bool process_cdi(struct core_state* state)
             if (state->base.spectrometer_enable) {
                 RFS_stop(state);
                 if (!(arg_low & 1)) {
-                    flash_state_clear(flash_store_pointer);
+                    flash_state_clear(state->flash_store_pointer);
                 }
             }
             break;
         case RFS_SET_RESET:
             cmd_soft_reset(arg_low, state);
             return true;
-        case RFS_SET_STORE:
-            spec_store();
+
+        case RFS_SET_TEMP_ALARM:
+            state->watchdog.FPGA_max_temp = arg_low;
             break;
-        case RFS_SET_RECALL:
-            spec_recall();
+
+        case RFS_SET_WAIT_SPECTRA:
+            state->cdi_wait_spectra = arg_low;
             break;
+
         case RFS_SET_HK_REQ:
             if ((arg_low < 2) || (arg_low == 99)) {
-                housekeeping_request = 1+arg_low;
+                state->housekeeping_request = 1+arg_low;
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
             break;
 
         case RFS_SET_RANGE_ADC:
-            range_adc = 1;
+            state->range_adc = 1;
             trigger_ADC_stat();
             break;
 
         case RFS_SET_WAVEFORM:
-            if (arg_low<8) request_waveform = arg_low | 8;
+            if (arg_low<8) state->request_waveform = arg_low | 8;
             else state->base.errors |= CDI_COMMAND_BAD_ARGS;
             break;
 
         case RFS_SET_WAIT_TICKS:
-            cdi_wait_counter = tap_counter + arg_low;
+            state->timing.cdi_wait_counter = tap_counter + arg_low;
             break;
 
         case RFS_SET_WAIT_SECS:            
-            cdi_wait_counter = tap_counter + arg_low * 100;
+            state->timing.cdi_wait_counter = tap_counter + arg_low * 100;
             break;
 
         case RFS_SET_WAIT_MINS:
-            cdi_wait_counter = tap_counter + arg_low * 100*60;
+            state->timing.cdi_wait_counter = tap_counter + arg_low * 100*60;
             break;
 
         case RFS_SET_WAIT_HRS:
-            cdi_wait_counter = tap_counter + arg_low * 100*60*60;
+            state->timing.cdi_wait_counter = tap_counter + arg_low * 100*60*60;
             break;
 
         case RFS_SET_DEBUG:
@@ -165,14 +168,13 @@ bool process_cdi(struct core_state* state)
 
         case RFS_SET_HEARTBEAT:
             if (arg_low == 0) {
-                heartbeat_counter = 0xFFFFFFFFFFFFFFFF;
+                state->timing.heartbeat_counter = 0xFFFFFFFFFFFFFFFF;
             } else {
-                heartbeat_counter = tap_counter + HEARTBEAT_DELAY;
+                state->timing.heartbeat_counter = tap_counter + HEARTBEAT_DELAY;
             }
             break;
 
         case RFS_SET_TIME_TO_DIE:
-            debug_print("Recevied time-to-die.\n\r");
             return true;
 
 
@@ -189,25 +191,46 @@ bool process_cdi(struct core_state* state)
             state->dispatch_delay = arg_low;
             break;
 
-        case RFS_SET_LOAD_FL:
-            // load the sequencer program # arg_low (0-255) into state->program
-            debug_print("Recevied RFS_SET_LOAD_FL.\n\r");
-            cdi_not_implemented("RFS_SET_LOAD_FL");
+
+        case RFS_SET_WR_ADR_LSB:
+            state->reg_address = arg_low;
+            state->reg_value = 0;
             break;
-        case RFS_SET_STORE_FL:
-            // store the sequencer program # arg_low (0-255) from state->program into flash
-            cdi_not_implemented("RFS_SET_STORE_FL");
+
+        case RFS_SET_WR_ADR_MSB:
+            state->reg_address = (state->reg_address & 0xFF) | (arg_low << 8);
+            break;
+
+        case RFS_SET_WR_VAL_0:
+            state->reg_value = (state->reg_value & 0xFFFFFF00) + arg_low;
+            break;
+
+        case RFS_SET_WR_VAL_1:
+            state->reg_value = (state->reg_value & 0xFFFF00FF) + (arg_low << 8);
+            break;
+
+        case RFS_SET_WR_VAL_2:
+            state->reg_value = (state->reg_value & 0xFF00FFFF) + (arg_low << 16);
+            break;
+
+        case RFS_SET_WR_VAL_3:
+            state->reg_value = (state->reg_value & 0x00FFFFFF) + (arg_low << 24);
+            spec_reg_write(state->reg_address, state->reg_value);
+            break;
+
+        case RFS_SET_SEQ_OVER: 
+            state->request_eos = arg_low;
             break;
 
         case RFS_SET_GAIN_ANA_SET:
             for (int i=0; i<NINPUT; i++){
                 uint8_t val = (arg_low >> (2*i)) & 0x03;
                 if (val==3) {
-                    if  (state->seq.gain[i] != GAIN_DISABLE){
-                        state->seq.gain[i] = GAIN_AUTO;
+                    if  (state->base.gain[i] != GAIN_DISABLE){
+                        state->base.gain[i] = GAIN_AUTO;
                     }
                 } else {
-                    state->seq.gain[i] = val;
+                    state->base.gain[i] = val;
                     state->base.actual_gain[i] = val;
                 }
             }
@@ -217,7 +240,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_DISABLE_ADC:
             for (int i=0; i<NINPUT; i++){
                 if ((arg_low >> (i)) & 0x01) {
-                    state->seq.gain[i] = GAIN_DISABLE;
+                    state->base.gain[i] = GAIN_DISABLE;
                     state->base.actual_gain[i] = GAIN_DISABLE;
                 }
             }
@@ -227,31 +250,31 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_GAIN_ANA_CFG_MIN:
             ch = arg_low & 0x03;
             val = (arg_low & 0xFC) >> 2;
-            state->seq.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
+            state->base.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
             break;
         case RFS_SET_GAIN_ANA_CFG_MULT:
             ch = arg_low & 0x03;
             val = (arg_low & 0xFC) >> 2;
-            state->seq.gain_auto_mult[ch] = val;
+            state->base.gain_auto_mult[ch] = val;
             break;
         case RFS_SET_BITSLICE_LOW:
             xcor = arg_low & 0x07;
             val = (arg_low & 0xF8) >> 3;
-            state->seq.bitslice[xcor] = val;
+            state->base.bitslice[xcor] = val;
             state->base.actual_bitslice[xcor] = val;
             break;
         case RFS_SET_BITSLICE_HIGH:
             xcor = (arg_low & 0x07) + 8;
             val = (arg_low & 0xF8) >> 3;
-            state->seq.bitslice[xcor] = val;
+            state->base.bitslice[xcor] = val;
             state->base.actual_bitslice[xcor] = val;
             break;
         case RFS_SET_BITSLICE_AUTO:
             if (arg_low > 0) {
-                for (int i=0; i<NSPECTRA; i++) state->seq.bitslice[i] = 0xFF;
-                state->seq.bitslice_keep_bits = arg_low;
+                for (int i=0; i<NSPECTRA; i++) state->base.bitslice[i] = 0xFF;
+                state->base.bitslice_keep_bits = arg_low;
             } else {
-                for (int i=0; i<NSPECTRA; i++) state->seq.bitslice[i] = 0x1F;
+                for (int i=0; i<NSPECTRA; i++) state->base.bitslice[i] = 0x1F;
             }
             break;
 
@@ -303,8 +326,8 @@ bool process_cdi(struct core_state* state)
                 // do nothing but set the error flag
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->seq.Navg1_shift = arg_low & 0x0F;
-                state->seq.Navg2_shift = (arg_low & 0xF0) >> 4;
+                state->base.Navg1_shift = arg_low & 0x0F;
+                state->base.Navg2_shift = (arg_low & 0xF0) >> 4;
             }
 
             break;
@@ -314,23 +337,23 @@ bool process_cdi(struct core_state* state)
                 // do nothing but set the error flag
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->seq.Navgf = arg_low;
+                state->base.Navgf = arg_low;
             }
             break;
         case RFS_SET_AVG_NOTCH:
-            state->seq.notch = arg_low;
+            state->base.notch = arg_low;
             break;
         case RFS_SET_AVG_SET_HI:
-            state->seq.hi_frac = arg_low;
+            state->base.hi_frac = arg_low;
             break;
         case RFS_SET_AVG_SET_MID:
-            state->seq.med_frac = arg_low;
+            state->base.med_frac = arg_low;
             break;
         case RFS_SET_OUTPUT_FORMAT:
             if (arg_low > (uint8_t)OUTPUT_16BIT_SHARED_LZ) {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             } else {
-                state->seq.format = arg_low;
+                state->base.format = arg_low;
             }
             break;
 
@@ -342,10 +365,10 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_REJ_SET:
-            state->seq.reject_ratio = arg_low;
+            state->base.reject_ratio = arg_low;
             break;
         case RFS_SET_REJ_NBAD:
-            state->seq.reject_maxbad = arg_low;
+            state->base.reject_maxbad = arg_low;
             break;
         case RFS_SET_TR_START_LSB:
             if (state->base.spectrometer_enable) {
@@ -353,103 +376,104 @@ bool process_cdi(struct core_state* state)
                 // do nothing but set the error flag
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->seq.tr_start = ((state->seq.tr_start & 0xFF00) +arg_low);
+                state->base.tr_start = ((state->base.tr_start & 0xFF00) +arg_low);
             }
             break;
         case RFS_SET_TR_STOP_LSB:
             if (state->base.spectrometer_enable) {
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->seq.tr_stop = ((state->seq.tr_stop & 0xFF00) +arg_low);
+                state->base.tr_stop = ((state->base.tr_stop & 0xFF00) +arg_low);
             }
             break;
         case RFS_SET_TR_ST_MSB:
             if (state->base.spectrometer_enable) {
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->seq.tr_start = ((state->seq.tr_start & 0x00FF) + ((arg_low & (0x0F)) << 8));
-                state->seq.tr_stop = ((state->seq.tr_stop & 0x00FF) + ((arg_low & (0xF0)) << 4));
+                state->base.tr_start = ((state->base.tr_start & 0x00FF) + ((arg_low & (0x0F)) << 8));
+                state->base.tr_stop = ((state->base.tr_stop & 0x00FF) + ((arg_low & (0xF0)) << 4));
             }
             break;
         case RFS_SET_TR_AVG_SHIFT:
             if (state->base.spectrometer_enable) {
                 state->base.errors |= CDI_COMMAND_BAD;
             } else {
-                state->seq.tr_avg_shift = arg_low;
+                state->base.tr_avg_shift = arg_low;
             }
             break;
-        case RFS_SET_CAL_FRAC_SET:
-            cdi_not_implemented("RFS_SET_CAL_FRAC_SET");
-            break;
-        case RFS_SET_CAL_MAX_SET:
-            cdi_not_implemented("RFS_SET_CAL_MAX_SET");
-            break;
-        case RFS_SET_CAL_LOCK_SET:
-            cdi_not_implemented("RFS_SET_CAL_LOCK_SET");
-            break;
-        case RFS_SET_CAL_SNR_SET:
-            cdi_not_implemented("RFS_SET_CAL_SNR_SET");
-            break;
-        case RFS_SET_CAL_BIN_ST:
-            cdi_not_implemented("RFS_SET_CAL_BIN_ST");
-            break;
-        case RFS_SET_CAL_BIN_EN:
-            cdi_not_implemented("RFS_SET_CAL_BIN_EN");
-            break;
-        case RFS_SET_CAL_ANT_MASK:
-            cdi_not_implemented("RFS_SET_CAL_ANT_MASK");
-            break;
-        case RFS_SET_ZOOM_EN:
-            cdi_not_implemented("RFS_SET_ZOOM_EN");
-            break;
-        case RFS_SET_ZOOM_SET1:
-            cdi_not_implemented("RFS_SET_ZOOM_SET1");
-            break;
-        case RFS_SET_ZOOM_SET1_LO:
-            cdi_not_implemented("RFS_SET_ZOOM_SET1_LO");
-            break;
-        case RFS_SET_ZOOM_SET1_HI:
-            cdi_not_implemented("RFS_SET_ZOOM_SET1_HI");
-            break;
-        case RFS_SET_ZOOM_SET2:
-            cdi_not_implemented("RFS_SET_ZOOM_SET2");
-            break;
-        case RFS_SET_ZOOM_SET2_LO:
-            cdi_not_implemented("RFS_SET_ZOOM_SET2_LO");
-            break;
-        case RFS_SET_ZOOM_SET2_HI:
-            cdi_not_implemented("RFS_SET_ZOOM_SET2_HI");
-            break;
-        case RFS_SET_SEQ_EN:
-            if (state->base.spectrometer_enable) {
-                state->base.errors |= CDI_COMMAND_BAD;
+
+        // CALIBRATOR SECTION
+        case RFS_SET_CAL_ENABLE:
+            if (arg_low<0xFF) {
+                state->cal.mode = arg_low;
+                state->base.calibrator_enable = true;
             } else {
-                state->sequencer_enabled = (arg_low>0);
+                state->base.calibrator_enable = false;
             }
             break;
-        case RFS_SET_SEQ_REP:
-            if (state->base.spectrometer_enable) {
-                state->base.errors |= CDI_COMMAND_BAD;
-            } else {
-                state->program.sequencer_repeat = arg_low;
-            }
+        case RFS_SET_CAL_AVG:
+            state->cal.Navg2 = arg_low & 0x03;
+            state->cal.Navg3 = (arg_low & 0x3C) >> 2;            
+            //calib_set_Navg(arg_low & 0x03, (arg_low & 0x3C) >> 2);
             break;
-        case RFS_SET_SEQ_CYC:
-            if (state->base.spectrometer_enable) {
-                state->base.errors |= CDI_COMMAND_BAD;
-            } else {
-                state->program.Nseq = arg_low;
-                state->base.sequencer_step = 0;
-            }
+
+        case RFS_SET_CAL_NINDEX:
+            state->cal.notch_index = arg_low;
             break;
-        case RFS_SET_SEQ_STO:
-            if (state->base.spectrometer_enable) {
-                state->base.errors |= CDI_COMMAND_BAD;
-            } else {
-                state->program.seq[state->base.sequencer_step] = state->seq;
-                state->program.seq_times[state->base.sequencer_step] = arg_low;
-                state->base.sequencer_step++;
-            }
+        case RFS_SET_CAL_DRIFT_GUARD:
+            state->cal.drift_guard = arg_low;   
+            break;
+        case RFS_SET_CAL_DRIFT_STEP:
+            state->cal.drift_step = arg_low;
+            break;
+        case RFS_SET_CAL_ANT_EN:
+            state->cal.antenna_mask = arg_low;
+            break;
+        case RFS_SET_CAL_SNR_ON:
+            state->cal.SNRon = arg_low;
+            break;
+        case RFS_SET_CAL_SNR_ON_HIGH:
+            state->cal.SNRon += (arg_low<<8);
+
+        case RFS_SET_CAL_SNR_OFF:
+            state->cal.SNRoff = arg_low;
+            break;
+
+        case RFS_SET_CAL_NSETTLE:
+            state->cal.Nsettle = arg_low;
+            break;
+
+        case RFS_SET_CAL_CORRA:
+            state->cal.delta_drift_corA = arg_low;
+            break;
+
+        case RFS_SET_CAL_CORRB:
+            state->cal.delta_drift_corB = arg_low;
+            break;
+
+        case RFS_SET_CAL_WEIGHT_NDX_LO:
+            state->cal.weight_ndx = arg_low;
+            break;
+        
+        case RFS_SET_CAL_WEIGHT_NDX_HI:
+            state->cal.weight_ndx = 256 + arg_low;
+            break;
+        
+        case RFS_SET_CAL_WEIGHT_VAL:
+            calib_set_weight(state->cal.weight_ndx, arg_low);
+            state->cal.weight_ndx++;
+            break;
+
+        case RFS_SET_CAL_WEIGHT_ZERO:
+            calib_zero_weights();
+            break;
+
+        case RFS_SET_CAL_PFB_NDX_LO: 
+            state->cal.pfb_index = arg_low + (state->cal.pfb_index & 0xFF00);
+            break;
+
+        case RFS_SET_CAL_PFB_NDX_HI:
+            state->cal.pfb_index = ((arg_low & 0x07) << 8) + (state->cal.pfb_index & 0x00FF);
             break;
 
         default:

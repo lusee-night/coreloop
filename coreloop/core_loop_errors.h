@@ -8,7 +8,7 @@
 #define CDI_COMMAND_BAD 2
 // CDI command called with wrong arguments
 #define CDI_COMMAND_BAD_ARGS 4
-// CDI command lost due to buffer overflow
+// CDI command lost due to FW FIFO overflow
 #define CDI_COMMAND_LOST 8
 // CDI internal bufer overlow
 #define CDI_COMMAND_BUFFER_OVERFLOW 16
@@ -29,7 +29,10 @@
 #define ANALOG_AGC_ACTION_CH4 (1<<16)
 
 #define DF_SPECTRA_DROPPED (1<<17)
-#define FLASH_CRC_FAIL (1<<18)
+#define DF_CAL_DROPPED (1<<18)
+#define FLASH_CRC_FAIL (1<<19)
+#define FPGA_TEMP_HIGH (1<<20)
+
 
 
 

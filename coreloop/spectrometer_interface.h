@@ -9,6 +9,7 @@
 
 #define NCHANNELS 2048
 #define NSPECTRA 16
+#define NCALPACKETS 16 
 #define NSPECTRA_AUTO 4
 #define NINPUT 4
 #define UINT14_MAX 16384
@@ -65,12 +66,6 @@ uint32_t spec_get_version(int s);
 
 // RFS_SET_RESET  Reset default configuration (system configuration as after boot)
 void spec_set_reset();
-
-// RFS_SET_STORE Stores current configuration
-void spec_store();
-
-// RFS_SET_RECALL  Recalls configuration from previous store 
-void spec_recall();
 
 // make the CDI interface generate raw waveform (together with delay, set to zero for something sensible)
 void spec_request_waveform(uint8_t ch, int dly);
@@ -139,5 +134,8 @@ void spec_set_ADC_custom_pattern();
 // read the argument registers from bootloader
 uint32_t spec_read_uC_register(uint8_t num);
 void spec_write_uC_register(uint8_t num, uint32_t value);
+
+// read writes general register
+void spec_reg_write(uint16_t reg, uint32_t value);
 
 #endif

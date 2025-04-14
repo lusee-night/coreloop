@@ -1,6 +1,27 @@
 
 # CHANGELOG
 
+## Version 2r03
+ * Extended the heartbeat packet to include additional information, including cdi command received, error array and cdi packets/bytes sent.
+ * Implemented wait for n-spectra command
+ * Implemented final packet (to be sent after all buffers empty)
+ * Changed aliveness for both of those above.
+ * Fixed calibration output (also changed point from CAL_BUF to CAL_DF)
+ * Version candidate to be used during TVAC
+
+## Version 2r02
+ * Added calibrator support V2 (automatic bitslicing, SNR adjustment, mode switching)
+ * Averaging temperatures over 128 interrupts for more accuracy. Changing the scalings to extract some more dynamic range.
+
+## Version 2r01
+ * Removed sequencer
+ * Added temperature watchdog
+ * Removed global state, completelly
+
+
+## Version 2r00
+ * Added Calibration support
+
 ## Version 1r10
  * Removed global state
 

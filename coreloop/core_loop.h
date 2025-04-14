@@ -4,18 +4,18 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000110
+#define VERSION_ID 0x00000203
 
 
 #include <inttypes.h>
 #include <stddef.h>
 #include "spectrometer_interface.h"
+#include "calibrator.h"
 #include "core_loop_errors.h"
 
 
 
 // Constants
-#define NSEQ_MAX 32
 #define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
@@ -28,25 +28,13 @@
 //consistent with 4k erases
 #define PAGES_PER_SLOT 256
 
-// global variables, will need to fix
-extern uint16_t avg_counter;
-extern uint32_t unique_packet_id;
-extern uint8_t leading_zeros_min[NSPECTRA];
-extern uint8_t leading_zeros_max[NSPECTRA];
-extern uint8_t housekeeping_request;
-extern uint8_t range_adc, resettle, request_waveform; 
-extern bool tick_tock;
-extern bool drop_df;
+
+/***************** UNAVOIDABLE GLOBAL STATE ******************/
+// flag to tell main we are doing a soft reset
 extern bool soft_reset_flag;
-extern uint32_t heartbeat_packet_count;
-extern volatile uint64_t heartbeat_counter;
-extern volatile uint64_t resettle_counter;
-extern volatile uint64_t cdi_wait_counter; 
-extern volatile uint64_t cdi_dispatch_counter;
+// tap counter increased in the interrupt
 extern volatile uint64_t tap_counter;
-extern uint16_t flash_store_pointer;
-
-
+extern volatile uint32_t TVS_sensors_avg[4];
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
@@ -69,9 +57,22 @@ struct route_state {
     uint8_t plus, minus;  // we route "plus" - "minus". if minus is FF, it is ground;
 };
 
+struct time_counters {
+    uint64_t heartbeat_counter;
+    uint64_t resettle_counter;
+    uint64_t cdi_wait_counter;
+    uint64_t cdi_dispatch_counter;
+};
 
-// sequencer state describes the information needed to set the spectrometer to a given state
-struct sequencer_state {
+
+// core state base contains the crucial state that is dumped with every metadata packet
+
+struct core_state_base {
+    uint64_t uC_time;
+    uint32_t time_32;
+    uint16_t time_16;    
+    uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
+    // former sequencer state starts here
     uint8_t gain [NINPUT]; // this defines the commanded gain state (can be auto)
     uint16_t gain_auto_min[NINPUT];   
     uint16_t gain_auto_mult[NINPUT];
@@ -86,23 +87,8 @@ struct sequencer_state {
     uint8_t reject_ratio; // how far we should be to reject stuff, zero to remove rejection
     uint8_t reject_maxbad; // how many need to be bad to reject.
     uint16_t tr_start, tr_stop, tr_avg_shift; // time resolved start, stop and averaging
-};
+    // former sequencer state ends here
 
-
-struct sequencer_program {
-    uint8_t Nseq; // Number of sequencer steps in a cycle (See RFS_SET_SEQ_CYC)
-    struct sequencer_state seq[NSEQ_MAX]; // sequencer states
-    uint16_t seq_times[NSEQ_MAX]; // steps in each sequencer state;
-    uint16_t sequencer_repeat; // number of sequencer repeats, 00 for infinite 
-};
-
-
-// core state base contains additional information that will be dumped with every metadata packet
-struct core_state_base {
-    uint64_t uC_time;
-    uint32_t time_32;
-    uint16_t time_16;    
-    uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
     uint32_t errors;
     uint16_t corr_products_mask; // which of 16 products to be used, starting with LSB
     uint8_t actual_gain[NINPUT]; // this defines the actual gain state (can only be low, med, high);
@@ -110,15 +96,17 @@ struct core_state_base {
     uint16_t spec_overflow;  // mean specta overflow mask
     uint16_t notch_overflow; // notch filter overflow mask
     struct ADC_stat ADC_stat[4];    
-    bool spectrometer_enable;
-    uint8_t sequencer_counter; // number of total cycles in the sequencer (up to sequencer_repeat)
-    uint8_t sequencer_step; // 0xFF is sequencer is disabled (up to Nseq)
-    uint8_t sequencer_substep; // counting seq_times (up to seq_times[i])
+    bool spectrometer_enable; // spectrometer_enable is true when FFT enegine is running
+    bool calibrator_enable; // calibrator enable is true will enable calibrator with enabling the FFT engine.
     uint32_t rand_state;
     uint8_t weight_previous, weight_current;
 };
 
-
+struct cdi_stats {
+    uint32_t cdi_total_command_count;
+    uint32_t cdi_packets_sent;
+    uint64_t cdi_bytes_sent;
+};
 
 struct delayed_cdi_sending {
     uint32_t appId;
@@ -127,30 +115,58 @@ struct delayed_cdi_sending {
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
     uint8_t tr_count; // time-resolved packet number that needs to be sent
+    uint8_t cal_count; // number of calibrator packets that need to be sent;
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
     uint32_t packet_id;
+    uint32_t cal_packet_id;
+    uint32_t cal_appId;
+    uint32_t cal_size, cal_packet_size;
+};
 
+
+struct watchdog_config {
+    uint8_t FPGA_max_temp;
+    // here add watchdog configuration if needed
 };
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
 struct core_state {
-    struct sequencer_state seq;
     struct core_state_base base;
+    struct cdi_stats cdi_stats;
+    struct calibrator_state cal;
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
-    bool sequencer_enabled;
-    struct sequencer_program program;
+    struct time_counters timing;
+    struct watchdog_config watchdog;
+    uint16_t cdi_wait_spectra;
+    uint16_t avg_counter;
+    uint32_t unique_packet_id;
+    uint8_t leading_zeros_min[NSPECTRA];
+    uint8_t leading_zeros_max[NSPECTRA];
+    uint8_t housekeeping_request;
+    uint8_t range_adc, resettle, request_waveform, request_eos; 
+    bool tick_tock;
+    bool drop_df;
+    uint32_t heartbeat_packet_count;
+    uint16_t flash_store_pointer;
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
     uint16_t cmd_start, cmd_end;
     uint32_t cmd_counter;
     uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
+    uint16_t reg_address; // address of the register to be written (for commands that do that)
+    int32_t reg_value; // value to be written to the register
 };
 
 struct saved_core_state {
     uint32_t in_use;
     struct core_state state;
     uint32_t CRC;
+};
+
+struct end_of_sequence {
+    uint32_t unique_packet_id;
+    uint32_t eos_arg;
 };
 
 struct startup_hello {
@@ -168,6 +184,9 @@ struct heartbeat {
     uint32_t packet_count;
     uint32_t time_32;
     uint16_t time_16;
+    uint16_t TVS_sensors[4];
+    struct cdi_stats cdi_stats;
+    uint32_t errors;
     char magic[6];
 };
 
@@ -175,7 +194,6 @@ struct heartbeat {
 struct meta_data {
     uint16_t version; 
     uint32_t unique_packet_id;
-    struct sequencer_state seq;
     struct core_state_base base;
 };
 
@@ -208,9 +226,9 @@ void core_loop(struct core_state*);
 
 // process a CDI command
 bool process_cdi(struct core_state*);
-//
 
-
+// process watchdogs and temperature alarms
+void process_watchdogs (struct core_state*);
 
 // starts / stops / restarts the spectrometer
 void RFS_stop(struct core_state*);
@@ -253,10 +271,9 @@ bool process_delayed_cdi_dispatch(struct core_state*);
 void process_gain_range(struct core_state*);
 bool bitslice_control(struct core_state*);
 
-// sequencer control
-void set_spectrometer_to_sequencer(struct core_state*);
-void default_seq(struct sequencer_state *seq);
-void advance_sequencer(struct core_state*);
+// settings control
+void set_spectrometer(struct core_state*);
+void default_state(struct core_state_base *);
 
 // debuggin functions
 void debug_helper(uint8_t arg, struct core_state*);
@@ -268,10 +285,24 @@ void send_hello_packet(struct core_state* state);
 bool process_hearbeat(struct core_state*);
 bool process_housekeeping(struct core_state*);
 
+// create end-of-sequence packet
+bool process_eos(struct core_state*); 
+
+// cdi dispatch with counting
+void cdi_dispatch_uC (struct cdi_stats* cdi_stats, uint16_t appID, uint32_t length);
+
+//delayed dispatch;
+bool delayed_cdi_dispatch_done (struct core_state*);
+
+// calibrator functions
+void calibrator_default_state (struct calibrator_state* cal);
+void calib_set_mode (struct core_state* state, uint8_t mode);
+void process_calibrator(struct core_state* state);
+void dispatch_calibrator_data(struct core_state* state);
+
 // Update random stae in state.base.rand_state
 inline static void update_random_state(struct core_state* s) {s->base.rand_state = 1103515245 * s->base.rand_state + 12345;}
-
-inline static void new_unique_packet_id() {unique_packet_id++;}
+inline static void new_unique_packet_id(struct core_state* s) {s->unique_packet_id++;}
 
 // utility functions
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -315,5 +346,9 @@ void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);
+
+// fft
+void fft_precompute_tables();
+void fft(uint32_t *real, uint32_t *imag);
 
 #endif // CORE_LOOP_H
