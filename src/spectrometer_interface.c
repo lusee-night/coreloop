@@ -226,7 +226,7 @@ uint8_t spec_watchdog_tripped(void) {
         printf("[watchdog] TRIPPED at tick %lu\n", tap_counter);
     }
     
-    return watchdog_triggered ? 1 : 0;
+    return watchdog_triggered ? (1 << 7) : 0;
 }
 
 void spec_clear_watchdog_tripped(void) {
@@ -237,7 +237,11 @@ void spec_clear_watchdog_tripped(void) {
 
 
 
-void feed_uC_watchdog(void) {}
+void feed_uC_watchdog(void) {
+    if (watchdogs_enabled) {
+        watchdog_start_tick = tap_counter;
+    }
+}
 
 void spec_trigger_ADC_stat(uint16_t Nsamples) {
     adc_trigger = true;

@@ -903,14 +903,13 @@ struct_ADC_stat._fields_ = [
     ('sumv2', uint64_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 34
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 36
 class struct_calibrator_state(Structure):
     pass
 
 struct_calibrator_state._pack_ = 1
 struct_calibrator_state.__slots__ = [
     'mode',
-    'readout_mode',
     'Navg2',
     'Navg3',
     'drift_guard',
@@ -922,6 +921,8 @@ struct_calibrator_state.__slots__ = [
     'Nsettle',
     'delta_drift_corA',
     'delta_drift_corB',
+    'ddrift_guard',
+    'gphase_guard',
     'pfb_index',
     'weight_ndx',
     'auto_slice',
@@ -935,10 +936,12 @@ struct_calibrator_state.__slots__ = [
     'errors',
     'zoom_ch1',
     'zoom_ch2',
+    'zoom_Nfft',
+    'zoom_prod',
+    'zoom_Navg',
 ]
 struct_calibrator_state._fields_ = [
     ('mode', uint8_t),
-    ('readout_mode', uint8_t),
     ('Navg2', uint8_t),
     ('Navg3', uint8_t),
     ('drift_guard', uint8_t),
@@ -950,6 +953,8 @@ struct_calibrator_state._fields_ = [
     ('Nsettle', uint32_t),
     ('delta_drift_corA', uint32_t),
     ('delta_drift_corB', uint32_t),
+    ('ddrift_guard', uint32_t),
+    ('gphase_guard', uint32_t),
     ('pfb_index', uint16_t),
     ('weight_ndx', uint16_t),
     ('auto_slice', c_bool),
@@ -961,11 +966,14 @@ struct_calibrator_state._fields_ = [
     ('prod1_slice', uint8_t),
     ('prod2_slice', uint8_t),
     ('errors', uint32_t),
-    ('zoom_ch1', uint32_t),
-    ('zoom_ch2', uint32_t),
+    ('zoom_ch1', uint8_t),
+    ('zoom_ch2', uint8_t),
+    ('zoom_Nfft', uint8_t),
+    ('zoom_prod', uint8_t),
+    ('zoom_Navg', uint8_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 57
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 62
 class struct_calibrator_metadata(Structure):
     pass
 
@@ -989,17 +997,33 @@ struct_calibrator_metadata._fields_ = [
     ('time_16', uint16_t),
     ('have_lock', uint16_t * int(4)),
     ('state', struct_calibrator_state),
-    ('SNR_max', c_int),
-    ('SNR_min', c_int),
+    ('SNR_max', c_int * int(4)),
+    ('SNR_min', c_int * int(4)),
     ('drift', c_int32 * int(1024)),
     ('error_regs', uint32_t * int(30)),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 143
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 75
+class struct_saved_calibrator_weights(Structure):
+    pass
+
+struct_saved_calibrator_weights._pack_ = 1
+struct_saved_calibrator_weights.__slots__ = [
+    'in_use',
+    'CRC',
+    'weights',
+]
+struct_saved_calibrator_weights._fields_ = [
+    ('in_use', uint32_t),
+    ('CRC', uint32_t),
+    ('weights', uint16_t * int(512)),
+]
+
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 151
 class struct_core_state(Structure):
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 71
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 84
 for _lib in _libs.values():
     if not _lib.has("set_calibrator", "cdecl"):
         continue
@@ -1008,7 +1032,7 @@ for _lib in _libs.values():
     set_calibrator.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 72
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 85
 for _lib in _libs.values():
     if not _lib.has("calibrator_set_SNR", "cdecl"):
         continue
@@ -1017,7 +1041,7 @@ for _lib in _libs.values():
     calibrator_set_SNR.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 73
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 86
 for _lib in _libs.values():
     if not _lib.has("calibrator_slice_init", "cdecl"):
         continue
@@ -1026,7 +1050,7 @@ for _lib in _libs.values():
     calibrator_slice_init.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 74
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 87
 for _lib in _libs.values():
     if not _lib.has("calibrator_set_slices", "cdecl"):
         continue
@@ -1035,16 +1059,16 @@ for _lib in _libs.values():
     calibrator_set_slices.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 75
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 88
 for _lib in _libs.values():
     if not _lib.has("process_cal_mode11", "cdecl"):
         continue
     process_cal_mode11 = _lib.get("process_cal_mode11", "cdecl")
-    process_cal_mode11.argtypes = [POINTER(struct_core_state), uint32_t]
+    process_cal_mode11.argtypes = [POINTER(struct_core_state)]
     process_cal_mode11.restype = POINTER(struct_calibrator_metadata)
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 34
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 31
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1052,7 +1076,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 36
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 33
 for _lib in _libs.values():
     try:
         tap_counter = (uint64_t).in_dll(_lib, "tap_counter")
@@ -1060,7 +1084,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 37
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 35
 for _lib in _libs.values():
     try:
         TVS_sensors_avg = (uint32_t * int(4)).in_dll(_lib, "TVS_sensors_avg")
@@ -1068,33 +1092,49 @@ for _lib in _libs.values():
     except:
         pass
 
-enum_gain_state = c_int# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 37
+for _lib in _libs.values():
+    try:
+        loop_count_min = (uint16_t).in_dll(_lib, "loop_count_min")
+        break
+    except:
+        pass
 
-GAIN_LOW = 0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 37
+for _lib in _libs.values():
+    try:
+        loop_count_max = (uint16_t).in_dll(_lib, "loop_count_max")
+        break
+    except:
+        pass
 
-GAIN_MED = (GAIN_LOW + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+enum_gain_state = c_int# /home/gtspeedie/coreloop/coreloop/core_loop.h: 41
 
-GAIN_HIGH = (GAIN_MED + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+GAIN_LOW = 0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 41
 
-GAIN_DISABLE = (GAIN_HIGH + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+GAIN_MED = (GAIN_LOW + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 41
 
-GAIN_AUTO = (GAIN_DISABLE + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 40
+GAIN_HIGH = (GAIN_MED + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 41
 
-enum_output_format = c_int# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+GAIN_DISABLE = (GAIN_HIGH + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 41
 
-OUTPUT_32BIT = 0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+GAIN_AUTO = (GAIN_DISABLE + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 41
 
-OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+enum_output_format = c_int# /home/gtspeedie/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_32BIT = 0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_10_PLUS_6 = (OUTPUT_16BIT_FLOAT1 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_16BIT_UPDATES = (OUTPUT_32BIT + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_4_TO_5 = (OUTPUT_16BIT_10_PLUS_6 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_16BIT_FLOAT1 = (OUTPUT_16BIT_UPDATES + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 48
 
-OUTPUT_16BIT_SHARED_LZ = (OUTPUT_16BIT_4_TO_5 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 47
+OUTPUT_16BIT_10_PLUS_6 = (OUTPUT_16BIT_FLOAT1 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 48
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 56
+OUTPUT_16BIT_4_TO_5 = (OUTPUT_16BIT_10_PLUS_6 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 48
+
+OUTPUT_16BIT_SHARED_LZ = (OUTPUT_16BIT_4_TO_5 + 1)# /home/gtspeedie/coreloop/coreloop/core_loop.h: 48
+
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 57
 class struct_route_state(Structure):
     pass
 
@@ -1108,7 +1148,7 @@ struct_route_state._fields_ = [
     ('minus', uint8_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 60
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 61
 class struct_time_counters(Structure):
     pass
 
@@ -1126,7 +1166,7 @@ struct_time_counters._fields_ = [
     ('cdi_dispatch_counter', uint64_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 70
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 71
 class struct_core_state_base(Structure):
     pass
 
@@ -1136,6 +1176,8 @@ struct_core_state_base.__slots__ = [
     'time_32',
     'time_16',
     'TVS_sensors',
+    'loop_count_min',
+    'loop_count_max',
     'gain',
     'gain_auto_min',
     'gain_auto_mult',
@@ -1164,14 +1206,20 @@ struct_core_state_base.__slots__ = [
     'spectrometer_enable',
     'calibrator_enable',
     'rand_state',
-    'weight_previous',
+    'weight',
     'weight_current',
+    'num_bad_min_current',
+    'num_bad_max_current',
+    'num_bad_min',
+    'num_bad_max',
 ]
 struct_core_state_base._fields_ = [
     ('uC_time', uint64_t),
     ('time_32', uint32_t),
     ('time_16', uint16_t),
     ('TVS_sensors', uint16_t * int(4)),
+    ('loop_count_min', uint16_t),
+    ('loop_count_max', uint16_t),
     ('gain', uint8_t * int(4)),
     ('gain_auto_min', uint16_t * int(4)),
     ('gain_auto_mult', uint16_t * int(4)),
@@ -1200,11 +1248,15 @@ struct_core_state_base._fields_ = [
     ('spectrometer_enable', c_bool),
     ('calibrator_enable', c_bool),
     ('rand_state', uint32_t),
-    ('weight_previous', uint8_t),
-    ('weight_current', uint8_t),
+    ('weight', uint16_t),
+    ('weight_current', uint16_t),
+    ('num_bad_min_current', uint16_t),
+    ('num_bad_max_current', uint16_t),
+    ('num_bad_min', uint16_t),
+    ('num_bad_max', uint16_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 105
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 112
 class struct_cdi_stats(Structure):
     pass
 
@@ -1220,7 +1272,7 @@ struct_cdi_stats._fields_ = [
     ('cdi_bytes_sent', uint64_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 111
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 118
 class struct_delayed_cdi_sending(Structure):
     pass
 
@@ -1258,21 +1310,25 @@ struct_delayed_cdi_sending._fields_ = [
     ('cal_packet_size', uint32_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 128
-class struct_watchdog_config(Structure):
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 135
+class struct_watchdog_state(Structure):
     pass
 
-struct_watchdog_config._pack_ = 1
-struct_watchdog_config.__slots__ = [
+struct_watchdog_state._pack_ = 1
+struct_watchdog_state.__slots__ = [
     'FPGA_max_temp',
     'watchdogs_enabled',
+    'feed_uc',
+    'tripped_mask',
 ]
-struct_watchdog_config._fields_ = [
+struct_watchdog_state._fields_ = [
     ('FPGA_max_temp', uint8_t),
     ('watchdogs_enabled', uint8_t),
+    ('feed_uc', c_bool),
+    ('tripped_mask', uint8_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 136
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 144
 class struct_watchdog_packet(Structure):
     pass
 
@@ -1309,15 +1365,20 @@ struct_core_state.__slots__ = [
     'tick_tock',
     'drop_df',
     'heartbeat_packet_count',
-    'flash_store_pointer',
+    'flash_slot',
     'cmd_arg_high',
     'cmd_arg_low',
-    'cmd_start',
+    'cmd_ptr',
     'cmd_end',
+    'sequence_upload',
+    'loop_depth',
+    'loop_start',
+    'loop_count',
     'cmd_counter',
     'dispatch_delay',
     'reg_address',
     'reg_value',
+    'bitslicer_action_counter',
 ]
 struct_core_state._fields_ = [
     ('base', struct_core_state_base),
@@ -1325,7 +1386,7 @@ struct_core_state._fields_ = [
     ('cal', struct_calibrator_state),
     ('cdi_dispatch', struct_delayed_cdi_sending),
     ('timing', struct_time_counters),
-    ('watchdog', struct_watchdog_config),
+    ('watchdog', struct_watchdog_state),
     ('cdi_wait_spectra', uint16_t),
     ('avg_counter', uint16_t),
     ('unique_packet_id', uint32_t),
@@ -1339,34 +1400,59 @@ struct_core_state._fields_ = [
     ('tick_tock', c_bool),
     ('drop_df', c_bool),
     ('heartbeat_packet_count', uint32_t),
-    ('flash_store_pointer', uint16_t),
-    ('cmd_arg_high', uint8_t * int(128)),
-    ('cmd_arg_low', uint8_t * int(128)),
-    ('cmd_start', uint16_t),
+    ('flash_slot', c_int8),
+    ('cmd_arg_high', uint8_t * int(512)),
+    ('cmd_arg_low', uint8_t * int(512)),
+    ('cmd_ptr', uint16_t),
     ('cmd_end', uint16_t),
+    ('sequence_upload', c_bool),
+    ('loop_depth', uint8_t),
+    ('loop_start', uint16_t * int(4)),
+    ('loop_count', uint8_t * int(4)),
     ('cmd_counter', uint32_t),
     ('dispatch_delay', uint16_t),
     ('reg_address', uint16_t),
     ('reg_value', c_int32),
+    ('bitslicer_action_counter', c_int8),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 170
-class struct_saved_core_state(Structure):
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 186
+class struct_saved_state(Structure):
     pass
 
-struct_saved_core_state._pack_ = 1
-struct_saved_core_state.__slots__ = [
+struct_saved_state._pack_ = 1
+struct_saved_state.__slots__ = [
     'in_use',
-    'state',
+    'cmd_arg_high',
+    'cmd_arg_low',
+    'cmd_ptr',
+    'cmd_end',
     'CRC',
 ]
-struct_saved_core_state._fields_ = [
+struct_saved_state._fields_ = [
     ('in_use', uint32_t),
-    ('state', struct_core_state),
+    ('cmd_arg_high', uint8_t * int(512)),
+    ('cmd_arg_low', uint8_t * int(512)),
+    ('cmd_ptr', uint16_t),
+    ('cmd_end', uint16_t),
     ('CRC', uint32_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 176
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 193
+class struct_state_recover_notification(Structure):
+    pass
+
+struct_state_recover_notification._pack_ = 1
+struct_state_recover_notification.__slots__ = [
+    'slot',
+    'size',
+]
+struct_state_recover_notification._fields_ = [
+    ('slot', uint32_t),
+    ('size', uint32_t),
+]
+
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 198
 class struct_end_of_sequence(Structure):
     pass
 
@@ -1380,7 +1466,7 @@ struct_end_of_sequence._fields_ = [
     ('eos_arg', uint32_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 181
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 203
 class struct_startup_hello(Structure):
     pass
 
@@ -1406,7 +1492,7 @@ struct_startup_hello._fields_ = [
     ('time_16', uint16_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 192
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 214
 class struct_heartbeat(Structure):
     pass
 
@@ -1416,6 +1502,8 @@ struct_heartbeat.__slots__ = [
     'time_32',
     'time_16',
     'TVS_sensors',
+    'loop_count_min',
+    'loop_count_max',
     'cdi_stats',
     'errors',
     'magic',
@@ -1425,12 +1513,14 @@ struct_heartbeat._fields_ = [
     ('time_32', uint32_t),
     ('time_16', uint16_t),
     ('TVS_sensors', uint16_t * int(4)),
+    ('loop_count_min', uint16_t),
+    ('loop_count_max', uint16_t),
     ('cdi_stats', struct_cdi_stats),
     ('errors', uint32_t),
     ('magic', c_char * int(6)),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 203
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 226
 class struct_meta_data(Structure):
     pass
 
@@ -1446,7 +1536,7 @@ struct_meta_data._fields_ = [
     ('base', struct_core_state_base),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 209
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 232
 class struct_housekeeping_data_base(Structure):
     pass
 
@@ -1464,7 +1554,7 @@ struct_housekeeping_data_base._fields_ = [
     ('housekeeping_type', uint16_t),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 216
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 239
 class struct_housekeeping_data_0(Structure):
     pass
 
@@ -1478,7 +1568,7 @@ struct_housekeeping_data_0._fields_ = [
     ('core_state', struct_core_state),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 221
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 244
 class struct_housekeeping_data_1(Structure):
     pass
 
@@ -1494,7 +1584,7 @@ struct_housekeeping_data_1._fields_ = [
     ('actual_gain', uint8_t * int(4)),
 ]
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 231
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 254
 for _lib in _libs.values():
     try:
         soft_reset_flag = (c_bool).in_dll(_lib, "soft_reset_flag")
@@ -1502,7 +1592,7 @@ for _lib in _libs.values():
     except:
         pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 234
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 257
 for _lib in _libs.values():
     if not _lib.has("core_loop", "cdecl"):
         continue
@@ -1511,7 +1601,7 @@ for _lib in _libs.values():
     core_loop.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 237
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 260
 for _lib in _libs.values():
     if not _lib.has("process_cdi", "cdecl"):
         continue
@@ -1520,7 +1610,7 @@ for _lib in _libs.values():
     process_cdi.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 241
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 264
 for _lib in _libs.values():
     if not _lib.has("process_watchdogs", "cdecl"):
         continue
@@ -1529,7 +1619,7 @@ for _lib in _libs.values():
     process_watchdogs.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 242
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 265
 for _lib in _libs.values():
     if not _lib.has("cmd_soft_reset", "cdecl"):
         continue
@@ -1538,7 +1628,7 @@ for _lib in _libs.values():
     cmd_soft_reset.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 245
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 268
 for _lib in _libs.values():
     if not _lib.has("RFS_stop", "cdecl"):
         continue
@@ -1547,7 +1637,7 @@ for _lib in _libs.values():
     RFS_stop.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 246
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 269
 for _lib in _libs.values():
     if not _lib.has("RFS_start", "cdecl"):
         continue
@@ -1556,7 +1646,7 @@ for _lib in _libs.values():
     RFS_start.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 247
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 270
 for _lib in _libs.values():
     if not _lib.has("restart_spectrometer", "cdecl"):
         continue
@@ -1565,7 +1655,7 @@ for _lib in _libs.values():
     restart_spectrometer.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 250
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 273
 for _lib in _libs.values():
     if not _lib.has("get_Navg1", "cdecl"):
         continue
@@ -1574,7 +1664,7 @@ for _lib in _libs.values():
     get_Navg1.restype = uint16_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 251
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 274
 for _lib in _libs.values():
     if not _lib.has("get_Navg2", "cdecl"):
         continue
@@ -1583,7 +1673,7 @@ for _lib in _libs.values():
     get_Navg2.restype = uint16_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 252
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 275
 for _lib in _libs.values():
     if not _lib.has("get_Nfreq", "cdecl"):
         continue
@@ -1592,7 +1682,7 @@ for _lib in _libs.values():
     get_Nfreq.restype = uint16_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 253
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 276
 for _lib in _libs.values():
     if not _lib.has("get_tr_avg", "cdecl"):
         continue
@@ -1601,7 +1691,7 @@ for _lib in _libs.values():
     get_tr_avg.restype = uint16_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 254
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 277
 for _lib in _libs.values():
     if not _lib.has("get_gain_auto_max", "cdecl"):
         continue
@@ -1610,7 +1700,7 @@ for _lib in _libs.values():
     get_gain_auto_max.restype = uint16_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 255
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 278
 for _lib in _libs.values():
     if not _lib.has("get_tr_length", "cdecl"):
         continue
@@ -1619,7 +1709,7 @@ for _lib in _libs.values():
     get_tr_length.restype = uint32_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 259
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 282
 for _lib in _libs.values():
     if not _lib.has("set_route", "cdecl"):
         continue
@@ -1628,7 +1718,7 @@ for _lib in _libs.values():
     set_route.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 262
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 285
 for _lib in _libs.values():
     if not _lib.has("update_spec_gains", "cdecl"):
         continue
@@ -1637,7 +1727,7 @@ for _lib in _libs.values():
     update_spec_gains.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 265
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 288
 for _lib in _libs.values():
     if not _lib.has("trigger_ADC_stat", "cdecl"):
         continue
@@ -1646,7 +1736,7 @@ for _lib in _libs.values():
     trigger_ADC_stat.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 268
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 291
 for _lib in _libs.values():
     if not _lib.has("reset_errormasks", "cdecl"):
         continue
@@ -1655,7 +1745,7 @@ for _lib in _libs.values():
     reset_errormasks.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 271
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 294
 for _lib in _libs.values():
     if not _lib.has("update_time", "cdecl"):
         continue
@@ -1664,7 +1754,7 @@ for _lib in _libs.values():
     update_time.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 274
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 297
 for _lib in _libs.values():
     if not _lib.has("process_spectrometer", "cdecl"):
         continue
@@ -1673,7 +1763,7 @@ for _lib in _libs.values():
     process_spectrometer.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 277
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 300
 for _lib in _libs.values():
     if not _lib.has("transfer_to_cdi", "cdecl"):
         continue
@@ -1682,7 +1772,7 @@ for _lib in _libs.values():
     transfer_to_cdi.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 279
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 302
 for _lib in _libs.values():
     if not _lib.has("process_delayed_cdi_dispatch", "cdecl"):
         continue
@@ -1691,7 +1781,7 @@ for _lib in _libs.values():
     process_delayed_cdi_dispatch.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 282
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 305
 for _lib in _libs.values():
     if not _lib.has("process_gain_range", "cdecl"):
         continue
@@ -1700,7 +1790,7 @@ for _lib in _libs.values():
     process_gain_range.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 283
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 306
 for _lib in _libs.values():
     if not _lib.has("bitslice_control", "cdecl"):
         continue
@@ -1709,7 +1799,7 @@ for _lib in _libs.values():
     bitslice_control.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 286
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 309
 for _lib in _libs.values():
     if not _lib.has("set_spectrometer", "cdecl"):
         continue
@@ -1718,7 +1808,7 @@ for _lib in _libs.values():
     set_spectrometer.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 287
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 310
 for _lib in _libs.values():
     if not _lib.has("default_state", "cdecl"):
         continue
@@ -1727,7 +1817,7 @@ for _lib in _libs.values():
     default_state.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 290
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 313
 for _lib in _libs.values():
     if not _lib.has("debug_helper", "cdecl"):
         continue
@@ -1736,7 +1826,7 @@ for _lib in _libs.values():
     debug_helper.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 291
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 314
 for _lib in _libs.values():
     if not _lib.has("cdi_not_implemented", "cdecl"):
         continue
@@ -1745,7 +1835,7 @@ for _lib in _libs.values():
     cdi_not_implemented.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 295
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 318
 for _lib in _libs.values():
     if not _lib.has("send_hello_packet", "cdecl"):
         continue
@@ -1754,7 +1844,7 @@ for _lib in _libs.values():
     send_hello_packet.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 296
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 319
 for _lib in _libs.values():
     if not _lib.has("process_hearbeat", "cdecl"):
         continue
@@ -1763,7 +1853,7 @@ for _lib in _libs.values():
     process_hearbeat.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 297
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 320
 for _lib in _libs.values():
     if not _lib.has("process_housekeeping", "cdecl"):
         continue
@@ -1772,7 +1862,7 @@ for _lib in _libs.values():
     process_housekeeping.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 300
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 323
 for _lib in _libs.values():
     if not _lib.has("process_eos", "cdecl"):
         continue
@@ -1781,7 +1871,7 @@ for _lib in _libs.values():
     process_eos.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 303
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 326
 for _lib in _libs.values():
     if not _lib.has("cdi_dispatch_uC", "cdecl"):
         continue
@@ -1790,7 +1880,7 @@ for _lib in _libs.values():
     cdi_dispatch_uC.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 306
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 329
 for _lib in _libs.values():
     if not _lib.has("delayed_cdi_dispatch_done", "cdecl"):
         continue
@@ -1799,7 +1889,7 @@ for _lib in _libs.values():
     delayed_cdi_dispatch_done.restype = c_bool
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 309
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 332
 for _lib in _libs.values():
     if not _lib.has("calibrator_default_state", "cdecl"):
         continue
@@ -1808,7 +1898,7 @@ for _lib in _libs.values():
     calibrator_default_state.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 310
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 333
 for _lib in _libs.values():
     if not _lib.has("calib_set_mode", "cdecl"):
         continue
@@ -1817,7 +1907,7 @@ for _lib in _libs.values():
     calib_set_mode.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 311
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 334
 for _lib in _libs.values():
     if not _lib.has("process_calibrator", "cdecl"):
         continue
@@ -1826,7 +1916,7 @@ for _lib in _libs.values():
     process_calibrator.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 312
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 335
 for _lib in _libs.values():
     if not _lib.has("dispatch_calibrator_data", "cdecl"):
         continue
@@ -1835,7 +1925,7 @@ for _lib in _libs.values():
     dispatch_calibrator_data.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 322
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 345
 for _lib in _libs.values():
     if not _lib.has("mini_wait", "cdecl"):
         continue
@@ -1844,7 +1934,7 @@ for _lib in _libs.values():
     mini_wait.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 326
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 349
 for _lib in _libs.values():
     if not _lib.has("timer_start", "cdecl"):
         continue
@@ -1853,7 +1943,7 @@ for _lib in _libs.values():
     timer_start.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 329
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 352
 for _lib in _libs.values():
     if not _lib.has("timer_stop", "cdecl"):
         continue
@@ -1862,7 +1952,7 @@ for _lib in _libs.values():
     timer_stop.restype = uint32_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 333
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 356
 for _lib in _libs.values():
     if not _lib.has("encode_12plus4", "cdecl"):
         continue
@@ -1871,7 +1961,7 @@ for _lib in _libs.values():
     encode_12plus4.restype = uint16_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 334
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 357
 for _lib in _libs.values():
     if not _lib.has("decode_12plus4", "cdecl"):
         continue
@@ -1880,7 +1970,7 @@ for _lib in _libs.values():
     decode_12plus4.restype = c_int32
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 337
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 360
 for _lib in _libs.values():
     if not _lib.has("encode_10plus6", "cdecl"):
         continue
@@ -1889,7 +1979,7 @@ for _lib in _libs.values():
     encode_10plus6.restype = uint16_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 338
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 361
 for _lib in _libs.values():
     if not _lib.has("decode_10plus6", "cdecl"):
         continue
@@ -1898,7 +1988,7 @@ for _lib in _libs.values():
     decode_10plus6.restype = c_int32
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 344
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 367
 for _lib in _libs.values():
     if not _lib.has("encode_shared_lz_positive", "cdecl"):
         continue
@@ -1907,7 +1997,7 @@ for _lib in _libs.values():
     encode_shared_lz_positive.restype = c_int
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 345
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 368
 for _lib in _libs.values():
     if not _lib.has("decode_shared_lz_positive", "cdecl"):
         continue
@@ -1916,7 +2006,7 @@ for _lib in _libs.values():
     decode_shared_lz_positive.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 351
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 374
 for _lib in _libs.values():
     if not _lib.has("encode_shared_lz_signed", "cdecl"):
         continue
@@ -1925,7 +2015,7 @@ for _lib in _libs.values():
     encode_shared_lz_signed.restype = c_int
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 352
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 375
 for _lib in _libs.values():
     if not _lib.has("decode_shared_lz_signed", "cdecl"):
         continue
@@ -1934,7 +2024,7 @@ for _lib in _libs.values():
     decode_shared_lz_signed.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 355
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 378
 for _lib in _libs.values():
     if not _lib.has("encode_4_into_5", "cdecl"):
         continue
@@ -1943,7 +2033,7 @@ for _lib in _libs.values():
     encode_4_into_5.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 356
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 379
 for _lib in _libs.values():
     if not _lib.has("decode_5_into_4", "cdecl"):
         continue
@@ -1952,7 +2042,7 @@ for _lib in _libs.values():
     decode_5_into_4.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 359
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 382
 for _lib in _libs.values():
     if not _lib.has("CRC", "cdecl"):
         continue
@@ -1961,7 +2051,7 @@ for _lib in _libs.values():
     CRC.restype = uint32_t
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 362
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 385
 for _lib in _libs.values():
     if not _lib.has("fft_precompute_tables", "cdecl"):
         continue
@@ -1970,7 +2060,7 @@ for _lib in _libs.values():
     fft_precompute_tables.restype = None
     break
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 363
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 386
 for _lib in _libs.values():
     if not _lib.has("fft", "cdecl"):
         continue
@@ -1999,35 +2089,41 @@ except:
 
 # /home/gtspeedie/coreloop/coreloop/calibrator.h: 15
 try:
-    CAL_MODE_RAW3 = 0b11
+    CAL_MODE_RAW2 = 0b10
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/calibrator.h: 19
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 17
 try:
-    CAL_MODE_BIT_SLICER_SETTLE = 0x10
+    CAL_MODE_RAW3 = 0b11
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/calibrator.h: 21
 try:
-    CAL_MODE_SNR_SETTLE = 0x20
+    CAL_MODE_BIT_SLICER_SETTLE = 0x10
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/calibrator.h: 23
 try:
-    CAL_MODE_RUN = 0x30
+    CAL_MODE_SNR_SETTLE = 0x20
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/calibrator.h: 25
 try:
-    CAL_MODE_BLIND = 0x40
+    CAL_MODE_RUN = 0x30
 except:
     pass
 
 # /home/gtspeedie/coreloop/coreloop/calibrator.h: 27
+try:
+    CAL_MODE_BLIND = 0x40
+except:
+    pass
+
+# /home/gtspeedie/coreloop/coreloop/calibrator.h: 29
 try:
     CAL_MODE_ZOOM = 0x50
 except:
@@ -2053,75 +2149,85 @@ except:
 
 # /home/gtspeedie/coreloop/coreloop/core_loop.h: 22
 try:
-    CMD_BUFFER_SIZE = 128
+    CMD_BUFFER_SIZE = 512
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 25
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 23
+try:
+    MAX_LOOPS = 4
+except:
+    pass
+
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 24
 try:
     ADC_STAT_SAMPLES = 16000
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 27
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 25
 try:
-    MAX_STATE_SLOTS = 64
+    MAX_STATE_SLOTS = 16
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 29
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 26
 try:
-    PAGES_PER_SLOT = 256
+    BITSLICER_MAX_ACTION = 5
 except:
     pass
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 319
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 342
 def MAX(x, y):
     return (x > y) and x or y
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 320
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 343
 def MIN(x, y):
     return (x < y) and x or y
 
-# /home/gtspeedie/coreloop/coreloop/core_loop.h: 321
+# /home/gtspeedie/coreloop/coreloop/core_loop.h: 344
 def IS_NEG(x):
     return (x < 0) and 1 or 0
 
-calibrator_state = struct_calibrator_state# /home/gtspeedie/coreloop/coreloop/calibrator.h: 34
+calibrator_state = struct_calibrator_state# /home/gtspeedie/coreloop/coreloop/calibrator.h: 36
 
-calibrator_metadata = struct_calibrator_metadata# /home/gtspeedie/coreloop/coreloop/calibrator.h: 57
+calibrator_metadata = struct_calibrator_metadata# /home/gtspeedie/coreloop/coreloop/calibrator.h: 62
 
-core_state = struct_core_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 143
+saved_calibrator_weights = struct_saved_calibrator_weights# /home/gtspeedie/coreloop/coreloop/calibrator.h: 75
 
-route_state = struct_route_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 56
+core_state = struct_core_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 151
 
-time_counters = struct_time_counters# /home/gtspeedie/coreloop/coreloop/core_loop.h: 60
+route_state = struct_route_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 57
 
-core_state_base = struct_core_state_base# /home/gtspeedie/coreloop/coreloop/core_loop.h: 70
+time_counters = struct_time_counters# /home/gtspeedie/coreloop/coreloop/core_loop.h: 61
 
-cdi_stats = struct_cdi_stats# /home/gtspeedie/coreloop/coreloop/core_loop.h: 105
+core_state_base = struct_core_state_base# /home/gtspeedie/coreloop/coreloop/core_loop.h: 71
 
-delayed_cdi_sending = struct_delayed_cdi_sending# /home/gtspeedie/coreloop/coreloop/core_loop.h: 111
+cdi_stats = struct_cdi_stats# /home/gtspeedie/coreloop/coreloop/core_loop.h: 112
 
-watchdog_config = struct_watchdog_config# /home/gtspeedie/coreloop/coreloop/core_loop.h: 128
+delayed_cdi_sending = struct_delayed_cdi_sending# /home/gtspeedie/coreloop/coreloop/core_loop.h: 118
 
-watchdog_packet = struct_watchdog_packet# /home/gtspeedie/coreloop/coreloop/core_loop.h: 136
+watchdog_state = struct_watchdog_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 135
 
-saved_core_state = struct_saved_core_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 170
+watchdog_packet = struct_watchdog_packet# /home/gtspeedie/coreloop/coreloop/core_loop.h: 144
 
-end_of_sequence = struct_end_of_sequence# /home/gtspeedie/coreloop/coreloop/core_loop.h: 176
+saved_state = struct_saved_state# /home/gtspeedie/coreloop/coreloop/core_loop.h: 186
 
-startup_hello = struct_startup_hello# /home/gtspeedie/coreloop/coreloop/core_loop.h: 181
+state_recover_notification = struct_state_recover_notification# /home/gtspeedie/coreloop/coreloop/core_loop.h: 193
 
-heartbeat = struct_heartbeat# /home/gtspeedie/coreloop/coreloop/core_loop.h: 192
+end_of_sequence = struct_end_of_sequence# /home/gtspeedie/coreloop/coreloop/core_loop.h: 198
 
-meta_data = struct_meta_data# /home/gtspeedie/coreloop/coreloop/core_loop.h: 203
+startup_hello = struct_startup_hello# /home/gtspeedie/coreloop/coreloop/core_loop.h: 203
 
-housekeeping_data_base = struct_housekeeping_data_base# /home/gtspeedie/coreloop/coreloop/core_loop.h: 209
+heartbeat = struct_heartbeat# /home/gtspeedie/coreloop/coreloop/core_loop.h: 214
 
-housekeeping_data_0 = struct_housekeeping_data_0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 216
+meta_data = struct_meta_data# /home/gtspeedie/coreloop/coreloop/core_loop.h: 226
 
-housekeeping_data_1 = struct_housekeeping_data_1# /home/gtspeedie/coreloop/coreloop/core_loop.h: 221
+housekeeping_data_base = struct_housekeeping_data_base# /home/gtspeedie/coreloop/coreloop/core_loop.h: 232
+
+housekeeping_data_0 = struct_housekeeping_data_0# /home/gtspeedie/coreloop/coreloop/core_loop.h: 239
+
+housekeeping_data_1 = struct_housekeeping_data_1# /home/gtspeedie/coreloop/coreloop/core_loop.h: 244
 
 # No inserted files
 

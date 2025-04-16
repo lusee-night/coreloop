@@ -132,10 +132,11 @@ struct delayed_cdi_sending {
 };
 
 
-struct watchdog_config {
+struct watchdog_state {
     uint8_t FPGA_max_temp;
     uint8_t watchdogs_enabled;
-
+    bool feed_uc;
+    uint8_t tripped_mask;
 };
 
 
@@ -154,7 +155,7 @@ struct core_state {
     // A number be utility values 
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
-    struct watchdog_config watchdog;
+    struct watchdog_state watchdog;
     uint16_t cdi_wait_spectra;
     uint16_t avg_counter;
     uint32_t unique_packet_id;
