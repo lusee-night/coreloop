@@ -31,6 +31,14 @@
 
 #define LOOP_COUNT_RST 1024 // number of clock ticks before we reset loop count
 
+#define GRIMM_BINS 4 // number of bins in grimm's tales mode
+// Rover frequencies are 14.3625,  20.8875,  29.5625,  41.8125 MHz
+// Corresponding to bins 
+#define GRIMM_NDX0 574
+#define GRIMM_NDX1 835
+#define GRIMM_NDX2 1182
+#define GRIMM_NDX3 1672
+
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
 // flag to tell main we are doing a soft reset
 extern bool soft_reset_flag;
@@ -102,7 +110,7 @@ struct core_state_base {
     uint8_t reject_maxbad; // how many need to be bad to reject.
     uint16_t tr_start, tr_stop, tr_avg_shift; // time resolved start, stop and averaging
     // former sequencer state ends here
-
+    uint8_t grimm_enable; // grimm enable is true when the grimm's tales mode is running
     uint8_t averaging_mode; // perform stage 2 averaging using int32, 40 bit encoding or float
 
     uint32_t errors;
@@ -136,6 +144,7 @@ struct delayed_cdi_sending {
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
     uint8_t tr_count; // time-resolved packet number that needs to be sent
+    uint8_t grimm_count; // number of grimm packets that need to be sent (just one)
     uint8_t cal_count; // number of calibrator packets that need to be sent;
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor

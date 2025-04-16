@@ -206,6 +206,9 @@ RFS_SET_TR_ST_MSB =  0x64
 # frequency averaging
 RFS_SET_TR_AVG_SHIFT =  0x65 
 
+# Enable Grimm's tales mode
+RFS_SET_GRIMMS_TALES =  0x66 
+
 # Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
 RFS_SET_CAL_ENABLE =  0x70 
 

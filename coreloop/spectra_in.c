@@ -24,6 +24,7 @@ static inline int32_t safe_abs_val(int32_t val)
 }
 
 bool transfer_time_resolved_from_df(struct core_state* state);
+bool transfer_grimm_from_df(struct core_state* state);
 
 static inline uint32_t is_bad_int32(const int32_t* df_ptr, const void* ddr_ptr_previous, int total_idx, uint8_t weight, uint8_t reject_ratio)
 {
@@ -202,10 +203,26 @@ bool transfer_from_df(struct core_state* state)
     }
 
     transfer_time_resolved_from_df(state);
+    transfer_grimm_from_df(state);
     state->avg_counter++;
 
     return accept;
 }
+
+bool transfer_grimm_from_df (struct core_state* state) {
+    if (!state->base.grimm_enable) return false;
+    for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
+        const int32_t* const spectrum_ptr = (int32_t *)SPEC_BUF + sp * NCHANNELS;
+        uint32_t vals_in[4];
+        vals_in[0] = spectrum_ptr[GRIMM_NDX0];
+        vals_in[1] = spectrum_ptr[GRIMM_NDX1];
+        vals_in[2] = spectrum_ptr[GRIMM_NDX2];
+        vals_in[3] = spectrum_ptr[GRIMM_NDX3];
+        uint16_t* const grimm_ptr = grimm_spectra_write_buffer(state->tick_tock) + state->avg_counter * NSPECTRA * 5 * sizeof(uint16_t);
+        encode_4_into_5(vals_in, grimm_ptr);
+    }
+}
+
 
 bool transfer_time_resolved_from_df(struct core_state* state)
 {

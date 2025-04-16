@@ -71,6 +71,7 @@ void core_init_state(struct core_state* state){
     state->dispatch_delay = DISPATCH_DELAY;
     state->cdi_dispatch.prod_count = 0xFF; // >0F so disabled.
     state->cdi_dispatch.tr_count = 0xFF; // >0F so disabled.
+    state->cdi_dispatch.grimm_count = 0xFF; // >0 so disabled.
     state->cdi_dispatch.cal_count = 0xFF; // >0F so disabled.
     state->tick_tock = true;
     state->base.weight_current = state->base.weight = 0;

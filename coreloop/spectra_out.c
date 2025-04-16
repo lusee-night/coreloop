@@ -156,6 +156,24 @@ void dispatch_16bit_4_to_5_data(struct core_state* state) {
     cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
 
+
+void dispatch_grimm_data(struct core_state *state) {
+
+
+    // if we are in tick, we are copyng over TOCK, otherwise TICK !!
+    const void* ddr_ptr = grimm_spectra_read_buffer(state->tick_tock);
+    uint16_t data_size = NSPECTRA * 10 * get_Navg2(state); // we pack 4 int32_t into 5 int16_t
+
+    wait_for_cdi_ready();
+    void *cdi_ptr = (char*)TLM_BUF;
+    *((uint32_t *)(cdi_ptr)) = state->cdi_dispatch.packet_id;
+    cdi_ptr += sizeof(int32_t);
+    memcpy(cdi_ptr, ddr_ptr, data_size);
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_SpectraGrimm, data_size + sizeof(int32_t));
+}
+
+
+
 // send NSPECTRA packets
 void dispatch_tr_data(struct core_state* state) {
     // TODOS:
@@ -257,6 +275,11 @@ void transfer_to_cdi(struct core_state* state) {
     } else {
         state->cdi_dispatch.tr_count = 0xFF; // disable
     }
+    if (state->base.grimm_enable) {
+        state->cdi_dispatch.grimm_count = 0; // dispatch the grimm spectra
+    } else {
+        state->cdi_dispatch.grimm_count = 0xFF; // disable
+    }
     state->cdi_dispatch.Nfreq = get_Nfreq(state);
     state->cdi_dispatch.Navgf = state->base.Navgf;
     state->cdi_dispatch.appId = get_next_baseAppID(state);
@@ -267,14 +290,17 @@ void transfer_to_cdi(struct core_state* state) {
 }
 
 bool delayed_cdi_dispatch_done (struct core_state* state) {
-    return (state->cdi_dispatch.prod_count >= NSPECTRA && state->cdi_dispatch.tr_count >= NSPECTRA && state->cdi_dispatch.cal_count >= NCALPACKETS);
+    return (state->cdi_dispatch.prod_count >= NSPECTRA && 
+            state->cdi_dispatch.tr_count >=  NSPECTRA   && 
+            state->cdi_dispatch.grimm_count >= 1 &&
+            state->cdi_dispatch.cal_count >= NCALPACKETS);
 }
 bool process_delayed_cdi_dispatch (struct core_state* state) {
 
     // if we are waiting, let's prevent anyone else to send stuff untill we are done
     if (state->timing.cdi_dispatch_counter > tap_counter) return true;
 
-    // we always send 16 products + some time resolved
+    // we always send 16 products + maybe some time resolved + maybe grimm
     // we sent all we had, return to the core loop and let spectra accumulate
     if (delayed_cdi_dispatch_done(state)) {
         // we already sent all spectra, averaged and time resolved, nothing to do
@@ -336,7 +362,9 @@ bool process_delayed_cdi_dispatch (struct core_state* state) {
         debug_print_dec(elapsed);
         debug_print("\r\n");
 #endif
-
+    } else if (state->cdi_dispatch.grimm_count < 1) {
+        dispatch_grimm_data(state);
+        state->cdi_dispatch.grimm_count++;        
     } else if (state->cdi_dispatch.cal_count < NCALPACKETS) {
         dispatch_calibrator_data(state);
         state->cdi_dispatch.cal_count++;

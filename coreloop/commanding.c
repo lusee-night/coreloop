@@ -445,6 +445,9 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
+        case RFS_SET_GRIMMS_TALES:            
+            state->base.grimm_enable = arg_low;
+
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
             if (arg_low<0xFF) {

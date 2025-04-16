@@ -68,8 +68,8 @@
 // Calibrator debug data (8 packets); Priority:  High     
 #define AppID_Calibrator_Debug 0x028C
 
-// Very low priority, not expected to be normally downloaded; Priority:  VeryLow  
-#define AppID_SpectraVeryLow 0x02D0
+// Grimm's tales spectra; Priority:  High     
+#define AppID_SpectraGrimm 0x02A0
 
 // x= 0...4 for 4 autocorrelatins; Priority:  High     
 #define AppID_FW_DirectSpectrum 0x02E0

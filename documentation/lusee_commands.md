@@ -89,7 +89,7 @@
 | 0x57 | RFS_SET_PRODMASK_HIGH | set the output correlation mask products 8-15
 | 0x58 | RFS_SET_AVG_MODE      | set averaging mode. Valid values are 0 (use int32, divide immediately), 1 (use 40 bits, postpone division) and 2 (use floats)
 
-### 0x6X Rejection and time averaging
+### 0x6X Rejection, time resolved spectra and Grimm's mode
 
 | 0x6M | Name                 |  Description                                       |
 |------|----------------------|----------------------------------------------------|                             
@@ -97,8 +97,9 @@
 | 0x61 | RFS_SET_REJ_NBAD     | Number of bad samples to reject a spectrum         |
 | 0x62 | RFS_SET_TR_START_LSB | Time-resolved spectra starting bin, LSB            |
 | 0x63 | RFS_SET_TR_STOP_LSB  | Time-resolved spectra stopping bin, LSB            |
-| 0x64 | RFS_SET_TR_ST_MSB    |  Time-resolved spectra stopping MSB (b4-7), starting MSB (b0-3)       |
-| 0x65 | RFS_SET_TR_AVG_SHIFT |  frequency averaging       |
+| 0x64 | RFS_SET_TR_ST_MSB    | Time-resolved spectra stopping MSB (b4-7), starting MSB (b0-3)       |
+| 0x65 | RFS_SET_TR_AVG_SHIFT | frequency averaging       |
+| 0x66 | RFS_SET_GRIMMS_TALES | Enable Grimm's tales mode 
 
 
 

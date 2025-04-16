@@ -5,7 +5,7 @@
 struct timespec time_start, time_now;
 
 void* DDR3_BASE_ADDR;
-void *SPEC_TICK, *SPEC_TOCK, *TR_SPEC_TICK, *TR_SPEC_TOCK;
+void *SPEC_TICK, *SPEC_TOCK, *TR_SPEC_TICK, *TR_SPEC_TOCK, *GRIMM_SPEC_TICK, *GRIMM_SPEC_TOCK;
 void *FLASH_WORK;
 void *CAL_DF, *CAL_DATA;
 int g_core_timer_0;
@@ -20,6 +20,8 @@ void DDR3_init() {
     TR_SPEC_TICK = SPEC_TOCK + SPEC_DATA_SIZE;
     TR_SPEC_TOCK = TR_SPEC_TICK + TR_SPEC_DATA_SIZE;
     CAL_DATA = TR_SPEC_TOCK + TR_SPEC_DATA_SIZE;
+    GRIMM_SPEC_TICK = malloc(32*1024);
+    GRIMM_SPEC_TICK = malloc(32*1024);
 }
 
 void TMR_clear_int(int* time) {};
