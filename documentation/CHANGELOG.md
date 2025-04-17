@@ -13,7 +13,8 @@
  * Added ability to have 16+4 bit outputs
  * Added different way to average 32 bits: 32+8 bits and floats
  * Removed CDI_COMMAND_LOST due to false triggering. It seems some kind of race condition
-
+ * Added Grimm's tales mode
+ 
 ## Version 2r03
  * Extended the heartbeat packet to include additional information, including cdi command received, error array and cdi packets/bytes sent.
  * Implemented wait for n-spectra command
