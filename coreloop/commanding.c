@@ -36,16 +36,8 @@ bool process_cdi(struct core_state* state)
     #ifdef NOTREAL
     cdi_fill_command_buffer();
     #endif
-    
-    if (!cdi_new_command(&cmd, &arg_high, &arg_low)) {
-        // if there are no new commands, then the buffer is empty and we should agree
-        // on the total number of commands received.
-        if (state->cmd_counter != cdi_command_count()) {
-            state->base.errors |= CDI_COMMAND_LOST;
-            state->cmd_counter = cdi_command_count();
-        }
-    } else {
-        // process incoming commands 
+    if (cdi_new_command(&cmd, &arg_high, &arg_low)) {
+        // process incoming commands
         state->cmd_counter++;
         debug_print ("[>>");
         debug_print_hex(cmd);
@@ -66,7 +58,7 @@ bool process_cdi(struct core_state* state)
             case RFS_SET_SEQ_END:
                 state->sequence_upload = false;
                 // flash storing
-                if (arg_low>0) store_state(state);                
+                if (arg_low>0) store_state(state);
                 return false;
             case RFS_SET_BREAK:
                 // reset the commanding;
@@ -100,7 +92,7 @@ bool process_cdi(struct core_state* state)
     if (state->cdi_wait_spectra>0) return false; // not taking any command while waitig for spectra.
     if (state->sequence_upload) return false; // not taking any commands while uploading sequence.
     if (state->cmd_ptr == state->cmd_end) return false; // no new commands
- 
+
     // finally process the command in the line
     state->cmd_ptr = (state->cmd_ptr + 1) % CMD_BUFFER_SIZE;
     arg_low = state->cmd_arg_low[state->cmd_ptr];
@@ -156,7 +148,7 @@ bool process_cdi(struct core_state* state)
             state->timing.cdi_wait_counter = tap_counter + arg_low;
             break;
 
-        case RFS_SET_WAIT_SECS:            
+        case RFS_SET_WAIT_SECS:
             state->timing.cdi_wait_counter = tap_counter + arg_low * 100;
             break;
 
@@ -272,7 +264,7 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
-        case RFS_SET_SEQ_OVER: 
+        case RFS_SET_SEQ_OVER:
             state->request_eos = arg_low;
             break;
 
@@ -296,7 +288,7 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_GAIN_ADOPT:
-            for (int i=0; i<NINPUT; i++) {                
+            for (int i=0; i<NINPUT; i++) {
                 if ((arg_low & (1<<i)) && (state->base.gain[i] == GAIN_AUTO)) {
                     state->base.gain[i] = state->base.actual_gain[i];
                 }
@@ -468,6 +460,9 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
+        case RFS_SET_GRIMMS_TALES:            
+            state->base.grimm_enable = arg_low;
+
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
             if (arg_low<0xFF) {
@@ -479,7 +474,7 @@ bool process_cdi(struct core_state* state)
             break;
         case RFS_SET_CAL_AVG:
             state->cal.Navg2 = arg_low & 0x03;
-            state->cal.Navg3 = (arg_low & 0x3C) >> 2;            
+            state->cal.Navg3 = (arg_low & 0x3C) >> 2;
             //calib_set_Navg(arg_low & 0x03, (arg_low & 0x3C) >> 2);
             break;
 
@@ -487,7 +482,7 @@ bool process_cdi(struct core_state* state)
             state->cal.notch_index = arg_low;
             break;
         case RFS_SET_CAL_DRIFT_GUARD:
-            state->cal.drift_guard = arg_low;   
+            state->cal.drift_guard = arg_low;
             break;
         case RFS_SET_CAL_DRIFT_STEP:
             state->cal.drift_step = arg_low;
@@ -529,11 +524,11 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_CAL_WEIGHT_NDX_LO:
             state->cal.weight_ndx = arg_low;
             break;
-        
+
         case RFS_SET_CAL_WEIGHT_NDX_HI:
             state->cal.weight_ndx = 256 + arg_low;
             break;
-        
+
         case RFS_SET_CAL_WEIGHT_VAL:
             // this prevents some resolution loss, but mostly compulsive obsessive disorder
             //if (arg_low == 0xFF)
@@ -547,7 +542,7 @@ bool process_cdi(struct core_state* state)
             calib_zero_weights();
             break;
 
-        case RFS_SET_CAL_PFB_NDX_LO: 
+        case RFS_SET_CAL_PFB_NDX_LO:
             state->cal.pfb_index = arg_low + (state->cal.pfb_index & 0xFF00);
             break;
 
@@ -613,7 +608,7 @@ bool process_cdi(struct core_state* state)
             state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;
             state->cal.zoom_prod = (arg_low & 0b110000) >> 4;
             break;
-        
+
         case RFS_SET_ZOOM_NFFT:
             if (arg_low>32) {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
@@ -625,7 +620,13 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_ZOOM_NAVG:
             state->cal.zoom_Navg = arg_low;
             break;
-        
+
+        case RFS_SET_AVG_MODE:
+            if (arg_low > (uint8_t)AVG_FLOAT) {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            } else {
+                state->base.averaging_mode = arg_low;
+            }
 
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");

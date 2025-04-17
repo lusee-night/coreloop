@@ -35,6 +35,8 @@ extern void* SPEC_TOCK;
 extern void* FLASH_WORK; 
 extern void* TR_SPEC_TICK;
 extern void* TR_SPEC_TOCK;
+extern void* GRIMM_SPEC_TICK;
+extern void* GRIMM_SPEC_TOCK;
 extern void* TLM_BUF;
 extern void* SPEC_BUF;
 extern void* CAL_DF;
@@ -49,5 +51,8 @@ static inline void* spectra_write_buffer(bool tick_tock)    { return tick_tock ?
 static inline void* spectra_read_buffer(bool tick_tock)     { return tick_tock ? SPEC_TOCK    : SPEC_TICK; };
 static inline void* tr_spectra_write_buffer(bool tick_tock) { return tick_tock ? TR_SPEC_TICK : TR_SPEC_TOCK; }
 static inline void* tr_spectra_read_buffer(bool tick_tock)  { return tick_tock ? TR_SPEC_TOCK : TR_SPEC_TICK; };
+static inline void* grimm_spectra_write_buffer(bool tick_tock) { return tick_tock ? GRIMM_SPEC_TICK : GRIMM_SPEC_TOCK; }
+static inline void* grimm_spectra_read_buffer(bool tick_tock)  { return tick_tock ? GRIMM_SPEC_TOCK : GRIMM_SPEC_TICK; };
+
 
 #endif

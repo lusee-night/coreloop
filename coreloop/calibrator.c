@@ -3,11 +3,12 @@
 #include "cdi_interface.h"
 #include "lusee_appIds.h"
 #include "LuSEE_IO.h"
+#include "fft.h"
 #include <string.h>
 
-#define CAL_MODE0_CHUNKSIZE (1024*sizeof(uint32_t))  
+#define CAL_MODE0_CHUNKSIZE (1024*sizeof(uint32_t))
 #define CAL_MODE0_DATASIZE (CAL_MODE0_CHUNKSIZE*5+1*sizeof(uint32_t)) // 5 chunks + 1 register
-#define CAL_MODE0_PACKETSIZE (CAL_MODE0_CHUNKSIZE*2) 
+#define CAL_MODE0_PACKETSIZE (CAL_MODE0_CHUNKSIZE*2)
 #define CAL_MODE0_APPID_OFFSET 0
 
 #define CAL_MODE1_CHUNKSIZE (2048*sizeof(uint32_t)) // REAL or IMage Size
@@ -18,7 +19,7 @@
 
 #define CAL_MODE3_CHUNKSIZE (1024*sizeof(uint32_t))
 #define CAL_MODE3_DATASIZE (24*CAL_MODE3_CHUNKSIZE) // 24 channels
-#define CAL_MODE3_PACKETSIZE (3*1024*sizeof(uint32_t)) 
+#define CAL_MODE3_PACKETSIZE (3*1024*sizeof(uint32_t))
 #define CAL_MODE3_APPID_OFFSET 11
 uint32_t register_scratch[CAL_NREGS];
 
@@ -84,7 +85,7 @@ void set_calibrator(struct calibrator_state* cal) {
         if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
             calibrator_slice_init(cal);
         }
-    }       
+    }
     calibrator_set_slices(cal);
     cal_clear_df_flag();
 }
@@ -109,6 +110,8 @@ void calibrator_set_slices(struct calibrator_state* cal) {
     calib_set_slicers(cal->powertop_slice, cal->powertop_slice+cal->delta_powerbot_slice, cal->sum1_slice, cal->sum2_slice, 0, cal->prod1_slice, cal->prod2_slice);
 }
 
+static float sqf(float x) { return x * x; }
+static int32_t sqi(int32_t x) { return x * x; }
 
 struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     struct calibrator_metadata* out = (struct calibrator_metadata *)CAL_DATA;
@@ -193,28 +196,162 @@ void process_cal_mode_raw11(struct core_state* state) {
 }
 
 void process_cal_zoom(struct core_state* state) {
-    // for arnur to implement.
+    void* to_send = CAL_DATA + 4 * FFT_SIZE * state->cal.zoom_Nfft * sizeof(int32_t);
+
+    // after this function finishes, raw PFB outputs will be in CAL_DF
     cal_transfer_data(2);
-    // do FFTs
-    cal_clear_df_flag();
-    // correlate 
-    // accumulate
-    // send to CDI
+
+    for (int zoom_avg_idx = 0; zoom_avg_idx < state->cal.zoom_Navg; ++zoom_avg_idx) {
+
+        int32_t* ch1_real = CAL_DF;
+        int32_t* ch1_imag = ch1_real + NCHANNELS;
+        int32_t* ch2_real = ch1_imag + NCHANNELS;
+        int32_t* ch2_imag = ch2_real + NCHANNELS;
+
+        // compute FFT
+#ifdef LN_CORELOOP_FFT_TIMING
+        timer_start();
+#endif
+
+        bool use_float_fft = true;
+
+        for(int fft_idx = 0; fft_idx < state->cal.zoom_Nfft; ++fft_idx) {
+
+            int32_t* fft_input_ch1_re = ch1_real + fft_idx * FFT_SIZE;
+            int32_t* fft_input_ch1_im = ch1_imag + fft_idx * FFT_SIZE;
+            int32_t* fft_input_ch2_re = ch2_real + fft_idx * FFT_SIZE;
+            int32_t* fft_input_ch2_im = ch2_imag + fft_idx * FFT_SIZE;
+
+            if (use_float_fft) {
+
+#ifdef LN_CORELOOP_FFT_TIMING
+                timer_start();
+#endif
+                float* fft_output_ch1_re = (float*)(CAL_DATA) + fft_idx * FFT_SIZE;
+                float* fft_output_ch1_im = fft_output_ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                float* fft_output_ch2_re = fft_output_ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                float* fft_output_ch2_im = fft_output_ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+
+                fft_float(fft_input_ch1_re, fft_input_ch1_im, fft_output_ch1_re, fft_output_ch1_im);
+
+#ifdef LN_CORELOOP_FFT_TIMING
+                state->fft_time = timer_stop();
+#endif
+
+                fft_float(fft_input_ch2_re, fft_input_ch2_im, fft_output_ch2_re, fft_output_ch2_im);
+            } else {
+
+                int32_t* fft_output_ch1_re = (int32_t*)(CAL_DATA) + fft_idx * FFT_SIZE;
+                int32_t* fft_output_ch1_im = fft_output_ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                int32_t* fft_output_ch2_re = fft_output_ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                int32_t* fft_output_ch2_im = fft_output_ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+
+#ifdef LN_CORELOOP_FFT_TIMING
+                timer_start();
+#endif
+
+                fft_int(fft_input_ch1_re, fft_input_ch1_im, fft_output_ch1_re, fft_output_ch1_im);
+
+#ifdef LN_CORELOOP_FFT_TIMING
+                state->fft_time = timer_stop();
+#endif
+                fft_int(fft_input_ch2_re, fft_input_ch2_im, fft_output_ch2_re, fft_output_ch2_im);
+            }
+        }
+
+        // we no longer need data from CAL_DF, all zoom_Nfft FFTs are stored at CAL_DATA
+        cal_clear_df_flag();
+
+        // correlate and accumulate
+        for(int fft_idx = 0; fft_idx < state->cal.zoom_Nfft; ++fft_idx) {
+
+            if (use_float_fft) {
+                float* ch1_re = (float*)(CAL_DATA) + fft_idx * FFT_SIZE;
+                float* ch1_im = ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                float* ch2_re = ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                float* ch2_im = ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+
+                float* ch1_autocorr_float = (float*)(to_send) + fft_idx * FFT_SIZE;
+                float* ch2_autocorr_float = ch1_autocorr_float + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                float* ch1_2_corr_real_float = ch2_autocorr_float + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                float* ch1_2_corr_imag_float = ch1_2_corr_real_float + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+
+                for(int i = 0; i < FFT_SIZE; i++) {
+                    if (zoom_avg_idx == 0) {
+                        ch1_autocorr_float[i] = (sqf(ch1_re[i]) + sqf(ch1_im[i])) / state->cal.zoom_Navg;
+                        ch2_autocorr_float[i] = (sqf(ch2_re[i]) + sqf(ch2_im[i])) / state->cal.zoom_Navg;
+                        ch1_2_corr_real_float[i] =  (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
+                        ch1_2_corr_imag_float[i] =  (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
+                    } else {
+                        ch1_autocorr_float[i] += (sqf(ch1_re[i]) + sqf(ch1_im[i])) / state->cal.zoom_Navg;
+                        ch2_autocorr_float[i] += (sqf(ch2_re[i]) + sqf(ch2_im[i])) / state->cal.zoom_Navg;
+                        ch1_2_corr_real_float[i] +=  (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
+                        ch1_2_corr_imag_float[i] +=  (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
+                    }
+                }
+
+            } else {
+                int32_t* ch1_re = (int32_t*)(CAL_DATA) + fft_idx * FFT_SIZE;
+                int32_t* ch1_im = ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                int32_t* ch2_re = ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                int32_t* ch2_im = ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+
+                int32_t* ch1_autocorr_int = (int32_t*)(to_send) + fft_idx * FFT_SIZE;
+                int32_t* ch2_autocorr_int = ch1_autocorr_int + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                int32_t* ch1_2_corr_real_int = ch2_autocorr_int + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+                int32_t* ch1_2_corr_imag_int = ch1_2_corr_real_int + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
+
+                for(int i = 0; i < FFT_SIZE; i++) {
+                    if (zoom_avg_idx == 0) {
+                        ch1_autocorr_int[i] = (sqi(ch1_re[i]) + sqi(ch1_im[i])) / state->cal.zoom_Navg;
+                        ch2_autocorr_int[i] = (sqi(ch2_re[i]) + sqi(ch2_im[i])) / state->cal.zoom_Navg;
+                        ch1_2_corr_real_int[i] =  (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
+                        ch1_2_corr_imag_int[i] =  (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
+                    } else {
+                        ch1_autocorr_int[i] += (sqi(ch1_re[i]) + sqi(ch1_im[i])) / state->cal.zoom_Navg;
+                        ch2_autocorr_int[i] += (sqi(ch2_re[i]) + sqi(ch2_im[i])) / state->cal.zoom_Navg;
+                        ch1_2_corr_real_int[i] +=  (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
+                        ch1_2_corr_imag_int[i] +=  (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
+                    }
+                }
+            }
+        } // zoom_Nfft FFTs were correlated and accumulated
+    }// zoom_Navg packets were averaged, sending to CDI
+
+
+    // TODO: should we really do it here?
+    struct delayed_cdi_sending* d = &(state->cdi_dispatch);
+    wait_for_cdi_ready();
+
+    uint32_t old_appId = d->cal_appId;
+    uint32_t old_cal_size = d->cal_size;
+
+    d->cal_appId = AppID_ZoomSpectra;
+    d->cal_size = 4 * sizeof(int32_t) * FFT_SIZE;
+
+    memcpy(TLM_BUF, to_send, d->cal_size);
+
+    cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId, d->cal_size);
+
+    debug_print("z#");
+
+    // restore previous cal_appId, cal_size
+    d->cal_appId = old_appId;
+    d->cal_size = old_cal_size;
 }
 
 
-
 void process_calibrator(struct core_state* state) {
- 
+
     static int32_t hk=0;
     static int32_t old_errors = 0xFF;
-    static int32_t old_bitslicer_errors = 0; 
+    static int32_t old_bitslicer_errors = 0;
 
     //if we are not enabled, return
     if (!state->base.calibrator_enable) return;
     // if we are still transferring, return
     if (state->cdi_dispatch.cal_count <0x20) return;
-    
+
     struct calibrator_state* cal = &(state->cal);
     bool df_ready[4];
     cal_new_cal_ready(df_ready);
@@ -230,7 +367,7 @@ void process_calibrator(struct core_state* state) {
     }
 
 
-    
+
     cal->errors = calib_get_errors();
     if (old_errors != cal->errors) {
             debug_print("[ * CE ");
@@ -243,10 +380,10 @@ void process_calibrator(struct core_state* state) {
             debug_print("  * ]");
             old_errors = cal->errors;
     }
-    
-    
+
+
     uint32_t bit_slicer_flags = calib_get_slicer_errors();
-        
+
     if (bit_slicer_flags!= old_bitslicer_errors) {
         debug_print("[ B");
         debug_print_dec(bit_slicer_flags);
@@ -260,12 +397,12 @@ void process_calibrator(struct core_state* state) {
 
         old_bitslicer_errors = bit_slicer_flags;
     }
-    
+
     /*
-    if ((bit_slicer_flags > 0) & (cal->mode >= CAL_MODE_BIT_SLICER_SETTLE) & (cal->auto_slice)) {        
+    if ((bit_slicer_flags > 0) & (cal->mode >= CAL_MODE_BIT_SLICER_SETTLE) & (cal->auto_slice)) {
         cal->mode = CAL_MODE_BIT_SLICER_SETTLE;
     }
-    
+
     if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
         if (cal->auto_slice) {
             if ((bit_slicer_flags == 0) & (new_data)) {
@@ -276,7 +413,7 @@ void process_calibrator(struct core_state* state) {
                 bool restart = false;
 
                 if (bit_slicer_flags & SLICER_ERR_PTOP) {restart=true; cal->powertop_slice+=1; debug_print("\r\n[PTOP++]");}
-                if (bit_slicer_flags & SLICER_ERR_PR_TOP) {restart=true; cal->powertop_slice+=1; debug_print("\r\n[PrTOP++]");}                
+                if (bit_slicer_flags & SLICER_ERR_PR_TOP) {restart=true; cal->powertop_slice+=1; debug_print("\r\n[PrTOP++]");}
                 if (bit_slicer_flags & SLICER_ERR_SUM1) {restart=true; cal->sum1_slice+=1;  debug_print("\r\n[SUM1++]");}
                 if (bit_slicer_flags & SLICER_ERR_SUM2) {restart=true; cal->sum2_slice+=1;  debug_print("\r\n[SUM2++]");}
                 if (bit_slicer_flags & (SLICER_ERR_FD+SLICER_ERR_SD1+SLICER_ERR_SD2+SLICER_ERR_SD3)) {restart=true; cal->sum1_slice++; debug_print("\r\n[SUMX++]");}
@@ -285,35 +422,35 @@ void process_calibrator(struct core_state* state) {
                 if (bit_slicer_flags & SLICER_ERR_PR_BOT) {restart=true; cal->powertop_slice+=1; debug_print("\r\n[PrBOT++]");}
                 if (bit_slicer_flags & SLICER_ERR_PROD1) {restart=true; cal->prod1_slice+=1; debug_print("\r\n[PROD1++]");}
                 else if (bit_slicer_flags & SLICER_ERR_PROD2) {
-                    restart=true; 
+                    restart=true;
                     // something weird going on here.
                     if (cal->prod2_slice - cal->prod1_slice > 5) {
-                        cal->prod1_slice += 1; 
+                        cal->prod1_slice += 1;
                     } else {
-                        cal->prod2_slice += 1; 
-                    }                    
-                    debug_print("\r\n[PROD2++]");                
+                        cal->prod2_slice += 1;
+                    }
+                    debug_print("\r\n[PROD2++]");
                 }
-                
-                if (restart) { calibrator_set_slices(cal); cal_reset(); 
-                
+
+                if (restart) { calibrator_set_slices(cal); cal_reset();
+
                     debug_print("[SLICERS ");
                     debug_print_dec (cal->powertop_slice); debug_print(" ");
                     debug_print_dec (cal->sum1_slice); debug_print(" ");
-                    debug_print_dec (cal->sum2_slice); debug_print(" ");                    
+                    debug_print_dec (cal->sum2_slice); debug_print(" ");
                     debug_print_dec (cal->prod1_slice); debug_print(" ");
-                    debug_print_dec (cal->prod2_slice); debug_print(" ]\n\r");                    
-                }    
+                    debug_print_dec (cal->prod2_slice); debug_print(" ]\n\r");
+                }
                 // do not return, can go straight into settle. (check later)
-            }   
+            }
         } else {
             cal->mode = CAL_MODE_SNR_SETTLE;
         }
     }
-    */    
-    
+    */
+
     if (cal->mode == CAL_MODE_SNR_SETTLE) {
-        if (df_ready[3]) {            
+        if (df_ready[3]) {
             struct calibrator_metadata* out = process_cal_mode11 (state);
             debug_print(" SNR:");
 
@@ -328,11 +465,11 @@ void process_calibrator(struct core_state* state) {
                     int diff = out->SNR_max[ant] - out->SNR_min[ant];
                     cal->SNRon = out->SNR_min[ant] + diff * 3 / 4;
                     cal->SNRoff = out->SNR_min[ant] + diff / 8;
-                    calibrator_set_SNR(cal);                
-                    cal->mode = CAL_MODE_RUN;  
+                    calibrator_set_SNR(cal);
+                    cal->mode = CAL_MODE_RUN;
                     debug_print("\r\n[ -> RUN]")
-                    return; 
-                }            
+                    return;
+                }
             }
         }
     }
@@ -342,10 +479,10 @@ void process_calibrator(struct core_state* state) {
         if (df_ready[0]) {
             process_cal_mode00(state);
             return;
-        } 
+        }
         if (df_ready[3]) {
             process_cal_mode_raw11(state);
-            /* 
+            /*
             struct calibrator_metadata* out = process_cal_mode11(state,CAL_MODE_RAW0);
             if (out->have_lock[0] + out->have_lock[1] + out->have_lock[2] + out->have_lock[3] == 0) {
                 // we have lost lock, let's go back to SNR acquisition
@@ -383,7 +520,7 @@ void process_calibrator(struct core_state* state) {
 
 
 void dispatch_calibrator_data(struct core_state* state) {
-    
+
     struct delayed_cdi_sending* d = &(state->cdi_dispatch);
     wait_for_cdi_ready();
     if (d->cal_appId == AppID_Calibrator_MetaData) {
@@ -397,16 +534,16 @@ void dispatch_calibrator_data(struct core_state* state) {
         *ptr = state->cdi_dispatch.cal_packet_id; ptr++;
         *ptr = state->base.time_32; ptr++;
         *ptr = state->base.time_16; ptr++;
-        
+
         uint32_t start = (state->cdi_dispatch.cal_count)*d->cal_packet_size;
         uint32_t appid = d->cal_appId+state->cdi_dispatch.cal_count;
         if (start+d->cal_packet_size >= d->cal_size) {
             d->cal_packet_size = d->cal_size-start;
-            d->cal_count=0xFE; 
+            d->cal_count=0xFE;
         }
         memcpy ((void *)(ptr), (void *)(CAL_DATA+start), d->cal_packet_size);
-        cdi_dispatch_uC(&(state->cdi_stats), appid, d->cal_packet_size+12); // +12 for the header        
+        cdi_dispatch_uC(&(state->cdi_stats), appid, d->cal_packet_size+12); // +12 for the header
         debug_print("c");
-    } 
-    
+    }
+
 }

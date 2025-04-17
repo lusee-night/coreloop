@@ -8,8 +8,9 @@
 #define CDI_COMMAND_BAD 2
 // CDI command called with wrong arguments
 #define CDI_COMMAND_BAD_ARGS 4
-// CDI command lost due to FW FIFO overflow
-#define CDI_COMMAND_LOST 8
+// RESERVED
+//#define RESERVED 8
+
 // CDI internal bufer overlow
 #define CDI_COMMAND_BUFFER_OVERFLOW 16
 // Cannot autogain

@@ -34,7 +34,6 @@ bool process_watchdogs (struct core_state* state) {
 
         if (tripped > 0) {
             state->watchdog.tripped_mask |= tripped;
-            printf("[Watchdog] Detected trip: 0x%02X\n\r", tripped); 
             return true;
         }
     }
@@ -47,7 +46,9 @@ bool process_watchdogs (struct core_state* state) {
         if (state->base.spectrometer_enable) RFS_stop(state);
     }   
     for (int i=0; i<4; i++) state->base.TVS_sensors[i] = TVS_sensors_avg[i];
-
+    state->base.loop_count_min = loop_count_min_latch;
+    state->base.loop_count_max = loop_count_max_latch;
+    
     return false;
 }
 

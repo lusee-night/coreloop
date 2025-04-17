@@ -188,6 +188,9 @@ RFS_SET_PRODMASK_LOW =  0x56
 # set the output correlation mask products 8-15
 RFS_SET_PRODMASK_HIGH =  0x57 
 
+# set averaging mode. Valid values are 0 (use int32, divide immediately), 1 (use 40 bits, postpone division) and 2 (use floats)
+RFS_SET_AVG_MODE =  0x58 
+
 # Set fraction to reject, 0 to disable rejections
 RFS_SET_REJ_SET =  0x60 
 
@@ -205,6 +208,9 @@ RFS_SET_TR_ST_MSB =  0x64
 
 # frequency averaging
 RFS_SET_TR_AVG_SHIFT =  0x65 
+
+# Enable Grimm's tales mode
+RFS_SET_GRIMMS_TALES =  0x66 
 
 # Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
 RFS_SET_CAL_ENABLE =  0x70 

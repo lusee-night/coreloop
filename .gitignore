@@ -66,3 +66,6 @@ cpdiff.sh
 # JetBrains stuff
 .idea/
 cmake-build-debug/
+
+pycoreloop/*.py
+-pycoreloop/__init__.py

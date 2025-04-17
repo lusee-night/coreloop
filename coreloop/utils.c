@@ -244,7 +244,7 @@ void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out)
     }
 }
 
-void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out)
+void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out)
 {
     const uint16_t shifts = *vals_in;
     const uint16_t* compressed = vals_in + 1;

@@ -39,5 +39,6 @@ void default_state (struct core_state_base *seq)
     seq->reject_maxbad = 0;
     seq->tr_start = 1;
     seq->tr_stop = 0;
+    seq->grimm_enable = 0;
 }
 
