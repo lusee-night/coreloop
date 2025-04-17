@@ -212,7 +212,6 @@ void core_loop(struct core_state* state)
         }
 
         if (state->watchdog.tripped_mask > 0) {
-            printf("Sending watchdog packet with mask: 0x%02X\n\r", state->watchdog.tripped_mask);
             send_watchdog_packet(state, state->watchdog.tripped_mask);
             state->watchdog.tripped_mask = 0;
         }
