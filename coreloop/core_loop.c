@@ -86,6 +86,8 @@ void core_init_state(struct core_state* state){
     state->watchdog.FPGA_max_temp = 90;
     spec_enable_watchdogs(0);
     state->watchdog.watchdogs_enabled = false;
+    state->watchdog.feed_uc = true;
+    state->watchdog.tripped_mask = 0;
     state->cmd_counter = 0;
     state->cdi_stats.cdi_packets_sent = 0;
     state->cdi_stats.cdi_bytes_sent = 0;
@@ -208,6 +210,13 @@ void core_loop(struct core_state* state)
             else if (process_eos(state)) {}
             else if (delayed_cdi_dispatch_done(state)  && cdi_ready()) {break;}
         }
+
+        if (state->watchdog.tripped_mask > 0) {
+            printf("Sending watchdog packet with mask: 0x%02X\n\r", state->watchdog.tripped_mask);
+            send_watchdog_packet(state, state->watchdog.tripped_mask);
+            state->watchdog.tripped_mask = 0;
+        }
+
     }
 
 }

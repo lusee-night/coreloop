@@ -219,6 +219,21 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_ENABLE_WATCHDOGS:
             state->watchdog.watchdogs_enabled = arg_low;
             spec_enable_watchdogs(arg_low);
+            break;
+
+        case RFS_SET_TEST_WATCHDOG:
+            switch (arg_low) {
+                case 0x13:
+                    state->watchdog.feed_uc = false;  // stop feeding uC watchdog
+                    break;
+                case 0x49:
+                    state->watchdog.tripped_mask |= (1 << 0);  // simulate another WD (bit 0 = ADC)
+                    break;
+                default:
+                    state->base.errors |= CDI_COMMAND_BAD_ARGS;  // standard bad argument error
+                    break;
+            }
+            break;
 
         case RFS_SET_LOOP_START:
             if (state->loop_depth < MAX_LOOPS) {

@@ -103,6 +103,9 @@
 // Enables or disables the watchdogs. Accepts a single byte argument.
 #define RFS_SET_ENABLE_WATCHDOGS  0x19 
 
+// Test command for watchdog behavior
+#define RFS_SET_TEST_WATCHDOG 0x1A
+
 // RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
 #define RFS_SET_SEQ_BEGIN  0x20 
 
