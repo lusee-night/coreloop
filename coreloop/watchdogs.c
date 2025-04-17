@@ -28,7 +28,7 @@ void send_watchdog_packet(struct core_state* state, uint8_t tripped) {
 bool process_watchdogs (struct core_state* state) {
     if (state->watchdog.watchdogs_enabled) {
         if (state->watchdog.feed_uc) {
-            feed_uC_watchdog();
+            spec_feed_uC_watchdog();
         }
         uint8_t tripped = spec_watchdog_tripped();
 

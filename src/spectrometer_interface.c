@@ -237,7 +237,7 @@ void spec_clear_watchdog_tripped(void) {
 
 
 
-void feed_uC_watchdog(void) {
+void spec_feed_uC_watchdog(void) {
     if (watchdogs_enabled) {
         watchdog_start_tick = tap_counter;
     }
