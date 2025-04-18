@@ -37,8 +37,7 @@
 | 0x17 | RFS_SET_WR_VAL_2           | Val bits 16-23
 | 0x18 | RFS_SET_WR_VAL_3           | Val bits 24-32 
 | 0x19 | RFS_SET_ENABLE_WATCHDOGS   | Enables or disables the watchdogs. Accepts a single byte argument.
-
-
+| 0x1A | RFS_SET_TEST_WATCHDOG      | arg = 0x13 - stop feed uC WD, 0x49 - simulate a watchdog trip 
 ### 0x2X Program flow control
 
 | 0x2M | Name                       |  Description                                       |
