@@ -58,16 +58,14 @@ int main(int argc, char *argv[]) {
     }
 
     DDR3_init();
+    spectrometer_pre_init();
+    cdi_pre_init();
     clock_gettime(CLOCK_REALTIME, &time_start);
-    soft_reset_flag = 0;
-    do {
-        printf("HERE {soft_reset_flag: %d}\n", soft_reset_flag);
-        core_loop(&global_state);
-    } while (soft_reset_flag);
-
-
+    
+    // This is the actual main loop
+    core_loop(&global_state);
+    
     return 0;
-
 }
 
 void raiseError(char *str, char *argv[]) {

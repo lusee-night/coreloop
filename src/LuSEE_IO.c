@@ -22,6 +22,7 @@ void DDR3_init() {
     CAL_DATA = TR_SPEC_TOCK + TR_SPEC_DATA_SIZE;
     GRIMM_SPEC_TICK = malloc(32*1024);
     GRIMM_SPEC_TICK = malloc(32*1024);
+    FLASH_WORK = malloc(64*1024);
 }
 
 void TMR_clear_int(int* time) {};

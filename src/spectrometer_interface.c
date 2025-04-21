@@ -41,7 +41,7 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 
 
 
-void spectrometer_init() {
+void spectrometer_pre_init() {
     FILE* file = fopen(true_spectrum_filename, "r");
     if (file == NULL) {
         printf("Error opening file: %s\n", true_spectrum_filename);
@@ -78,6 +78,8 @@ void spectrometer_init() {
         boot_registers[i] = 0;
     }
 }
+
+void spectrometer_init() {}
 
 uint32_t spec_get_version(int s) {
     switch (s) {

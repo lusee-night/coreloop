@@ -40,8 +40,6 @@
 #define GRIMM_NDX3 1672
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
-// flag to tell main we are doing a soft reset
-extern bool soft_reset_flag;
 // tap counter increased in the interrupt
 extern volatile uint64_t tap_counter;
 // TVS sensors averaged in timer interrupt
@@ -179,6 +177,7 @@ struct core_state {
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
     struct watchdog_state watchdog;
+    bool soft_reset_flag;
     uint16_t cdi_wait_spectra;
     uint16_t avg_counter;
     uint32_t unique_packet_id;
@@ -271,11 +270,6 @@ struct housekeeping_data_1 {
     uint8_t actual_gain[NINPUT];
 };
 
-
-
-
-//extern struct core_state state;
-extern bool soft_reset_flag;
 
 // main function
 void core_loop(struct core_state*);

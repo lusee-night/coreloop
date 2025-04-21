@@ -15,7 +15,7 @@
             do { if (DEBUG) printf("%i", fmt); } while (0);
 
 #define debug_print_hex(fmt) \
-            do { if (DEBUG) printf("%x",fmt); } while (0);
+            do { if (DEBUG) printf("0x%x",fmt); } while (0);
 
 
 // Global variables
@@ -53,6 +53,10 @@ static inline void* tr_spectra_write_buffer(bool tick_tock) { return tick_tock ?
 static inline void* tr_spectra_read_buffer(bool tick_tock)  { return tick_tock ? TR_SPEC_TOCK : TR_SPEC_TICK; };
 static inline void* grimm_spectra_write_buffer(bool tick_tock) { return tick_tock ? GRIMM_SPEC_TICK : GRIMM_SPEC_TOCK; }
 static inline void* grimm_spectra_read_buffer(bool tick_tock)  { return tick_tock ? GRIMM_SPEC_TOCK : GRIMM_SPEC_TICK; };
+
+// test harness init
+void spectrometer_pre_init();
+void cdi_pre_init();
 
 
 #endif

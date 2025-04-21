@@ -36,8 +36,9 @@ int sockfd_in;
 struct sockaddr_in serverAddr;
 
 
+void cdi_init() {}
 
-void cdi_init(){
+void cdi_pre_init(){
     cdi_command_counter = 0;
     TLM_BUF = malloc(STAGING_AREA_SIZE);
     switch(cdi_format) {

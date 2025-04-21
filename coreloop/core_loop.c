@@ -18,8 +18,7 @@
 // thing that are touched in the interrupt need to be proclaimed volatile
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
-// flag to tell main we are doing a soft reset
-bool soft_reset_flag;
+
 // tap counter increased in the interrupt
 volatile uint64_t tap_counter;
 // sensor averaging
@@ -56,6 +55,7 @@ void core_init_state(struct core_state* state){
     memset(state, 0, sizeof(struct core_state));
     default_state (&state->base);
     calibrator_default_state(&state->cal);
+    state->soft_reset_flag = false;
     state->base.errors = 0;
     state->cmd_ptr = state->cmd_end = 0;
     state->sequence_upload = false;
@@ -129,94 +129,113 @@ bool process_waveform(struct core_state* state) {
     return true;
 }
 
+void init_tvs_sensor_accum() {
+    for (int i=0; i<4; i++) TVS_sensors[i] = 0;
+}
+
+
+static void display_greeting(void)
+{
+    debug_print ("\r\n\r\n***** LuSEE-Night FS ");
+    debug_print_hex (VERSION_ID)
+    debug_print (" (FW ");
+    debug_print_hex (spec_get_version(1));
+    debug_print (") ***** \n\r");
+}
 
 void core_loop(struct core_state* state)
 {
-    // disable watchdogs at start
-    spectrometer_init();
-    calib_init();
-    cdi_init();
-
-    fft_precompute_tables();
-
-    soft_reset_flag = false;
-    for (int i=0; i<4; i++) TVS_sensors[i] = 0;
-    // now empty the CDI command buffer in case we are doing the reset.
-    #ifndef NOTREAL
-    // by default clear the incoming command buffer
-    if (spec_read_uC_register(1)==0) {
-        uint8_t tmp;
-        while (cdi_new_command(&tmp, &tmp, &tmp)) {};
-    }
-    #endif
-
-    send_hello_packet(state);
-    core_init_state(state);
-    spec_clear_df_flag();
-
-    #ifndef NOTREAL
-    // restore state from flash if unscheduled reset occured
-    restore_state(state);
-    #endif
+    // this is the outer soft-reboot loop
+    do {        
+        if (DEBUG) display_greeting();
+        // initialize spectrometer hardware, disable watchdogs, etc
+        spectrometer_init();
+        // initialize the calibrator hardware
+        calib_init();
+        // initialize cdi communication
+        cdi_init();
+        // set sensible defaults in our state
+        core_init_state(state);
+        // initialize accumulators used in the interrupt
+        init_tvs_sensor_accum();
+        // send the hello packet saying we are alive
+        send_hello_packet(state);
+        // ignore any data waiting in the data formatter
+        spec_clear_df_flag();
+        // precomput the FFT tables for zoom (FIX THIS)
+        fft_precompute_tables();
     
-    spec_write_uC_register(0,0);
-    spec_write_uC_register(1,0);
-    for (;;)
-    {
-        // Check if we have a new CDI command and process it.
-        // If this functions returns true, it means we got the time-to-die command
-        if (process_cdi(state)) break;
-        if (process_watchdogs(state)) break;
-        process_spectrometer(state);
-        process_calibrator(state);
-        process_gain_range(state);
-        if (soft_reset_flag) break;
-        // we always process just one CDI interfacing things
-        // compiler
-        if (cdi_ready()) {
-            if (process_hearbeat(state)) {}
-            else if (process_delayed_cdi_dispatch(state)) {}
-            else if (process_housekeeping(state)) {}
-            else if (process_waveform(state)) {}
-            else process_eos(state);
+        // now empty the CDI command buffer in case we are doing the reset.
+        #ifndef NOTREAL
+        // by default clear the incoming command buffer, unless we are doing a soft reset
+        if (spec_read_uC_register(1)==0) {
+            uint8_t tmp;
+            while (cdi_new_command(&tmp, &tmp, &tmp)) {};
         }
-        loop_count++;
-
-#ifdef NOTREAL
-        // if we are running inside the coreloop test harness we call the interrupt routine
-        // every 100ms;
-        uint8_t  MSYS_EI5_IRQHandler();
-        clock_gettime(CLOCK_REALTIME, &time_now);
-        // Calculate the elapsed time in milliseconds
-        long elapsed_ms = (time_now.tv_sec - time_start.tv_sec) * 1000 + (time_now.tv_nsec - time_start.tv_nsec) / 1000000;
-        long elapsed_ticks = elapsed_ms/10; // 10Hz.
-        if (elapsed_ticks != g_core_timer_0) {
-            MSYS_EI5_IRQHandler();
-            g_core_timer_0 = elapsed_ticks;
+        spec_write_uC_register(1,0);
+        #endif
+        
+        restore_state(state);
+        
+        // this is the inner loop, the actual core loop that provides some sort of
+        // cooperative multitasking.
+        for (;;)
+        {
+            // Check if we have a new CDI command and process it.
+            // If this functions returns true, it means we got the time-to-die command
+            if (process_cdi(state)) break;
+            if (process_watchdogs(state)) break;
+            process_spectrometer(state);
+            process_calibrator(state);
+            process_gain_range(state);
+            if (state->soft_reset_flag) break;
+            // we always process just one CDI interfacing things
+            // compiler
+            if (cdi_ready()) {
+                if (process_hearbeat(state)) {}
+                else if (process_delayed_cdi_dispatch(state)) {}
+                else if (process_housekeeping(state)) {}
+                else if (process_waveform(state)) {}
+                else process_eos(state);
+            }
+            loop_count++;
+            
+            #ifdef NOTREAL
+            // if we are running inside the coreloop test harness we call the interrupt routine
+            // every 100ms;
+            uint8_t  MSYS_EI5_IRQHandler();
+            clock_gettime(CLOCK_REALTIME, &time_now);
+            // Calculate the elapsed time in milliseconds
+            long elapsed_ms = (time_now.tv_sec - time_start.tv_sec) * 1000 + (time_now.tv_nsec - time_start.tv_nsec) / 1000000;
+            long elapsed_ticks = elapsed_ms/10; // 10Hz.
+            if (elapsed_ticks != g_core_timer_0) {
+                MSYS_EI5_IRQHandler();
+                g_core_timer_0 = elapsed_ticks;
+            }
+            #endif
         }
-#endif
-    }
-    if (!soft_reset_flag) {
-        // empty buffers and call it a day
-        debug_print("Winding down...\n\r")
-        RFS_stop(state);
-        clear_current_slot(state);
-        // empty buffers
-        while (true) {
-            if (process_hearbeat(state)) {}
-            else if (process_delayed_cdi_dispatch(state)) {}
-            else if (process_housekeeping(state)) {}
-            else if (process_waveform(state)) {}
-            else if (process_eos(state)) {}
-            else if (delayed_cdi_dispatch_done(state)  && cdi_ready()) {break;}
+        if (!state->soft_reset_flag) {
+            // empty buffers and call it a day
+            debug_print("Winding down...\n\r")
+            RFS_stop(state);
+            clear_current_slot(state);
+            // empty buffers
+            while (true) {
+                if (process_hearbeat(state)) {}
+                else if (process_delayed_cdi_dispatch(state)) {}
+                else if (process_housekeeping(state)) {}
+                else if (process_waveform(state)) {}
+                else if (process_eos(state)) {}
+                else if (delayed_cdi_dispatch_done(state)  && cdi_ready()) {break;}
+            }
+            
+            if (state->watchdog.tripped_mask > 0) {
+                send_watchdog_packet(state, state->watchdog.tripped_mask);
+                state->watchdog.tripped_mask = 0;
+            }
+            
         }
-
-        if (state->watchdog.tripped_mask > 0) {
-            send_watchdog_packet(state, state->watchdog.tripped_mask);
-            state->watchdog.tripped_mask = 0;
-        }
-
-    }
+    } while (state->soft_reset_flag);
 
 }
 

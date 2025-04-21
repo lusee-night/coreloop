@@ -23,7 +23,7 @@ void cmd_soft_reset(uint8_t arg_low, struct core_state* state)
     // arglow controls what to do with the stored states after reset.
     spec_write_uC_register(0,arg_low & 0b011);
     spec_write_uC_register(1,arg_low & 0b100);
-    soft_reset_flag = true;
+    state->soft_reset_flag = true;
 }
 
 bool process_cdi(struct core_state* state)
