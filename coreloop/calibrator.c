@@ -184,7 +184,20 @@ void process_cal_mode_01_10(struct core_state* state, int mode) {
 void process_cal_mode_raw11(struct core_state* state) {
     // now that we have the flag, transfer data over;
     cal_transfer_data(0b11);
-    memcpy ( (void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE3_DATASIZE);
+    // first repack into 16 bytes
+    uint32_t* have_lock = (uint32_t *)(CAL_DF);
+    uint16_t* have_lock_tgt = (uint16_t *)(CAL_DATA);
+    for (int i=0; i<1024; i++) {
+        *have_lock_tgt = ((*have_lock)&0xFF) | (((*have_lock)&0xFF0000)>>8);
+        have_lock++;
+        have_lock_tgt++;
+    }
+    void* lock_ant = (void*)CAL_DATA + 1024*sizeof(uint16_t);
+    cal_copy_errors((struct calibrator_errors *)lock_ant);
+
+    memcpy ( (void *) (CAL_DATA+CAL_MODE3_CHUNKSIZE), (void *) (CAL_DF+CAL_MODE3_CHUNKSIZE),  
+            CAL_MODE3_DATASIZE-CAL_MODE3_CHUNKSIZE);
+    
     // nextmode //debug
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
@@ -196,14 +209,14 @@ void process_cal_mode_raw11(struct core_state* state) {
 }
 
 void process_cal_zoom(struct core_state* state) {
-    void* to_send = CAL_DATA + 4 * FFT_SIZE * state->cal.zoom_Nfft * sizeof(int32_t);
+    void* to_send = (void *)CAL_DATA + 4 * FFT_SIZE * state->cal.zoom_Nfft * sizeof(int32_t);
 
     // after this function finishes, raw PFB outputs will be in CAL_DF
     cal_transfer_data(2);
 
     for (int zoom_avg_idx = 0; zoom_avg_idx < state->cal.zoom_Navg; ++zoom_avg_idx) {
 
-        int32_t* ch1_real = CAL_DF;
+        int32_t* ch1_real = (int32_t*) CAL_DF;
         int32_t* ch1_imag = ch1_real + NCHANNELS;
         int32_t* ch2_real = ch1_imag + NCHANNELS;
         int32_t* ch2_imag = ch2_real + NCHANNELS;
@@ -329,7 +342,7 @@ void process_cal_zoom(struct core_state* state) {
     d->cal_appId = AppID_ZoomSpectra;
     d->cal_size = 4 * sizeof(int32_t) * FFT_SIZE;
 
-    memcpy(TLM_BUF, to_send, d->cal_size);
+    memcpy((void*) TLM_BUF, to_send, d->cal_size);
 
     cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId, d->cal_size);
 
@@ -350,7 +363,7 @@ void process_calibrator(struct core_state* state) {
     //if we are not enabled, return
     if (!state->base.calibrator_enable) return;
     // if we are still transferring, return
-    if (state->cdi_dispatch.cal_count <0x20) return;
+    if (state->cdi_dispatch.cal_count <NCALPACKETS) return;
 
     struct calibrator_state* cal = &(state->cal);
     bool df_ready[4];

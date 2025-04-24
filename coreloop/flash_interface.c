@@ -103,6 +103,8 @@ void store_state (struct core_state* state) {
 
 void restore_state(struct core_state* state) {
     uint32_t arg1 = spec_read_uC_register(0);  // register contains argumed passed from bootloader
+    // now that we have it, delete it
+    spec_write_uC_register(0,0);
     if (arg1 == 1) {
         debug_print("\r\nISS\r\n");
         state->flash_slot = -1;

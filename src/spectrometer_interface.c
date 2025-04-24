@@ -32,6 +32,7 @@ uint8_t channel_gain[NINPUT];
 
 #define N_BOOT_REGISTERS 16
 uint32_t boot_registers[N_BOOT_REGISTERS];
+uint64_t waveform_time; 
 
 uint8_t watchdog_enabled = 0;
 
@@ -283,12 +284,12 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     return true;
 }
 
-void spec_request_waveform(uint8_t ch, int dly) {
+void spec_request_waveform(uint8_t ch, int dly, uint64_t* timestamps) {
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
     int Nsamples = UINT14_MAX;
     if (ch == 4) {
-        for (int i=0; i<4; i++) spec_request_waveform(i, dly);
+        for (int i=0; i<4; i++) spec_request_waveform(i, dly, timestamps);
     } else {
         if (ADC_mode == ADC_RAMP) {
             for (size_t i = 0; i < Nsamples; i++){
@@ -303,8 +304,17 @@ void spec_request_waveform(uint8_t ch, int dly) {
             }
         }
         cdi_dispatch (AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
+        clock_gettime(CLOCK_REALTIME, &time_now);
+        const float ticks_per_sec = 102.4e6;
+        uint64_t elapsed_ticks = (time_now.tv_sec - time_start.tv_sec)*ticks_per_sec  
+                                 + (time_now.tv_nsec - time_start.tv_nsec)*(ticks_per_sec/1e9);
+        timestamps[ch] = elapsed_ticks;
+            
+        
     }
 }
+
+uint64_t spec_last_waveform_timestamp() { return waveform_time; }
 
 void spec_disable_channel (uint8_t ch) {}
 
@@ -324,6 +334,9 @@ void spec_disable_channel (uint8_t ch) {}
  bool spec_df_dropped() {
      return false;
  }
+
+
+ 
 
 void spec_set_ADC_normal_ops() {
     ADC_mode = ADC_NORMAL_OPS;

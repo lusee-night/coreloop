@@ -26,5 +26,6 @@
 |    84 | AppID_Calibrator_RawPFB     | High     | Calibrator raw PFB (8 packets for 4 x R/I)
 |    8C | AppID_Calibrator_Debug      | High     | Calibrator debug data (8 packets)
 |    A0 | AppID_SpectraGrimm          | High     | Grimm's tales spectra
-|    Ex | AppID_FW_DirectSpectrum     | High     | x= 0...4 for 4 autocorrelatins
-|    Fx | AppID_RawADC                | High     | x= 0..4 for 4 raw ADC data streams
+|    Ex | AppID_FW_DirectSpectrum     | High     | x= 0...3 for 4 autocorrelatins
+|    Fx | AppID_RawADC                | High     | x= 0..3 for 4 raw ADC data streams
+|    FA | AppID_RawADC_Meta           | High     | Metadata (timestamps mainly)

@@ -112,10 +112,13 @@ void core_init_state(struct core_state* state){
 }
 
 bool process_waveform(struct core_state* state) {
+    uint64_t timestamps[4];
+    timestamps[0] = timestamps[1] = timestamps[2] = timestamps[3] = 0xFFFFFFFFFFFFFFFF;
     if (!state->request_waveform) return false;
+    update_time(state);
     wait_for_cdi_ready();
     uint32_t request = state->request_waveform & 7;
-    spec_request_waveform(request, 16+state->dispatch_delay*4);
+    spec_request_waveform(request, 16+state->dispatch_delay*4, &(timestamps[0]));
     if (request==4) {
         state->cdi_stats.cdi_packets_sent+=4;
         state->cdi_stats.cdi_bytes_sent+=4*32768;
@@ -123,8 +126,19 @@ bool process_waveform(struct core_state* state) {
         state->cdi_stats.cdi_packets_sent++;
         state->cdi_stats.cdi_bytes_sent+=32768;
     }
-
-    state->cdi_stats.cdi_packets_sent++;
+    // now send the timestamps
+    struct waveform_metadata* buf = (struct waveform_metadata *)TLM_BUF;
+    
+    wait_for_cdi_ready();
+    new_unique_packet_id(state);
+    buf->unique_packet_id = state->unique_packet_id;
+    buf->time_32 = state->base.time_32;
+    buf->time_16 = state->base.time_16;
+    buf->timestamps[0] = timestamps[0];
+    buf->timestamps[1] = timestamps[1];
+    buf->timestamps[2] = timestamps[2];
+    buf->timestamps[3] = timestamps[3];
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_RawADC_Meta, sizeof(struct waveform_metadata));
     state->request_waveform = 0;
     return true;
 }

@@ -71,6 +71,13 @@ struct calibrator_metadata {
   uint32_t error_regs [30];
 };
 
+struct calibrator_errors {
+  uint32_t cal_phaser_err[2];
+  uint32_t averager_err[16];
+  uint32_t process_err[8];
+  uint32_t stage3_err[4];
+  uint32_t check; // fix to 0xFEEDDAD0
+};
 
 struct saved_calibrator_weights {
   uint32_t in_use;

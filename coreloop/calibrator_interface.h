@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "calibrator.h"
 
 #define CAL_NREGS 498
 #define CAL_NWEIGHTS 410
@@ -61,12 +62,6 @@
 
 
 
-
-
-
-
-
-
 // put calibration into a default state
 void calib_init();
 
@@ -97,6 +92,9 @@ int calib_get_readout_mode();
 
 // copy all the registers to the buffer
 void cal_copy_registers(uint32_t *buffer);
+
+// copy just error registers
+void cal_copy_errors (struct calibrator_errors* err);
 
 // get and set the PFB index
 int calib_get_PFB_index();

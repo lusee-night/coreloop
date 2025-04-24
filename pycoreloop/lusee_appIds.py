@@ -74,9 +74,12 @@ AppID_Calibrator_Debug = 0x028C
 # Grimm's tales spectra; Priority:  High     
 AppID_SpectraGrimm = 0x02A0
 
-# x= 0...4 for 4 autocorrelatins; Priority:  High     
+# x= 0...3 for 4 autocorrelatins; Priority:  High     
 AppID_FW_DirectSpectrum = 0x02E0
 
-# x= 0..4 for 4 raw ADC data streams; Priority:  High     
+# x= 0..3 for 4 raw ADC data streams; Priority:  High     
 AppID_RawADC = 0x02F0
+
+# Metadata (timestamps mainly); Priority:  High     
+AppID_RawADC_Meta = 0x02FA
 
