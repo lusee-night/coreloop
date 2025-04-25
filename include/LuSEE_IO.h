@@ -18,6 +18,11 @@
             do { if (DEBUG) printf("0x%x",fmt); } while (0);
 
 
+struct SpectraIn {
+    uint32_t low[2048 * 16];      /* Lower 32 bits */
+};
+
+
 // Global variables
 
 // timer stuff
@@ -32,7 +37,7 @@ void TMR_clear_int(int* time);
 extern void* DDR3_BASE_ADDR;
 extern void* SPEC_TICK;
 extern void* SPEC_TOCK;
-extern void* FLASH_WORK; 
+extern void* FLASH_WORK;
 extern void* TR_SPEC_TICK;
 extern void* TR_SPEC_TOCK;
 extern void* GRIMM_SPEC_TICK;
@@ -41,6 +46,15 @@ extern void* TLM_BUF;
 extern void* SPEC_BUF;
 extern void* CAL_DF;
 extern void* CAL_DATA;
+
+// buffers to store extra 8 bits if we use 40 bit averaging
+// in this mode, the high pointers in (SpectraIn*)SPEC_TICK/TOCK
+// will be set to these pointers; besides this assignment in commanding.c
+// and malloc in src/its equivalent in Lusee_FS,
+// there never should be a need to use them explicitly:
+// the buffers will be accessible through spectra_write_buffer(tick)->high
+extern void* SPEC_EXTRA_8_TICK;
+extern void* SPEC_EXTRA_8_TOCK;
 
 extern const size_t SPEC_DATA_SIZE;
 extern const size_t TR_SPEC_DATA_SIZE;
@@ -53,6 +67,9 @@ static inline void* tr_spectra_write_buffer(bool tick_tock) { return tick_tock ?
 static inline void* tr_spectra_read_buffer(bool tick_tock)  { return tick_tock ? TR_SPEC_TOCK : TR_SPEC_TICK; };
 static inline void* grimm_spectra_write_buffer(bool tick_tock) { return tick_tock ? GRIMM_SPEC_TICK : GRIMM_SPEC_TOCK; }
 static inline void* grimm_spectra_read_buffer(bool tick_tock)  { return tick_tock ? GRIMM_SPEC_TOCK : GRIMM_SPEC_TICK; };
+
+static inline uint32_t* spectra_write_buffer_high(bool tick_tock)   { return tick_tock ? SPEC_EXTRA_8_TICK  : SPEC_EXTRA_8_TOCK; }
+static inline uint32_t* spectra_read_buffer_high(bool tick_tock)    { return tick_tock ? SPEC_EXTRA_8_TOCK  : SPEC_EXTRA_8_TICK; }
 
 // test harness init
 void spectrometer_pre_init();

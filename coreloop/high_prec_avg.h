@@ -5,6 +5,7 @@
 #include <string.h>
 #include "spectrometer_interface.h"
 #include "core_loop.h"
+#include "LuSEE_IO.h"
 
 //#define NAIVE_HIGH_PREC_AVG
 
@@ -30,56 +31,52 @@ static inline int32_t get_averaged_value_int40(const struct SpectraIn* buf, int 
 
 #else
 
-struct SpectraIn {
-    uint32_t low[NCHANNELS * NSPECTRA];      /* Lower 32 bits */
-    uint32_t high[NCHANNELS * NSPECTRA / 4]; /* Packed 8-bit values, 4 spectra per int32 */
-};
 
 /* Helper functions to work with packed high bits */
-static inline int8_t get_high_bits(const struct SpectraIn* buf, int total_idx) {
+static inline int8_t get_high_bits(const uint32_t* buf_high, int total_idx) {
     int pack_idx = total_idx >> 2;
     int shift = (total_idx & 3) * 8;
-    return (int8_t)((buf->high[pack_idx] >> shift) & 0x7F);
+    return (int8_t)((buf_high[pack_idx] >> shift) & 0x7F);
 }
 
-static inline int64_t get_packed_sign(const struct SpectraIn* buf, int total_idx) {
+static inline int64_t get_packed_sign(const uint32_t* buf_high, int total_idx) {
     int pack_idx = total_idx >> 2;
     int shift = (total_idx & 3) * 8;
-    return ((buf->high[pack_idx] >> shift) & 0x80) ? -1 : 1;
+    return ((buf_high[pack_idx] >> shift) & 0x80) ? -1 : 1;
 }
 
-static inline int8_t is_negative(const struct SpectraIn* buf, int total_idx) {
+static inline int8_t is_negative(const uint32_t* buf_high, int total_idx) {
     int pack_idx = total_idx >> 2;
     int shift = (total_idx & 3) * 8;
-    return ((buf->high[pack_idx] >> shift) & 0x80) ? 1 : 0;
+    return ((buf_high[pack_idx] >> shift) & 0x80) ? 1 : 0;
 }
 
-static inline int64_t get_packed_value(const struct SpectraIn* buf, int total_idx) {
-    return (((int64_t)get_high_bits(buf, total_idx) << 32) | (int64_t)buf->low[total_idx]) * get_packed_sign(buf, total_idx);
+static inline int64_t get_packed_value(const struct SpectraIn* buf, const uint32_t* buf_high, int total_idx) {
+    return (((int64_t)get_high_bits(buf_high, total_idx) << 32) | (int64_t)buf->low[total_idx]) * get_packed_sign(buf_high, total_idx);
 }
 
 
-static inline int32_t get_averaged_value_int40(const struct SpectraIn* buf, int offset, int i, int Navgf, int shift_by)
+static inline int32_t get_averaged_value_int40(const struct SpectraIn* buf, int offset, int i, int Navgf, int shift_by, const uint32_t* buf_high)
 {
     int64_t result;
 
     // to average over frequencies, we need additional shifts
     if (Navgf == 1) {
-        result = get_packed_value(buf, offset + i);
+        result = get_packed_value(buf, buf_high, offset + i);
     } else if (Navgf == 2) {
-        result = get_packed_value(buf, offset + 2*i);
-        result += get_packed_value(buf, offset + 2*i + 1);
+        result = get_packed_value(buf, buf_high, offset + 2*i);
+        result += get_packed_value(buf, buf_high, offset + 2*i + 1);
         shift_by += 1;
     } else if (Navgf == 3) {
-        result = get_packed_value(buf, offset + 4*i);
-        result += get_packed_value(buf, offset + 4*i + 1);
-        result += get_packed_value(buf, offset + 4*i + 2);
+        result = get_packed_value(buf, buf_high, offset + 4*i);
+        result += get_packed_value(buf, buf_high, offset + 4*i + 1);
+        result += get_packed_value(buf, buf_high, offset + 4*i + 2);
         shift_by += 2;
     } else if (Navgf == 4) {
-        result = get_packed_value(buf, offset + 4*i);
-        result += get_packed_value(buf, offset + 4*i + 1);
-        result += get_packed_value(buf, offset + 4*i + 2);
-        result += get_packed_value(buf, offset + 4*i + 3);
+        result = get_packed_value(buf, buf_high, offset + 4*i);
+        result += get_packed_value(buf, buf_high, offset + 4*i + 1);
+        result += get_packed_value(buf, buf_high, offset + 4*i + 2);
+        result += get_packed_value(buf, buf_high, offset + 4*i + 3);
         shift_by += 2;
     }
 
@@ -142,12 +139,12 @@ static inline int32_t get_averaged_value_float(const void* _buf, int offset, int
     return (int32_t)(result >> shift_by);
 }
 
-static inline int32_t get_averaged_value(const void* buf, int offset, int i, int Navgf, int shift_by, uint8_t averaging_mode)
+static inline int32_t get_averaged_value(const void* buf, int offset, int i, int Navgf, int shift_by, uint8_t averaging_mode, const uint32_t* buf_high)
 {
     if (averaging_mode == AVG_INT32) {
         return get_averaged_value_int32(buf, offset, i, Navgf, shift_by);
     } else if (averaging_mode == AVG_INT_40_BITS) {
-        return get_averaged_value_int40(buf, offset, i, Navgf, shift_by);
+        return get_averaged_value_int40(buf, offset, i, Navgf, shift_by, buf_high);
     } else if (averaging_mode == AVG_FLOAT) {
         return get_averaged_value_float(buf, offset, i, Navgf, shift_by);
     }

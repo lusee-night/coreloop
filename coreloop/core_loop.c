@@ -202,7 +202,7 @@ void core_loop(struct core_state* state)
             process_spectrometer(state);
             process_calibrator(state);
             process_gain_range(state);
-            if (state->soft_reset_flag) break;
+            if (state->soft_reset_flag) { break; }
             // we always process just one CDI interfacing things
             // compiler
             if (cdi_ready()) {
