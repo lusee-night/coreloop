@@ -129,12 +129,12 @@
 | 0x81 | RFS_SET_CAL_WEIGHT_ZERO   | set all weights to zero.
 | 0x82 | RFS_SET_CAL_PFB_NDX_LO    | set PFB NDX (8 LSB bits)
 | 0x83 | RFS_SET_CAL_PFB_NDX_HI    | set PFB NDX (3 MSB bits)
-| 0x84 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 0 for automatic slicer control.
+| 0x84 | RFS_SET_CAL_BITSLICE      | Set bitslicer setting. LSB 5 bits is the slicer setting. MSB 3 bits is the slicer reg. 
 | 0x85 | RFS_SET_CAL_DDRIFT_GUARD  | Set delta drift guard. 1 = 25 units of cordic angle 
 | 0x86 | RFS_SET_CAL_GPHASE_GUARD  | Set gphase guard. 1=2000 units of cordic angle 
-| 0x87 | RFS_SET_CAL_WSAVE        | Store the weight set into one of the 16 slots specified in arg_low 
-| 0x88 | RFS_SET_CAL_WLOAD      | Restore the weight set 
-
+| 0x87 | RFS_SET_CAL_WSAVE         | Store the weight set into one of the 16 slots specified in arg_low 
+| 0x88 | RFS_SET_CAL_WLOAD         | Restore the weight set 
+| 0x89 | RFS_SET_CAL_BITSLICE_AUTO | Enable / Disable automatic bitslicer 
 
 
 ### 0x9X spectral zoom functionality 

@@ -101,7 +101,7 @@ uint16_t calib_get_weight (int index) {return index;}
 void cal_reset() {};
 
 void calib_set_slicers (uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t sum1_slice, \
-                        uint8_t sum2_slice, uint8_t sd2_slice, uint8_t prod1_slice, uint8_t prod2_slice) {}
+                        uint8_t sum2_slice, uint8_t fd_slice, uint8_t sd2_slice, uint8_t prod1_slice, uint8_t prod2_slice) {}
 
 
 

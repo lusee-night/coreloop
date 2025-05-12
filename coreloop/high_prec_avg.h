@@ -16,6 +16,7 @@
 //    int32_t high[NCHANNELS * NSPECTRA / 4]; /* Packed 8-bit values, 4 spectra per int32 */
 //};
 
+
 struct SpectraIn {
     int64_t values[NCHANNELS * NSPECTRA];      /* Lower 32 bits */
 };
@@ -30,6 +31,10 @@ static inline int32_t get_averaged_value_int40(const struct SpectraIn* buf, int 
 }
 
 #else
+
+struct SpectraIn {
+    uint32_t low[2048 * 16];      /* Lower 32 bits */
+};
 
 
 /* Helper functions to work with packed high bits */
@@ -51,9 +56,11 @@ static inline int8_t is_negative(const uint32_t* buf_high, int total_idx) {
     return ((buf_high[pack_idx] >> shift) & 0x80) ? 1 : 0;
 }
 
+
 static inline int64_t get_packed_value(const struct SpectraIn* buf, const uint32_t* buf_high, int total_idx) {
     return (((int64_t)get_high_bits(buf_high, total_idx) << 32) | (int64_t)buf->low[total_idx]) * get_packed_sign(buf_high, total_idx);
 }
+
 
 
 static inline int32_t get_averaged_value_int40(const struct SpectraIn* buf, int offset, int i, int Navgf, int shift_by, const uint32_t* buf_high)

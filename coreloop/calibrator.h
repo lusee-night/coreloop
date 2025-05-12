@@ -48,7 +48,7 @@ struct calibrator_state {
     bool auto_slice;
     uint8_t powertop_slice;
     uint8_t delta_powerbot_slice;
-    uint8_t sum1_slice, sum2_slice, sd2_slice;
+    uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
     uint8_t prod1_slice, prod2_slice;
     uint32_t errors;
     uint8_t zoom_ch1, zoom_ch2;
@@ -68,7 +68,14 @@ struct calibrator_metadata {
   uint16_t time_16;
   uint16_t have_lock[4];
   struct calibrator_state state;
-  int SNR_max[4], SNR_min[4];
+  int32_t SNR_max[4], SNR_min[4];
+  int32_t ptop_max[4], ptop_min[4];
+  int32_t pbot_max[4], pbot_min[4];
+  int32_t FD_max[4], FD_min[4];
+  int32_t SD_max[4], SD_min[4];
+
+
+
   int32_t drift [1024];
   uint32_t error_regs [30];
 };

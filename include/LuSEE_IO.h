@@ -18,10 +18,6 @@
             do { if (DEBUG) printf("0x%x",fmt); } while (0);
 
 
-struct SpectraIn {
-    uint32_t low[2048 * 16];      /* Lower 32 bits */
-};
-
 
 // Global variables
 

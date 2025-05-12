@@ -73,7 +73,7 @@ void cal_reset();
 
 // the hell, slicers
 void calib_set_slicers (uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t sum1_slice, \
-                        uint8_t sum2_slice, uint8_t sd2_slice, uint8_t prod1_slice, uint8_t prod2_slice);
+                        uint8_t sum2_slice, uint8_t sd1_slice, uint8_t sd2_slice, uint8_t prod1_slice, uint8_t prod2_slice);
 
 
 

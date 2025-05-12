@@ -554,7 +554,7 @@ bool process_cdi(struct core_state* state)
             int reg = arg_low >> 5;
             int val = arg_low & 0b00011111;
             if (reg==0) {
-                state->cal.auto_slice = (val>0);
+                state->cal.fd_slice = val;
             } else if (reg==1) {
                 state->cal.powertop_slice = val;
             } else if (reg==2) {
@@ -574,6 +574,10 @@ bool process_cdi(struct core_state* state)
                 state->base.errors |= INTERNAL_ERROR;
             }
             }
+            break;
+
+        case RFS_SET_CAL_BITSLICE_AUTO: 
+            state->cal.auto_slice = (arg_low>0);
             break;
 
         case RFS_SET_CAL_DDRIFT_GUARD:

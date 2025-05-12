@@ -43,6 +43,7 @@ void calibrator_default_state (struct calibrator_state* cal) {
     cal->auto_slice = true;
     cal->delta_powerbot_slice = 2;
     cal->sd2_slice = 0;
+    cal->fd_slice = 8;
     cal->zoom_ch1 = 0;
     cal->zoom_ch2 = 1;
     cal->ddrift_guard = 2500;
@@ -85,9 +86,6 @@ void set_calibrator(struct calibrator_state* cal) {
 
     if ((cal->mode == CAL_MODE_SNR_SETTLE) || (cal->mode == CAL_MODE_BIT_SLICER_SETTLE)) {
         calib_set_SNR_lock_on(0xFFFFFF);
-        if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
-            calibrator_slice_init(cal);
-        }
     }
     calibrator_set_slices(cal);
     cal_clear_df_flag();
@@ -100,21 +98,31 @@ void calibrator_set_SNR(struct calibrator_state* cal) {
     calib_set_SNR_lock_off(cal->SNRoff);
 }
 
-void calibrator_slice_init(struct calibrator_state* cal) {
-    cal->powertop_slice = 10;
-    cal->sum1_slice = 10;
-    cal->sum2_slice = 10;
-    cal->prod1_slice = 12;
-    cal->prod2_slice = 15;
-}
 
 void calibrator_set_slices(struct calibrator_state* cal) {
     // second one was plus +4
-    calib_set_slicers(cal->powertop_slice, cal->powertop_slice+cal->delta_powerbot_slice, cal->sum1_slice, cal->sum2_slice, 0, cal->prod1_slice, cal->prod2_slice);
+    calib_set_slicers(cal->powertop_slice, cal->powertop_slice+cal->delta_powerbot_slice, cal->sum1_slice, cal->sum2_slice, cal->fd_slice, cal->sd2_slice, cal->prod1_slice, cal->prod2_slice);
 }
 
 static float sqf(float x) { return x * x; }
 static int32_t sqi(int32_t x) { return x * x; }
+
+
+void get_mode11_minmax (uint32_t* max, uint32_t* min, int reg) {
+    int32_t* tgt = (int32_t *)(CAL_DF +reg*CAL_MODE3_CHUNKSIZE);
+    for (int ant=0; ant<4; ant++) {
+        int ofs = ant*1024;
+        int ofe = ofs + 1024;
+        int32_t cmin = INT32_MAX;
+        int32_t cmax = INT32_MIN;
+        for (int i=ofs; i<ofe; i++) {
+            if (tgt[i] > cmax) cmax = tgt[i];
+            if (tgt[i] < cmin) cmin = tgt[i];
+        }
+        max[ant] = cmax;
+        min[ant] = cmin;
+    }
+}
 
 struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     struct calibrator_metadata* out = (struct calibrator_metadata *)CAL_DATA;
@@ -125,6 +133,8 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     out->time_32 = state->base.time_32;
     out->time_16 = state->base.time_16;
     out->state = state->cal;
+
+    // sume have_locks
     uint32_t* have_lock = (uint32_t *)(CAL_DF + 0*CAL_MODE3_CHUNKSIZE);
     out->have_lock[0] = out->have_lock[1] = out->have_lock[2] = out->have_lock[3] = 0;
     for (int i=0; i<1024; i++) {
@@ -134,22 +144,17 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
         if (*have_lock & 8) out->have_lock[3]++;
         have_lock++;
     }
+
+
     // drift is chunk
     memcpy ((void*) &out->drift, (void *)CAL_DF + 1*CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
-    int32_t* SNR = (int32_t *)(CAL_DF + 20*CAL_MODE3_CHUNKSIZE);
-    for (int ant=0; ant<4; ant++) {
-        int ofs = ant*1024;
-        int ofe = ofs + 1024;
-        uint32_t cmin = 0xFFFF;
-        uint32_t cmax = 0;
-        for (int i=ofs; i<ofe; i++) {
-            if (SNR[i] > cmax) cmax = SNR[i];
-            if (SNR[i] < cmin) cmin = SNR[i];
-        }
-        out->SNR_max[ant] = cmax;
-        out->SNR_min[ant] = cmin;
-    }
-
+    
+    get_mode11_minmax(out->SNR_max, out->SNR_min, 20);
+    get_mode11_minmax(out->ptop_max, out->ptop_min, 2);
+    get_mode11_minmax(out->pbot_max, out->pbot_min, 6);
+    get_mode11_minmax(out->FD_max, out->FD_min, 10);
+    get_mode11_minmax(out->SD_max, out->SD_min, 14);
+    
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
