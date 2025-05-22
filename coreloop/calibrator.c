@@ -127,6 +127,10 @@ void get_mode11_minmax (uint32_t* max, uint32_t* min, int reg) {
 struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     struct calibrator_metadata* out = (struct calibrator_metadata *)CAL_DATA;
     cal_transfer_data(0b11);
+
+    state->cal.errors = calib_get_errors();
+    state->cal.bitslicer_errors = calib_get_slicer_errors();
+
     out->version = VERSION_ID;
     new_unique_packet_id(state);
     out->unique_packet_id = state->unique_packet_id;
@@ -154,7 +158,11 @@ struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
     get_mode11_minmax(out->pbot_max, out->pbot_min, 6);
     get_mode11_minmax(out->FD_max, out->FD_min, 10);
     get_mode11_minmax(out->SD_max, out->SD_min, 14);
-    
+
+
+
+
+
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count=0;
     state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
@@ -192,6 +200,9 @@ void process_cal_mode_01_10(struct core_state* state, int mode) {
 void process_cal_mode_raw11(struct core_state* state) {
     // now that we have the flag, transfer data over;
     cal_transfer_data(0b11);
+    state->cal.errors = calib_get_errors();
+    state->cal.bitslicer_errors = calib_get_slicer_errors();
+
     // first repack into 16 bytes
     uint32_t* have_lock = (uint32_t *)(CAL_DF);
     uint16_t* have_lock_tgt = (uint16_t *)(CAL_DATA);
@@ -407,46 +418,18 @@ void process_calibrator(struct core_state* state) {
         return;
     }
 
-
-
-    cal->errors = calib_get_errors();
-    if (old_errors != cal->errors) {
-            debug_print("[ * CE ");
-            for (int i=0; i<32; i++) {
-                if (cal->errors & (1<<i)) {
-                    debug_print_dec(i);
-                    debug_print(" ");
-                }
-            }
-            debug_print("  * ]");
-            old_errors = cal->errors;
-    }
-
-
-    uint32_t bit_slicer_flags = calib_get_slicer_errors();
-
-    if (bit_slicer_flags!= old_bitslicer_errors) {
-        debug_print("[ B");
-        debug_print_dec(bit_slicer_flags);
-        /*for (int i=0; i<32; i++) {
-            if (bit_slicer_flags & (1<<i)) {
-                debug_print_dec(i);
-                debug_print(" ");
-            }
-        }*/
-        debug_print(" ]");
-
-        old_bitslicer_errors = bit_slicer_flags;
-    }
-
-    /*
-    if ((bit_slicer_flags > 0) & (cal->mode >= CAL_MODE_BIT_SLICER_SETTLE) & (cal->auto_slice)) {
-        cal->mode = CAL_MODE_BIT_SLICER_SETTLE;
-    }
-
+    
     if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
         if (cal->auto_slice) {
-            if ((bit_slicer_flags == 0) & (new_data)) {
+
+            if (df_ready[3]) {
+                struct calibrator_metadata* stats = process_cal_mode11 (state);
+                uint32_t bit_slicer_flags = state->cal.bitslicer_errors;
+                bool range_ok = true; //check_cal_range (stats, &bot_off, &sd_off, &fd_off)
+
+
+
+            if ((bit_slicer_flags == 0) & (range_ok)) {
                 // We have converged, time to move onto the next mode;
                 cal->mode = CAL_MODE_SNR_SETTLE;
                 debug_print("\r\n[ -> SNR]")
@@ -461,6 +444,8 @@ void process_calibrator(struct core_state* state) {
                 if (bit_slicer_flags & (SLICER_ERR_PR_FD+SLICER_ERR_PR_FDX+SLICER_ERR_PR_SD+SLICER_ERR_PR_SDX)) { restart=true;cal->sum1_slice++; cal->sum2_slice++; debug_print("\r\n[PSUMX++]");}
                 if (bit_slicer_flags & SLICER_ERR_PBOT) {restart=true; cal->powertop_slice+=1; debug_print("\r\n[PBOT++]");}
                 if (bit_slicer_flags & SLICER_ERR_PR_BOT) {restart=true; cal->powertop_slice+=1; debug_print("\r\n[PrBOT++]");}
+
+                /*
                 if (bit_slicer_flags & SLICER_ERR_PROD1) {restart=true; cal->prod1_slice+=1; debug_print("\r\n[PROD1++]");}
                 else if (bit_slicer_flags & SLICER_ERR_PROD2) {
                     restart=true;
@@ -472,6 +457,7 @@ void process_calibrator(struct core_state* state) {
                     }
                     debug_print("\r\n[PROD2++]");
                 }
+                */
 
                 if (restart) { calibrator_set_slices(cal); cal_reset();
 
@@ -484,11 +470,12 @@ void process_calibrator(struct core_state* state) {
                 }
                 // do not return, can go straight into settle. (check later)
             }
+          }
         } else {
             cal->mode = CAL_MODE_SNR_SETTLE;
         }
     }
-    */
+    
 
     if (cal->mode == CAL_MODE_SNR_SETTLE) {
         if (df_ready[3]) {
@@ -502,10 +489,10 @@ void process_calibrator(struct core_state* state) {
                 debug_print_dec(out->SNR_min[ant]);
                 debug_print(" ");
                 debug_print_dec(out->SNR_max[ant] );
-                if ((cal->antenna_mask >> ant ) && (out->SNR_max[ant]/(out->SNR_min[ant]) >= 15))  {
+                if ((cal->antenna_mask >> ant ) && (2*out->SNR_max[ant]/(out->SNR_min[ant]) >= 5))  {
                     int diff = out->SNR_max[ant] - out->SNR_min[ant];
                     cal->SNRon = out->SNR_min[ant] + diff * 3 / 4;
-                    cal->SNRoff = out->SNR_min[ant] + diff / 8;
+                    cal->SNRoff = 1;
                     calibrator_set_SNR(cal);
                     cal->mode = CAL_MODE_RUN;
                     debug_print("\r\n[ -> RUN]")

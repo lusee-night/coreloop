@@ -249,7 +249,7 @@ struct waveform_metadata {
     uint32_t unique_packet_id;
     uint32_t time_32;
     uint16_t time_16;
-    uint64_t timestamps[4];
+    uint64_t timestamp;
 };
 
 // metadata payload, compatible with core_state

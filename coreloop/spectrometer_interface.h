@@ -77,8 +77,7 @@ uint32_t spec_get_version(int s);
 void spec_set_reset();
 
 // make the CDI interface generate raw waveform (together with delay, set to zero for something sensible)
-// returns timestamps for each channel 
-void spec_request_waveform(uint8_t ch, int dly, uint64_t* timestamps);
+void spec_request_waveform(uint8_t ch, int dly);
 
 // last_waveform time as implemented in FW 242
 uint64_t spec_last_waveform_timestamp();

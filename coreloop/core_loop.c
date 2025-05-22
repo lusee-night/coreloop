@@ -118,7 +118,7 @@ bool process_waveform(struct core_state* state) {
     update_time(state);
     wait_for_cdi_ready();
     uint32_t request = state->request_waveform & 7;
-    spec_request_waveform(request, 16+state->dispatch_delay*4, &(timestamps[0]));
+    spec_request_waveform(request, 16+state->dispatch_delay*4);
     if (request==4) {
         state->cdi_stats.cdi_packets_sent+=4;
         state->cdi_stats.cdi_bytes_sent+=4*32768;
@@ -134,10 +134,7 @@ bool process_waveform(struct core_state* state) {
     buf->unique_packet_id = state->unique_packet_id;
     buf->time_32 = state->base.time_32;
     buf->time_16 = state->base.time_16;
-    buf->timestamps[0] = timestamps[0];
-    buf->timestamps[1] = timestamps[1];
-    buf->timestamps[2] = timestamps[2];
-    buf->timestamps[3] = timestamps[3];
+    buf->timestamp = spec_last_waveform_timestamp();
     cdi_dispatch_uC(&(state->cdi_stats),AppID_RawADC_Meta, sizeof(struct waveform_metadata));
     state->request_waveform = 0;
     return true;

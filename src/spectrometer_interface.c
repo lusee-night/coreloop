@@ -284,12 +284,12 @@ bool spec_get_ADC_stat(struct ADC_stat *stat) {
     return true;
 }
 
-void spec_request_waveform(uint8_t ch, int dly, uint64_t* timestamps) {
+void spec_request_waveform(uint8_t ch, int dly) {
     uint16_t* TLM_BUF_INT16 = (uint16_t*)TLM_BUF;
     uint16_t start_value = 500*1000*ch;
     int Nsamples = UINT14_MAX;
     if (ch == 4) {
-        for (int i=0; i<4; i++) spec_request_waveform(i, dly, timestamps);
+        for (int i=0; i<4; i++) spec_request_waveform(i, dly);
     } else {
         if (ADC_mode == ADC_RAMP) {
             for (size_t i = 0; i < Nsamples; i++){
@@ -304,13 +304,7 @@ void spec_request_waveform(uint8_t ch, int dly, uint64_t* timestamps) {
             }
         }
         cdi_dispatch (AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
-        clock_gettime(CLOCK_REALTIME, &time_now);
-        const float ticks_per_sec = 102.4e6;
-        uint64_t elapsed_ticks = (time_now.tv_sec - time_start.tv_sec)*ticks_per_sec  
-                                 + (time_now.tv_nsec - time_start.tv_nsec)*(ticks_per_sec/1e9);
-        timestamps[ch] = elapsed_ticks;
-            
-        
+        clock_gettime(CLOCK_REALTIME, &time_now);                    
     }
 }
 

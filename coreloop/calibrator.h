@@ -50,7 +50,7 @@ struct calibrator_state {
     uint8_t delta_powerbot_slice;
     uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
     uint8_t prod1_slice, prod2_slice;
-    uint32_t errors;
+    uint32_t errors, bitslicer_errors;
     uint8_t zoom_ch1, zoom_ch2;
     uint8_t zoom_Nfft;
     uint8_t zoom_prod;
