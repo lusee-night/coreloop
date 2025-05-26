@@ -58,6 +58,7 @@ struct calibrator_state {
     uint8_t zoom_avg_idx;
     uint8_t max_zoom_avg_iters_per_call;
     bool use_float_fft;
+    uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
 };
 
 
@@ -67,15 +68,17 @@ struct calibrator_metadata {
   uint32_t time_32;
   uint16_t time_16;
   uint16_t have_lock[4];
-  struct calibrator_state state;
-  int32_t SNR_max[4], SNR_min[4];
-  int32_t ptop_max[4], ptop_min[4];
-  int32_t pbot_max[4], pbot_min[4];
+  uint32_t SNRon, SNRoff;
+  uint8_t powertop_slice;
+  uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
+  uint8_t prod1_slice, prod2_slice;
+  uint32_t errors, bitslicer_errors;
+
+  uint32_t SNR_max[4], SNR_min[4];
+  uint32_t ptop_max[4], ptop_min[4];
+  uint32_t pbot_max[4], pbot_min[4];
   int32_t FD_max[4], FD_min[4];
   int32_t SD_max[4], SD_min[4];
-
-
-
   int32_t drift [1024];
   uint32_t error_regs [30];
 };

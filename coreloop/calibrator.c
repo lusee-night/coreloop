@@ -51,6 +51,8 @@ void calibrator_default_state (struct calibrator_state* cal) {
     cal->use_float_fft = true;
     cal->zoom_avg_idx = 0;
     cal->max_zoom_avg_iters_per_call = 4;
+    cal->raw11_every = 0xFF; //never 
+    cal->raw11_counter = 0;
 }
 
 
@@ -108,94 +110,8 @@ static float sqf(float x) { return x * x; }
 static int32_t sqi(int32_t x) { return x * x; }
 
 
-void get_mode11_minmax (uint32_t* max, uint32_t* min, int reg) {
-    int32_t* tgt = (int32_t *)(CAL_DF +reg*CAL_MODE3_CHUNKSIZE);
-    for (int ant=0; ant<4; ant++) {
-        int ofs = ant*1024;
-        int ofe = ofs + 1024;
-        int32_t cmin = INT32_MAX;
-        int32_t cmax = INT32_MIN;
-        for (int i=ofs; i<ofe; i++) {
-            if (tgt[i] > cmax) cmax = tgt[i];
-            if (tgt[i] < cmin) cmin = tgt[i];
-        }
-        max[ant] = cmax;
-        min[ant] = cmin;
-    }
-}
-
-struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
-    struct calibrator_metadata* out = (struct calibrator_metadata *)CAL_DATA;
-    cal_transfer_data(0b11);
-
-    state->cal.errors = calib_get_errors();
-    state->cal.bitslicer_errors = calib_get_slicer_errors();
-
-    out->version = VERSION_ID;
-    new_unique_packet_id(state);
-    out->unique_packet_id = state->unique_packet_id;
-    out->time_32 = state->base.time_32;
-    out->time_16 = state->base.time_16;
-    out->state = state->cal;
-
-    // sume have_locks
-    uint32_t* have_lock = (uint32_t *)(CAL_DF + 0*CAL_MODE3_CHUNKSIZE);
-    out->have_lock[0] = out->have_lock[1] = out->have_lock[2] = out->have_lock[3] = 0;
-    for (int i=0; i<1024; i++) {
-        if (*have_lock & 1) out->have_lock[0]++;
-        if (*have_lock & 2) out->have_lock[1]++;
-        if (*have_lock & 4) out->have_lock[2]++;
-        if (*have_lock & 8) out->have_lock[3]++;
-        have_lock++;
-    }
 
 
-    // drift is chunk
-    memcpy ((void*) &out->drift, (void *)CAL_DF + 1*CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
-    
-    get_mode11_minmax(out->SNR_max, out->SNR_min, 20);
-    get_mode11_minmax(out->ptop_max, out->ptop_min, 2);
-    get_mode11_minmax(out->pbot_max, out->pbot_min, 6);
-    get_mode11_minmax(out->FD_max, out->FD_min, 10);
-    get_mode11_minmax(out->SD_max, out->SD_min, 14);
-
-
-
-
-
-    cal_clear_df_flag();
-    state->cdi_dispatch.cal_count=0;
-    state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
-    state->cdi_dispatch.cal_appId = AppID_Calibrator_MetaData;
-    state->cdi_dispatch.cal_size = sizeof(struct calibrator_metadata);
-    return out;
-}
-
-void process_cal_mode00(struct core_state* state) {
-    // now that we have the flag, transfer data over;
-    cal_transfer_data(00);
-    memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE0_DATASIZE);
-    cal_clear_df_flag();
-    state->cdi_dispatch.cal_count=0;
-    new_unique_packet_id(state);
-    state->cdi_dispatch.cal_packet_id =state->unique_packet_id;
-    state->cdi_dispatch.cal_appId = AppID_Calibrator_Data;
-    state->cdi_dispatch.cal_size = CAL_MODE0_DATASIZE;
-    state->cdi_dispatch.cal_packet_size = CAL_MODE0_PACKETSIZE;
-}
-
-
-void process_cal_mode_01_10(struct core_state* state, int mode) {
-    cal_transfer_data(mode);
-    memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE1_DATASIZE);
-    cal_clear_df_flag();
-    state->cdi_dispatch.cal_count=0;
-    new_unique_packet_id(state);
-    state->cdi_dispatch.cal_packet_id =state->unique_packet_id;
-    state->cdi_dispatch.cal_appId = AppID_Calibrator_RawPFB;
-    state->cdi_dispatch.cal_size = CAL_MODE1_DATASIZE;
-    state->cdi_dispatch.cal_packet_size = CAL_MODE1_PACKETSIZE;
-}
 
 void process_cal_mode_raw11(struct core_state* state) {
     // now that we have the flag, transfer data over;
@@ -225,6 +141,150 @@ void process_cal_mode_raw11(struct core_state* state) {
     state->cdi_dispatch.cal_appId = AppID_Calibrator_Debug;
     state->cdi_dispatch.cal_size = CAL_MODE3_DATASIZE;
     state->cdi_dispatch.cal_packet_size = CAL_MODE3_PACKETSIZE;
+}
+
+
+
+
+void get_mode11_minmax (int32_t* max, int32_t* min, int reg) {
+    
+    int32_t cmin, cmax; 
+    int32_t mmin[4], mmax[4];
+    int32_t* tgt = (int32_t *)(CAL_DF +reg*CAL_MODE3_CHUNKSIZE);
+    
+    for (int ant=0; ant<4; ant++) {
+        cmin = INT32_MAX;
+        cmax = INT32_MIN;
+        for (int i=0; i<1024; i++) {            
+            int32_t val = *tgt;
+            if (val > cmax) cmax = val;
+            if (val < cmin) cmin = val;
+            tgt++;
+        }
+        mmin[ant] = cmin;
+        mmax[ant] = cmax;
+    }
+    
+    // why we have to do it this way is not clear, seems some weird compiler bug;
+    for (int ant=0; ant<4; ant++) {
+        min[ant] = mmin[ant];
+        max[ant] = mmax[ant];
+    }
+}
+
+
+void get_mode11_minmax_unsigned (uint32_t* max, uint32_t* min, int reg) {
+
+    uint32_t cmin, cmax;
+    uint32_t mmin[4], mmax[4];
+    uint32_t* tgt = (uint32_t *)(CAL_DF +reg*CAL_MODE3_CHUNKSIZE);
+
+    for (int ant=0; ant<4; ant++) {
+        cmin = UINT32_MAX;
+        cmax = 0;
+        for (int i=0; i<1024; i++) {
+            uint32_t val = *tgt;
+            if (val > cmax) cmax = val;
+            if (val < cmin) cmin = val;
+            tgt++;
+        }
+        mmin[ant] = cmin;
+        mmax[ant] = cmax;
+    }
+    
+    // why we have to do it this way is not clear, seems some weird compiler bug;
+    for (int ant=0; ant<4; ant++) {
+        min[ant] = mmin[ant];
+        max[ant] = mmax[ant];
+    }
+}
+
+
+
+struct calibrator_metadata* process_cal_mode11(struct core_state* state) {
+
+    struct calibrator_metadata* out = (struct calibrator_metadata *)CAL_DATA;
+    struct calibrator_state* cal = &(state->cal);
+    cal_transfer_data(0b11);
+
+
+
+    cal->errors = calib_get_errors();
+    cal->bitslicer_errors = calib_get_slicer_errors();
+
+    out->version = VERSION_ID;
+    new_unique_packet_id(state);
+    out->unique_packet_id = state->unique_packet_id;
+    out->time_32 = state->base.time_32;
+    out->time_16 = state->base.time_16;
+    
+    out->SNRon = cal->SNRon;
+    out->SNRoff = cal->SNRoff;
+    out->powertop_slice = cal->powertop_slice;
+    out->sum1_slice = cal->sum1_slice;
+    out->sum2_slice = cal->sum2_slice;
+    out->fd_slice = cal->fd_slice;
+    out->sd2_slice = cal->sd2_slice;
+    out->prod1_slice = cal->prod1_slice;
+    out->prod2_slice = cal->prod2_slice;
+    out->errors = state->cal.errors;
+    out->bitslicer_errors = state->cal.bitslicer_errors;
+
+    
+    // drift is chunk
+    memcpy ((void*) &(out->drift), (void *)CAL_DF + 1*CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
+
+    // sume have_locks
+    uint32_t* have_lock = (uint32_t *)(CAL_DF + 0*CAL_MODE3_CHUNKSIZE);
+    out->have_lock[0] = out->have_lock[1] = out->have_lock[2] = out->have_lock[3] = 0;
+    for (int i=0; i<1024; i++) {
+        if (*have_lock & 1) out->have_lock[0]++;
+        if (*have_lock & 2) out->have_lock[1]++;
+        if (*have_lock & 4) out->have_lock[2]++;
+        if (*have_lock & 8) out->have_lock[3]++;
+        have_lock++;
+    }
+
+    get_mode11_minmax_unsigned(out->SNR_max, out->SNR_min, 20);    
+    get_mode11_minmax_unsigned(out->ptop_max, out->ptop_min, 2);
+    get_mode11_minmax_unsigned(out->pbot_max, out->pbot_min, 6);
+    get_mode11_minmax(out->FD_max, out->FD_min, 10);
+    get_mode11_minmax(out->SD_max, out->SD_min, 14);
+
+
+    cal_clear_df_flag();
+    state->cdi_dispatch.cal_count=0;
+    state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
+    state->cdi_dispatch.cal_appId = AppID_Calibrator_MetaData;
+    state->cdi_dispatch.cal_size = sizeof(struct calibrator_metadata);
+
+    return out;
+}
+
+void process_cal_mode00(struct core_state* state) {
+    // now that we have the flag, transfer data over;
+    cal_transfer_data(00);
+    memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE0_DATASIZE);
+    cal_clear_df_flag();
+    state->cdi_dispatch.cal_count=0;
+    new_unique_packet_id(state);
+    state->cdi_dispatch.cal_packet_id =state->unique_packet_id;
+    state->cdi_dispatch.cal_appId = AppID_Calibrator_Data;
+    state->cdi_dispatch.cal_size = CAL_MODE0_DATASIZE;
+    state->cdi_dispatch.cal_packet_size = CAL_MODE0_PACKETSIZE;
+}
+
+
+void process_cal_mode_01_10(struct core_state* state, int mode) {
+    cal_transfer_data(mode);
+    memcpy ((void *) CAL_DATA, (void *) CAL_DF,  CAL_MODE1_DATASIZE);
+    cal_clear_df_flag();
+    state->cdi_dispatch.cal_count=0;
+    new_unique_packet_id(state);
+    state->cdi_dispatch.cal_packet_id =state->unique_packet_id;
+    state->cdi_dispatch.cal_appId = AppID_Calibrator_RawPFB;
+    state->cdi_dispatch.cal_size = CAL_MODE1_DATASIZE;
+    state->cdi_dispatch.cal_packet_size = CAL_MODE1_PACKETSIZE;
 }
 
 
@@ -509,7 +569,14 @@ void process_calibrator(struct core_state* state) {
             return;
         }
         if (df_ready[3]) {
-            process_cal_mode_raw11(state);
+            cal->raw11_counter++;
+            if ((cal->raw11_every<0xff) && (cal->raw11_counter >= cal->raw11_every)) {
+                cal->raw11_counter = 0;
+                process_cal_mode_raw11(state);
+            } else {
+            process_cal_mode11(state);
+            }
+            
             /*
             struct calibrator_metadata* out = process_cal_mode11(state,CAL_MODE_RAW0);
             if (out->have_lock[0] + out->have_lock[1] + out->have_lock[2] + out->have_lock[3] == 0) {
