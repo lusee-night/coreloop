@@ -287,3 +287,15 @@ uint32_t print_buf(const void* data, size_t size) {
 }
 
 
+extern char __stack_bottom;  // Defined in linker script
+extern char __stack_top;    // Defined in linker script
+
+size_t get_free_stack() {
+    volatile char dummy;
+    char *current_sp = (char*)&dummy;
+
+    size_t total_stack = &__stack_top - &__stack_bottom;
+    size_t used_stack = &__stack_top - current_sp;
+
+    return total_stack - used_stack;
+}
