@@ -410,7 +410,9 @@ uint32_t CRC(const void* data, size_t size);
 void fft_precompute_tables();
 void fft(uint32_t *real, uint32_t *imag);
 
+#ifndef NOTREAL
 // get amount of free stack
 size_t get_free_stack();
+#endif
 
 #endif // CORE_LOOP_H

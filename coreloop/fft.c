@@ -6,8 +6,6 @@
 #include "core_loop.h"
 #include "fft.h"
 
-#undef LN_CORELOOP_FFT_TIMING
-
 int32_t sine_table_int[TABLE_SIZE];
 float sine_table_float[TABLE_SIZE];
 
@@ -82,10 +80,6 @@ uint8_t reverse_bits(uint8_t index) {
 
 void fft_int_in_place(int32_t *real_ptr, int32_t *imag_ptr)
 {
-#ifdef LN_CORELOOP_FFT_TIMING
-    timer_start();
-#endif
-
     // Bit reversal
     for (uint8_t i = 0; i < FFT_SIZE; i++) {
         uint8_t j = reverse_bits(i);
@@ -133,20 +127,10 @@ void fft_int_in_place(int32_t *real_ptr, int32_t *imag_ptr)
             }
         }
     }
-
-#ifdef LN_CORELOOP_FFT_TIMING
-    uint32_t elapsed = timer_stop();
-    debug_print("FFT(int,single): ");
-    debug_print_dec(elapsed);
-    debug_print("\n ");
-#endif
 }
 
 void fft_int(int32_t *input_real, int32_t *input_imag, int32_t *output_real, int32_t *output_imag)
 {
-#ifdef LN_CORELOOP_FFT_TIMING
-    timer_start();
-#endif
     // Copy input to output initially
     for (int i = 0; i < FFT_SIZE; i++) {
         output_real[i] = input_real[i];
@@ -200,28 +184,15 @@ void fft_int(int32_t *input_real, int32_t *input_imag, int32_t *output_real, int
             }
         }
     }
-
-#ifdef LN_CORELOOP_FFT_TIMING
-    uint32_t elapsed = timer_stop();
-    debug_print("FFT(int,single): ");
-    debug_print_dec(elapsed);
-    debug_print("\n ");
-#endif
 }
 
-
-void fft_int_multiple(int32_t** input_real, int32_t** input_imag, int32_t** output_real, int32_t** output_imag)
+void fft_int_multiple(int32_t* input_real_beg, int32_t* input_imag_beg, int32_t* output_real_beg, int32_t* output_imag_beg)
 {
-
-#ifdef LN_CORELOOP_FFT_TIMING
-    timer_start();
-#endif
-
     for(int arr_idx = 0; arr_idx < NUM_FFTS_IN_ONE_GO; ++arr_idx) {
         // Copy input to output initially
         for (int i = 0; i < FFT_SIZE; i++) {
-            output_real[arr_idx][i] = input_real[arr_idx][i];
-            output_imag[arr_idx][i] = input_imag[arr_idx][i];
+            output_real_beg[arr_idx * FFT_SIZE + i] = input_real_beg[arr_idx * FFT_SIZE + i];
+            output_imag_beg[arr_idx * FFT_SIZE + i] = input_imag_beg[arr_idx * FFT_SIZE + i];
         }
     }
 
@@ -231,12 +202,12 @@ void fft_int_multiple(int32_t** input_real, int32_t** input_imag, int32_t** outp
         if (i < j) {
             // Swap only if i < j to avoid double swapping
             for(int arr_idx = 0; arr_idx < NUM_FFTS_IN_ONE_GO; ++arr_idx) {
-                int32_t temp_real = output_real[arr_idx][i];
-                int32_t temp_imag = output_imag[arr_idx][i];
-                output_real[arr_idx][i] = output_real[arr_idx][j];
-                output_imag[arr_idx][i] = output_imag[arr_idx][j];
-                output_real[arr_idx][j] = temp_real;
-                output_imag[arr_idx][j] = temp_imag;
+                int32_t temp_real = output_real_beg[arr_idx * FFT_SIZE + i];
+                int32_t temp_imag = output_imag_beg[arr_idx * FFT_SIZE + i];
+                output_real_beg[arr_idx * FFT_SIZE + i] = output_real_beg[arr_idx * FFT_SIZE + j];
+                output_imag_beg[arr_idx * FFT_SIZE + i] = output_imag_beg[arr_idx * FFT_SIZE + j];
+                output_real_beg[arr_idx * FFT_SIZE + j] = temp_real;
+                output_imag_beg[arr_idx * FFT_SIZE + j] = temp_imag;
             }
         }
     }
@@ -258,8 +229,8 @@ void fft_int_multiple(int32_t** input_real, int32_t** input_imag, int32_t** outp
 
                 for(int arr_idx = 0; arr_idx < NUM_FFTS_IN_ONE_GO; ++arr_idx) {
                     // Complex multiplication
-                    int64_t temp_real = output_real[arr_idx][idx2];
-                    int64_t temp_imag = output_imag[arr_idx][idx2];
+                    int64_t temp_real = output_real_beg[arr_idx * FFT_SIZE + idx2];
+                    int64_t temp_imag = output_imag_beg[arr_idx * FFT_SIZE + idx2];
 
                     int64_t product_real = ((twiddle_real * temp_real - twiddle_imag * temp_imag)
                                           >> (FIXED_POINT_FRACTIONAL_BITS - 1));  // Adjust shift
@@ -267,29 +238,19 @@ void fft_int_multiple(int32_t** input_real, int32_t** input_imag, int32_t** outp
                                           >> (FIXED_POINT_FRACTIONAL_BITS - 1));
 
                     // Butterfly operation
-                    output_real[arr_idx][idx2] = (output_real[arr_idx][idx1] - product_real) >> 1;  // Scale down to prevent overflow
-                    output_imag[arr_idx][idx2] = (output_imag[arr_idx][idx1] - product_imag) >> 1;
-                    output_real[arr_idx][idx1] = (output_real[arr_idx][idx1] + product_real) >> 1;
-                    output_imag[arr_idx][idx1] = (output_imag[arr_idx][idx1] + product_imag) >> 1;
+                    output_real_beg[arr_idx * FFT_SIZE + idx2] = (output_real_beg[arr_idx * FFT_SIZE + idx1] - product_real) >> 1;  // Scale down to prevent overflow
+                    output_imag_beg[arr_idx * FFT_SIZE + idx2] = (output_imag_beg[arr_idx * FFT_SIZE + idx1] - product_imag) >> 1;
+                    output_real_beg[arr_idx * FFT_SIZE + idx1] = (output_real_beg[arr_idx * FFT_SIZE + idx1] + product_real) >> 1;
+                    output_imag_beg[arr_idx * FFT_SIZE + idx1] = (output_imag_beg[arr_idx * FFT_SIZE + idx1] + product_imag) >> 1;
                 }
             }
         }
     }
 
-#ifdef LN_CORELOOP_FFT_TIMING
-    uint32_t elapsed = timer_stop();
-    debug_print("FFT(int,multiple): ");
-    debug_print_dec(elapsed);
-    debug_print("\n ");
-#endif
-
 }
 
 void fft_float(int32_t *input_real, int32_t *input_imag, float* output_real, float* output_imag)
 {
-#ifdef LN_CORELOOP_FFT_TIMING
-    timer_start();
-#endif
     // copy with bit reversal
     for (uint8_t i = 0; i < FFT_SIZE; i++) {
         uint8_t j = reverse_bits(i);
@@ -327,28 +288,19 @@ void fft_float(int32_t *input_real, int32_t *input_imag, float* output_real, flo
             }
         }
     }
-
-#ifdef LN_CORELOOP_FFT_TIMING
-    uint32_t elapsed = timer_stop();
-    debug_print("FFT(float,single): ");
-    debug_print_dec(elapsed);
-    debug_print("\n ");
-#endif
 }
 
-void fft_float_multiple(int32_t** input_real, int32_t** input_imag, float** output_real, float** output_imag)
+
+void fft_float_multiple(int32_t* input_real_beg, int32_t* input_imag_beg, float* output_real_beg, float* output_imag_beg)
 {
-#ifdef LN_CORELOOP_FFT_TIMING
-    timer_start();
-#endif
 
     // Bit reversal
     for (uint8_t i = 0; i < FFT_SIZE; i++) {
         uint8_t j = reverse_bits(i);
 
         for(int arr_idx = 0; arr_idx < NUM_FFTS_IN_ONE_GO; ++arr_idx) {
-            output_real[arr_idx][i] = (float)input_real[arr_idx][j];
-            output_imag[arr_idx][i] = (float)input_imag[arr_idx][j];
+            output_real_beg[arr_idx * FFT_SIZE + i] = (float)input_real_beg[arr_idx * FFT_SIZE + j];
+            output_imag_beg[arr_idx * FFT_SIZE + i] = (float)input_imag_beg[arr_idx * FFT_SIZE + j];
         }
     }
 
@@ -369,26 +321,20 @@ void fft_float_multiple(int32_t** input_real, int32_t** input_imag, float** outp
 
                 // Butterfly operation
                 for(int arr_idx = 0; arr_idx < NUM_FFTS_IN_ONE_GO; ++arr_idx) {
-                    float temp_real = output_real[arr_idx][idx2] * cos_angle - output_imag[arr_idx][idx2] * sin_angle;
-                    float temp_imag = output_real[arr_idx][idx2] * sin_angle + output_imag[arr_idx][idx2] * cos_angle;
+                    float temp_real = output_real_beg[arr_idx * FFT_SIZE + idx2] * cos_angle - output_imag_beg[arr_idx * FFT_SIZE +idx2] * sin_angle;
+                    float temp_imag = output_real_beg[arr_idx * FFT_SIZE + idx2] * sin_angle + output_imag_beg[arr_idx * FFT_SIZE + idx2] * cos_angle;
 
-                    float a_real = output_real[arr_idx][idx1];
-                    float a_imag = output_imag[arr_idx][idx1];
+                    float a_real = output_real_beg[arr_idx * FFT_SIZE + idx1];
+                    float a_imag = output_imag_beg[arr_idx * FFT_SIZE + idx1];
 
-                    output_real[arr_idx][idx1] = a_real + temp_real;
-                    output_imag[arr_idx][idx1] = a_imag + temp_imag;
+                    output_real_beg[arr_idx * FFT_SIZE + idx1] = a_real + temp_real;
+                    output_imag_beg[arr_idx * FFT_SIZE + idx1] = a_imag + temp_imag;
 
-                    output_real[arr_idx][idx2] = a_real - temp_real;
-                    output_imag[arr_idx][idx2] = a_imag - temp_imag;
+                    output_real_beg[arr_idx * FFT_SIZE + idx2] = a_real - temp_real;
+                    output_imag_beg[arr_idx * FFT_SIZE + idx2] = a_imag - temp_imag;
                 }
             }
         }
     }
 
-#ifdef LN_CORELOOP_FFT_TIMING
-    uint32_t elapsed = timer_stop();
-    debug_print("FFT(float,multiple): ");
-    debug_print_dec(elapsed);
-    debug_print("\n ");
-#endif
 }

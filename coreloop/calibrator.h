@@ -56,7 +56,6 @@ struct calibrator_state {
     uint8_t zoom_prod;
     uint8_t zoom_Navg;
     uint8_t zoom_avg_idx;
-    uint8_t max_zoom_avg_iters_per_call;
     bool use_float_fft;
     uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
 };
