@@ -11,6 +11,7 @@
 #include "LuSEE_IO.h"
 #include <stdbool.h>
 #include "core_loop.h" // for tap_counter
+#include "interface_utils.h"
 
 const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
@@ -43,35 +44,9 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 
 
 void spectrometer_pre_init() {
-    FILE* file = fopen(true_spectrum_filename, "r");
-    if (file == NULL) {
-        printf("Error opening file: %s\n", true_spectrum_filename);
-        return;
-    }
-    for (int i = 0; i < NCHANNELS * NSPECTRA; i++) {
-        if (fscanf(file, "%i", &true_spectrum[i]) != 1) {                
-            printf("Error reading from file: %s\n", true_spectrum_filename);
-            fclose(file);
-            return;
-        }
-    }
-    fclose(file);
-    
-    file = fopen(ramp_spectrum_filename, "r");
-    if (file == NULL) {
-        printf("Error opening file: %s\n", ramp_spectrum_filename);
-        return;
-    }
+    read_array_uint(true_spectrum_filename, true_spectrum, NCHANNELS * NSPECTRA);
+    read_array_double(ramp_spectrum_filename, ramp_spectrum, NCHANNELS);
 
-    for (int i = 0; i < NCHANNELS; i++) {
-        if (fscanf(file, "%lf", &ramp_spectrum[i]) != 1) {
-            printf("Error reading from file: %s\n", ramp_spectrum_filename);
-            fclose(file);
-            return;
-        }
-    }
-
-    fclose(file);
     SPEC_BUF = malloc(NCHANNELS*NSPECTRA*sizeof(int32_t));
     adc_trigger = false;
     printf("Spectrometer init.\n");
@@ -106,14 +81,6 @@ void spec_set_spectrometer_enable(bool on) {
     }
 }
 
-
-
-double generate_gaussian_variate() {
-    double u1 = rand() / (double)RAND_MAX;
-    double u2 = rand() / (double)RAND_MAX;
-    double z = sqrt(-2 * log(u1)) * cos(2 * M_PI * u2);
-    return z;
-}
 
 
 bool spec_new_spectrum_ready() {

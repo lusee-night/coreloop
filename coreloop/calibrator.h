@@ -105,6 +105,6 @@ void calibrator_set_SNR(struct calibrator_state* cal);
 void calibrator_slice_init(struct calibrator_state* cal);
 void calibrator_set_slices(struct calibrator_state* cal);
 struct calibrator_metadata* process_cal_mode11(struct core_state* state);
-
+void process_cal_zoom(struct core_state* state);
 
 #endif

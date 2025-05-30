@@ -293,9 +293,6 @@ RFS_SET_CAL_BITSLICE_AUTO =  0x89
 # Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
 RFS_SET_ZOOM_CH =  0x90 
 
-# Set number of 64 point FFTs to do before processing next channel
-RFS_SET_ZOOM_NFFT =  0x91 
-
 # log 2 averaging (of NFFT chunks) before spitting out data
 RFS_SET_ZOOM_NAVG =  0x92 
 
