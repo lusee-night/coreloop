@@ -52,11 +52,9 @@ struct calibrator_state {
     uint8_t prod1_slice, prod2_slice;
     uint32_t errors, bitslicer_errors;
     uint8_t zoom_ch1, zoom_ch2;
-    uint8_t zoom_Nfft;
     uint8_t zoom_prod;
-    uint8_t zoom_Navg;
+    uint16_t zoom_Navg;
     uint8_t zoom_avg_idx;
-    uint8_t max_zoom_avg_iters_per_call;
     bool use_float_fft;
     uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
 };
@@ -106,6 +104,6 @@ void calibrator_set_SNR(struct calibrator_state* cal);
 void calibrator_slice_init(struct calibrator_state* cal);
 void calibrator_set_slices(struct calibrator_state* cal);
 struct calibrator_metadata* process_cal_mode11(struct core_state* state);
-
+void process_cal_zoom(struct core_state* state);
 
 #endif

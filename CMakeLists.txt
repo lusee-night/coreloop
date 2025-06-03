@@ -6,10 +6,10 @@ ADD_CUSTOM_TARGET(generate_h_from_md ALL COMMAND make -C ../pycoreloop)
 
 # Add main.cpp file of the project root directory as a source file
 
-set(SOURCE_FILES src/main.c src/LuSEE_IO.c src/LuSEE_SPI.c src/cdi_interface.c src/spectrometer_interface.c 
+set(SOURCE_FILES src/main.c src/LuSEE_IO.c src/LuSEE_SPI.c src/cdi_interface.c src/spectrometer_interface.c src/interface_utils.c
     src/calibrator_interface.c coreloop/core_loop.c coreloop/commanding.c coreloop/flash_interface.c coreloop/spectra_in.c 
     coreloop/spectra_out.c coreloop/housekeeping.c coreloop/gain.c coreloop/utils.c coreloop/sequencer.c
-    coreloop/calibrator.c coreloop/fft.c coreloop/watchdogs.c)
+    coreloop/calibrator.c coreloop/fft.c coreloop/watchdogs.c coreloop/calibrator_zoom.c)
 
 
 # Add executable target with source files listed in SOURCE_FILES variable

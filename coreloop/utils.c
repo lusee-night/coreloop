@@ -286,7 +286,7 @@ uint32_t print_buf(const void* data, size_t size) {
     debug_print("\r\n")
 }
 
-
+#ifndef NOTREAL
 extern char __stack_bottom;  // Defined in linker script
 extern char __stack_top;    // Defined in linker script
 
@@ -299,3 +299,4 @@ size_t get_free_stack() {
 
     return total_stack - used_stack;
 }
+#endif

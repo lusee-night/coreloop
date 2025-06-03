@@ -145,7 +145,6 @@ input ADC channel using 0x90 command below
 | 0x9M | Name                 |  Description                                       |
 |------|----------------------|----------------------------------------------------|                             
 | 0x90 | RFS_SET_ZOOM_CH      | Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
-| 0x91 | RFS_SET_ZOOM_NFFT    | Set number of 64 point FFTs to do before processing next channel |
 | 0x92 | RFS_SET_ZOOM_NAVG    | log 2 averaging (of NFFT chunks) before spitting out data
 
 

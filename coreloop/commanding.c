@@ -613,16 +613,8 @@ bool process_cdi(struct core_state* state)
             state->cal.zoom_prod = (arg_low & 0b110000) >> 4;
             break;
 
-        case RFS_SET_ZOOM_NFFT:
-            if (arg_low>32) {
-                state->base.errors |= CDI_COMMAND_BAD_ARGS;
-            } else {
-                state->cal.zoom_Nfft = arg_low;
-            }
-            break;
-
         case RFS_SET_ZOOM_NAVG:
-            state->cal.zoom_Navg = arg_low;
+            state->cal.zoom_Navg = (1 << arg_low);
             break;
 
         case RFS_SET_AVG_MODE:

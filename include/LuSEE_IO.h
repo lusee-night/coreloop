@@ -69,6 +69,7 @@ static inline uint32_t* spectra_read_buffer_high(bool tick_tock)    { return tic
 
 // test harness init
 void spectrometer_pre_init();
+void calib_pre_init();
 void cdi_pre_init();
 
 

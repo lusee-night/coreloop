@@ -5,6 +5,7 @@
 #include "LuSEE_IO.h"
 #include "fft.h"
 #include <string.h>
+#include <stdlib.h>
 
 #define CAL_MODE0_CHUNKSIZE (1024 * sizeof(uint32_t))
 #define CAL_MODE0_DATASIZE (CAL_MODE0_CHUNKSIZE * 5 + 1 * sizeof(uint32_t)) // 5 chunks + 1 register
@@ -50,7 +51,6 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->gphase_guard = 200000;
     cal->use_float_fft = true;
     cal->zoom_avg_idx = 0;
-    cal->max_zoom_avg_iters_per_call = 4;
     cal->raw11_every = 0x00; // always 0xFF; // never
     cal->raw11_counter = 0;
 }
@@ -97,9 +97,6 @@ void calibrator_set_slices(struct calibrator_state *cal)
     // second one was plus +4
     calib_set_slicers(cal->powertop_slice, cal->powertop_slice + cal->delta_powerbot_slice, cal->sum1_slice, cal->sum2_slice, cal->fd_slice, cal->sd2_slice, cal->prod1_slice, cal->prod2_slice);
 }
-
-static float sqf(float x) { return x * x; }
-static int32_t sqi(int32_t x) { return x * x; }
 
 void process_cal_mode_raw11(struct core_state *state)
 {
@@ -278,190 +275,6 @@ void process_cal_mode_01_10(struct core_state *state, int mode)
     state->cdi_dispatch.cal_packet_size = CAL_MODE1_PACKETSIZE;
 }
 
-void compute_fft_for_zoom(int fft_idx, const struct core_state *state,
-                          int32_t *ch1_real, int32_t *ch1_imag,
-                          int32_t *ch2_real, int32_t *ch2_imag)
-{
-    int fft_offset = fft_idx * FFT_SIZE;
-
-    int32_t *fft_input_ch1_re = ch1_real + fft_offset;
-    int32_t *fft_input_ch1_im = ch1_imag + fft_offset;
-    int32_t *fft_input_ch2_re = ch2_real + fft_offset;
-    int32_t *fft_input_ch2_im = ch2_imag + fft_offset;
-
-    if (state->cal.use_float_fft)
-    {
-
-#ifdef LN_CORELOOP_FFT_TIMING
-        timer_start();
-#endif
-        float *fft_output_ch1_re = (float *)(CAL_DATA) + fft_idx * FFT_SIZE;
-        float *fft_output_ch1_im = fft_output_ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        float *fft_output_ch2_re = fft_output_ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        float *fft_output_ch2_im = fft_output_ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-
-        fft_float(fft_input_ch1_re, fft_input_ch1_im, fft_output_ch1_re, fft_output_ch1_im);
-
-#ifdef LN_CORELOOP_FFT_TIMING
-        state->fft_time = timer_stop();
-#endif
-
-        fft_float(fft_input_ch2_re, fft_input_ch2_im, fft_output_ch2_re, fft_output_ch2_im);
-    }
-    else
-    {
-
-        int32_t *fft_output_ch1_re = (int32_t *)(CAL_DATA) + fft_idx * FFT_SIZE;
-        int32_t *fft_output_ch1_im = fft_output_ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        int32_t *fft_output_ch2_re = fft_output_ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        int32_t *fft_output_ch2_im = fft_output_ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-
-#ifdef LN_CORELOOP_FFT_TIMING
-        timer_start();
-#endif
-
-        fft_int(fft_input_ch1_re, fft_input_ch1_im, fft_output_ch1_re, fft_output_ch1_im);
-
-#ifdef LN_CORELOOP_FFT_TIMING
-        state->fft_time = timer_stop();
-#endif
-        fft_int(fft_input_ch2_re, fft_input_ch2_im, fft_output_ch2_re, fft_output_ch2_im);
-    }
-}
-
-void correlate_and_accumulate(const struct core_state *state, int fft_idx, void *to_send)
-{
-    if (state->cal.use_float_fft)
-    {
-        float *ch1_re = (float *)(CAL_DATA) + fft_idx * FFT_SIZE;
-        float *ch1_im = ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        float *ch2_re = ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        float *ch2_im = ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-
-        float *ch1_autocorr_float = (float *)(to_send) + fft_idx * FFT_SIZE;
-        float *ch2_autocorr_float = ch1_autocorr_float + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        float *ch1_2_corr_real_float = ch2_autocorr_float + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        float *ch1_2_corr_imag_float = ch1_2_corr_real_float + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-
-        for (int i = 0; i < FFT_SIZE; i++)
-        {
-            if (state->cal.zoom_avg_idx == 0)
-            {
-                ch1_autocorr_float[i] = (sqf(ch1_re[i]) + sqf(ch1_im[i])) / state->cal.zoom_Navg;
-                ch2_autocorr_float[i] = (sqf(ch2_re[i]) + sqf(ch2_im[i])) / state->cal.zoom_Navg;
-                ch1_2_corr_real_float[i] = (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
-                ch1_2_corr_imag_float[i] = (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
-            }
-            else
-            {
-                ch1_autocorr_float[i] += (sqf(ch1_re[i]) + sqf(ch1_im[i])) / state->cal.zoom_Navg;
-                ch2_autocorr_float[i] += (sqf(ch2_re[i]) + sqf(ch2_im[i])) / state->cal.zoom_Navg;
-                ch1_2_corr_real_float[i] += (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
-                ch1_2_corr_imag_float[i] += (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
-            }
-        }
-    }
-    else
-    {
-        int32_t *ch1_re = (int32_t *)(CAL_DATA) + fft_idx * FFT_SIZE;
-        int32_t *ch1_im = ch1_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        int32_t *ch2_re = ch1_im + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        int32_t *ch2_im = ch2_re + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-
-        int32_t *ch1_autocorr_int = (int32_t *)(to_send) + fft_idx * FFT_SIZE;
-        int32_t *ch2_autocorr_int = ch1_autocorr_int + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        int32_t *ch1_2_corr_real_int = ch2_autocorr_int + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-        int32_t *ch1_2_corr_imag_int = ch1_2_corr_real_int + (state->cal.zoom_Nfft + fft_idx) * FFT_SIZE;
-
-        for (int i = 0; i < FFT_SIZE; i++)
-        {
-            if (state->cal.zoom_avg_idx == 0)
-            {
-                ch1_autocorr_int[i] = (sqi(ch1_re[i]) + sqi(ch1_im[i])) / state->cal.zoom_Navg;
-                ch2_autocorr_int[i] = (sqi(ch2_re[i]) + sqi(ch2_im[i])) / state->cal.zoom_Navg;
-                ch1_2_corr_real_int[i] = (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
-                ch1_2_corr_imag_int[i] = (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
-            }
-            else
-            {
-                ch1_autocorr_int[i] += (sqi(ch1_re[i]) + sqi(ch1_im[i])) / state->cal.zoom_Navg;
-                ch2_autocorr_int[i] += (sqi(ch2_re[i]) + sqi(ch2_im[i])) / state->cal.zoom_Navg;
-                ch1_2_corr_real_int[i] += (ch1_re[i] * ch2_re[i] + ch1_im[i] * ch2_im[i]) / state->cal.zoom_Navg;
-                ch1_2_corr_imag_int[i] += (-ch1_re[i] * ch2_im[i] + ch1_im[i] * ch2_re[i]) / state->cal.zoom_Navg;
-            }
-        }
-    }
-}
-
-void dispatch_cal_zoom(struct core_state *state, void *to_send)
-{
-    struct delayed_cdi_sending *d = &(state->cdi_dispatch);
-    wait_for_cdi_ready();
-
-    uint32_t old_appId = d->cal_appId;
-    uint32_t old_cal_size = d->cal_size;
-
-    d->cal_appId = AppID_ZoomSpectra;
-    d->cal_size = 4 * sizeof(int32_t) * FFT_SIZE;
-
-    memcpy((void *)TLM_BUF, to_send, d->cal_size);
-
-    cdi_dispatch_uC(&(state->cdi_stats), d->cal_appId, d->cal_size);
-
-    debug_print("z#");
-
-    // restore previous cal_appId, cal_size
-    d->cal_appId = old_appId;
-    d->cal_size = old_cal_size;
-}
-
-void process_cal_zoom(struct core_state *state)
-{
-    void *to_send = (void *)CAL_DATA + 4 * FFT_SIZE * state->cal.zoom_Nfft * sizeof(int32_t);
-
-    int n_iters = 0;
-
-    if (state->cal.zoom_avg_idx < state->cal.zoom_Navg)
-    {
-        // after this function finishes, raw PFB outputs will be in CAL_DF
-        cal_transfer_data(2);
-
-        int32_t *ch1_real = (int32_t *)CAL_DF;
-        int32_t *ch1_imag = ch1_real + NCHANNELS;
-        int32_t *ch2_real = ch1_imag + NCHANNELS;
-        int32_t *ch2_imag = ch2_real + NCHANNELS;
-
-        for (int fft_idx = 0; fft_idx < state->cal.zoom_Nfft; ++fft_idx)
-        {
-            compute_fft_for_zoom(fft_idx, state, ch1_real, ch1_imag, ch2_real, ch2_imag);
-        }
-
-        // we no longer need data from CAL_DF, all zoom_Nfft FFTs are stored at CAL_DATA
-        cal_clear_df_flag();
-
-        for (int fft_idx = 0; fft_idx < state->cal.zoom_Nfft; ++fft_idx)
-        {
-            correlate_and_accumulate(state, fft_idx, to_send);
-        }
-
-        state->cal.zoom_avg_idx++;
-
-        n_iters++;
-        // TODO: replace max_zoom_avg_iters_per_call with #define-d constant?
-        if (n_iters >= state->cal.max_zoom_avg_iters_per_call)
-        {
-            // if zoom_Navg iteration has passed, we go straight to sending next time process_cal_zoom is called
-            return;
-        }
-    }
-
-    if (state->cal.zoom_avg_idx == state->cal.zoom_Navg)
-    {
-        dispatch_cal_zoom(state, to_send);
-        state->cal.zoom_avg_idx = 0;
-    }
-}
-
 int check_range_unsigned(uint32_t *fields, uint32_t value, uint8_t antenna_mask)
 {
     int maxshift = 0;
@@ -528,7 +341,6 @@ void process_calibrator(struct core_state *state)
     // if readout mode is zoom, we just do a special processing
     if (mode == CAL_MODE_ZOOM)
     {
-        debug_print("IMPLEMENT");
         if (df_ready[2])
         {
             process_cal_zoom(state);
