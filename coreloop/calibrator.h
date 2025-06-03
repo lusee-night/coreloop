@@ -52,9 +52,8 @@ struct calibrator_state {
     uint8_t prod1_slice, prod2_slice;
     uint32_t errors, bitslicer_errors;
     uint8_t zoom_ch1, zoom_ch2;
-    uint8_t zoom_Nfft;
     uint8_t zoom_prod;
-    uint8_t zoom_Navg;
+    uint16_t zoom_Navg;
     uint8_t zoom_avg_idx;
     bool use_float_fft;
     uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 

@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
 
     DDR3_init();
     spectrometer_pre_init();
+    calib_pre_init();
     cdi_pre_init();
     clock_gettime(CLOCK_REALTIME, &time_start);
     

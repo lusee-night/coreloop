@@ -614,7 +614,7 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_ZOOM_NAVG:
-            state->cal.zoom_Navg = arg_low;
+            state->cal.zoom_Navg = (1 << arg_low);
             break;
 
         case RFS_SET_AVG_MODE:

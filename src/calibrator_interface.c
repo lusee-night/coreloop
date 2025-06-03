@@ -7,18 +7,24 @@
 const char* cal_zoom_filename = CORELOOP_ROOT "/data/cal_zoom.dat";
 int32_t cal_zoom_data[NCHANNELS * 4];
 struct timespec time_cal_start;
+bool calibrator_enable = false;
+
+void calib_pre_init()
+{
+    CAL_DF = malloc(128 * 1024);
+    read_array_int(cal_zoom_filename, cal_zoom_data, NCHANNELS * 4);
+}
 
 void calib_init()
 {
-    // Placeholder implementation
-    CAL_DF = malloc(128 * 1024);
-
-    read_array_int(cal_zoom_filename, cal_zoom_data, NCHANNELS * 4);
+    clock_gettime(CLOCK_REALTIME, &time_cal_start);
 }
 
 void calib_enable(bool enable)
 {
-    // Placeholder implementation
+    calibrator_enable = enable;
+    if (enable)
+        clock_gettime(CLOCK_REALTIME, &time_cal_start);
 }
 
 void calib_set_readout_mode(int mode)
@@ -47,7 +53,7 @@ void cal_new_cal_ready(bool* modes)
 {
     long ns_passed = nanosecs_passed(time_cal_start);
     long to_pass_zoom = 1000000;
-    modes[CAL_MODE_ZOOM] = (ns_passed > to_pass_zoom);
+    modes[2] = (ns_passed > to_pass_zoom);
 }
 
 // assuming a certain mode is ready above, transfer it over
