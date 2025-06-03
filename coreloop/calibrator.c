@@ -73,10 +73,15 @@ void set_calibrator(struct calibrator_state *cal)
 
     memset((void *)CAL_DF, 0, CAL_MODE0_DATASIZE);
 
+    if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
+        calib_set_Navg(0, cal->Navg3);
+    }
+
     if ((cal->mode == CAL_MODE_SNR_SETTLE) || (cal->mode == CAL_MODE_BIT_SLICER_SETTLE))
     {
         calib_set_SNR_lock_on(0xFFFFFF);
     }
+    
     calibrator_set_slices(cal);
     cal_clear_df_flag();
 }
@@ -535,6 +540,7 @@ void process_calibrator(struct core_state *state)
     {
         if (cal->auto_slice)
         {
+            calib_set_Navg(0, cal->Navg3);
             if (df_ready[3])
             {
                 stats = process_cal_mode11(state);
@@ -555,6 +561,8 @@ void process_calibrator(struct core_state *state)
                 if (range_ok)
                 {
                     // We have converged, time to move onto the next mode;
+                    calib_set_Navg(cal->Navg2, cal->Navg3);
+                    cal_reset();
                     cal->mode = CAL_MODE_SNR_SETTLE;
                     debug_print("\r\n[ -> SNR]")
                 }
@@ -562,46 +570,51 @@ void process_calibrator(struct core_state *state)
                 {
 
                     // if powertop changes, we need to adjust the slice, but wait with FD/SD since SD=sum0*sum2+sum1**2
-                    if (ptop_shift > 0)
-                    {
-                        cal->powertop_slice = MAX(0, (int)(stats->powertop_slice) - ptop_shift);
-                    }
-                    else if (sd_shift > 0)
-                    {
+                    if (ptop_shift > 0) cal->powertop_slice = MAX(0, (int)(stats->powertop_slice) - ptop_shift);
+                    if (sd_shift > 0) {
                         // powertop is ok. Let's increase sum1 and sum2 by half
                         int shift = (sd_shift+1)/2;
                         if (shift == 0 ) shift = 1;
                         cal->sum1_slice = MAX(0, (int)(stats->sum1_slice) - shift);
                         cal->sum2_slice = MAX(0, (int)(stats->sum2_slice) - shift);
                     }
-                    else
-                    {
+                    if ((ptop_shift==0) & (sd_shift==0)) {
+                        // powertop and sum1/sum2 are ok, let's adjust FD
+                        // we need to shift FD by fd_shift, but we need to check if it is not negative
+                        // if it is negative, we just set it to 0
+                        // if it is positive, we set it to fd_slice - fd_shift
+                        // so that we can still have some margin for the next iteration
+                        if (fd_shift < 0) {
+                            cal->fd_slice = MAX(0, (int)(stats->fd_slice));
+                        } else {
                         // ok, the last one is FD
                         cal->fd_slice = MAX(0, (int)(stats->fd_slice) - fd_shift);
+                        }
                     }
-
                     calibrator_set_slices(cal);
                     cal_reset();
 
+
+                    //powertop.sum1.sum2.prod1.prod2.delta_powerbot.fd_slice,sd2_slice
                     debug_print("[SLICERS ");
                     debug_print_dec(cal->powertop_slice);
-                    debug_print(" ");
+                    debug_print(".");
                     debug_print_dec(cal->sum1_slice);
-                    debug_print(" ");
+                    debug_print(".");
                     debug_print_dec(cal->sum2_slice);
-                    debug_print(" ");
-                    debug_print_dec(cal->fd_slice);
-                    debug_print(" ");
+                    debug_print(".");
                     debug_print_dec(cal->prod1_slice);
-                    debug_print(" ");
+                    debug_print(".");
                     debug_print_dec(cal->prod2_slice);
-                    debug_print(" ]\n\r");
+                    debug_print(".0");
+                    debug_print_dec(cal->fd_slice);
+                    debug_print(".0 ]\n\r");
                 }
             }
         }
         else
         {
-            // if not on auto slicer we can just move on
+            // if not on auto slicer we can just move on            
             cal->mode = CAL_MODE_SNR_SETTLE;
         }
     }
@@ -634,11 +647,13 @@ void process_calibrator(struct core_state *state)
                 else
                 {
                     // ok, the signal is present, let's just set the bar a bit below max;
-                    SNR_on = MAX (SNR_on, stats->SNR_min[ant] + diff * 3 / 4);                    
+                    SNR_on =  MAX(SNR_on, stats->SNR_min[ant] + diff * 9 / 10);                    
                 }                
             }
             if (SNR_on>0) {
                 cal->mode = CAL_MODE_RUN;
+                cal->SNRon = SNR_on;
+                debug_print_dec(SNR_on);
                 debug_print("\r\n[ -> RUN]");
                 calibrator_set_SNR(cal);
             }    
