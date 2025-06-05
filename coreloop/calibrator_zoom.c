@@ -158,7 +158,7 @@ void dispatch_cal_zoom(struct core_state* state, void* to_send)
     // TODO: add CRC?
     cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId, d->cal_size);
 
-    //debug_print("z#");
+    debug_print("z#");
 
     // restore previous cal_appId, cal_size
     d->cal_appId = old_appId;
@@ -168,6 +168,8 @@ void dispatch_cal_zoom(struct core_state* state, void* to_send)
 void process_cal_zoom(struct core_state* state) {
     void* to_send = (void *)CAL_DATA + 4 * FFT_SIZE * ZOOM_NFFT * sizeof(int32_t);
 
+#ifdef NOTREAL
+    // for CPU backend, slow down artificially
     static int32_t n_call = 0;
     static const int32_t n_skip = 100000;
 
@@ -179,6 +181,7 @@ void process_cal_zoom(struct core_state* state) {
         }
         n_call = 0;
     }
+#endif
 
     if (state->cal.zoom_avg_idx < state->cal.zoom_Navg) {
         // after this function finishes, raw PFB outputs will be in CAL_DF
@@ -189,7 +192,9 @@ void process_cal_zoom(struct core_state* state) {
         int32_t* ch2_real = ch1_imag + NCHANNELS;
         int32_t* ch2_imag = ch2_real + NCHANNELS;
 
+#ifdef NOTREAL
         n_call++;
+#endif
 
 #ifdef LN_CORELOOP_FFT_TIMING
         timer_start();
