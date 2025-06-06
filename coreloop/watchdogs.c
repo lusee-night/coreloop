@@ -29,10 +29,13 @@ bool process_watchdogs (struct core_state* state) {
     if (state->watchdog.watchdogs_enabled) {
         if (state->watchdog.feed_uc) {
             spec_feed_uC_watchdog();
+            debug_print("F");
         }
         uint8_t tripped = spec_watchdog_tripped();
 
         if (tripped > 0) {
+            debug_print("tripped");
+            debug_print_dec(tripped);
             state->watchdog.tripped_mask |= tripped;
             return true;
         }
