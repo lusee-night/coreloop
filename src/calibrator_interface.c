@@ -59,18 +59,38 @@ void cal_new_cal_ready(bool* modes)
 // assuming a certain mode is ready above, transfer it over
 void cal_transfer_data(int mode)
 {
-    bool add_noise = true;
-    if (mode == CAL_MODE_ZOOM) {
-        // ignore PFB bin, just populate CAL_DF with data from array
+    if (mode == 2) {
         int32_t* cal_df = CAL_DF;
-        for(int i = 0 ; i < NCHANNELS * 4 ; ++i) {
-            if (add_noise) {
-                double noise = generate_gaussian_variate();
-                cal_df[i] = (int32_t)(2 * cal_zoom_data[i] * noise);
-            } else {
-                cal_df[i] = cal_zoom_data[i];
-            }
+        double x;
+        double dx = 2.0 * M_PI / (NCHANNELS - 1);
+
+        for (int i = 0; i < NCHANNELS; i++) {
+            x = i * dx;
+
+            // ch1_re: 10000 * (3 * sin(x) - 4 * cos(3*x))
+            cal_df[i] = (int32_t)(10000.0 * (3.0 * sin(x) - 4.0 * cos(30.0 * x)));
+
+            // ch1_im: 10000 * (2 * cos(x) + 3 * sin(2*x))
+            cal_df[NCHANNELS + i] = (int32_t)(10000.0 * (2.0 * cos(x) + 3.0 * sin(20.0 * x)));
+
+            // ch2_re: 10000 * (sin(x) + cos(2*x))
+            cal_df[2 * NCHANNELS + i] = (int32_t)(10000.0 * (sin(x) + cos(20.0 * x)));
+
+            // ch2_im: 10000 * (2 * sin(x) - cos(x))
+            cal_df[3 * NCHANNELS + i] = (int32_t)(10000.0 * (2.0 * sin(50.0 * x) - cos(x)));
         }
+
+        // ignore PFB bin, just populate CAL_DF with data from array
+
+//        bool add_noise = true;
+//        for(int i = 0 ; i < NCHANNELS * 4 ; ++i) {
+//            if (add_noise) {
+//                double noise = generate_gaussian_variate();
+//                cal_df[i] = (int32_t)(2 * cal_zoom_data[i] * noise);
+//            } else {
+//                cal_df[i] = cal_zoom_data[i];
+//            }
+//        }
     }
     // reset time_cal_start
     clock_gettime(CLOCK_REALTIME, &time_cal_start);
