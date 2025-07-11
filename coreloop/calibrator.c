@@ -252,6 +252,15 @@ void process_cal_mode00(struct core_state *state)
 {
     // now that we have the flag, transfer data over;
     cal_transfer_data(00);
+
+    uint32_t *gNacc = (uint32_t *)(CAL_DF + 512*8*sizeof(uint32_t));
+    if (*gNacc< 1<<(state->cal.Navg3-1)) {
+        // if less than half integration period has data, balk at it
+        debug_print ("~");
+        cal_clear_df_flag();
+        return;
+    }
+
     memcpy((void *)CAL_DATA, (void *)CAL_DF, CAL_MODE0_DATASIZE);
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count = 0;
