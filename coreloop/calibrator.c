@@ -35,6 +35,7 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->notch_index = 2;
     cal->SNRon = 5;
     cal->SNRoff = 3;
+    cal->SNR_minratio = 16; // 16/8 = 2.0
     cal->Nsettle = 5;
     cal->delta_drift_corA = 1;
     cal->delta_drift_corB = 1;
@@ -81,6 +82,12 @@ void set_calibrator(struct calibrator_state *cal)
     {
         calib_set_SNR_lock_on(0xFFFFFF);
     }
+
+    if (cal->mode == CAL_MODE_RAW3)
+    {
+        // we need to set the raw11_every to 0x01 so that we output every single one;
+        cal->raw11_every = 0x01;
+    }
     
     calibrator_set_slices(cal);
     cal_clear_df_flag();
@@ -98,37 +105,6 @@ void calibrator_set_slices(struct calibrator_state *cal)
     calib_set_slicers(cal->powertop_slice, cal->powertop_slice + cal->delta_powerbot_slice, cal->sum1_slice, cal->sum2_slice, cal->fd_slice, cal->sd2_slice, cal->prod1_slice, cal->prod2_slice);
 }
 
-void process_cal_mode_raw11(struct core_state *state)
-{
-    // now that we have the flag, transfer data over;
-    cal_transfer_data(0b11);
-    state->cal.errors = calib_get_errors();
-    state->cal.bitslicer_errors = calib_get_slicer_errors();
-
-    // first repack into 16 bytes
-    uint32_t *have_lock = (uint32_t *)(CAL_DF);
-    uint16_t *have_lock_tgt = (uint16_t *)(CAL_DATA);
-    for (int i = 0; i < 1024; i++)
-    {
-        *have_lock_tgt = ((*have_lock) & 0xFF) | (((*have_lock) & 0xFF0000) >> 8);
-        have_lock++;
-        have_lock_tgt++;
-    }
-    void *lock_ant = (void *)CAL_DATA + 1024 * sizeof(uint16_t);
-    cal_copy_errors((struct calibrator_errors *)lock_ant);
-
-    memcpy((void *)(CAL_DATA + CAL_MODE3_CHUNKSIZE), (void *)(CAL_DF + CAL_MODE3_CHUNKSIZE),
-           CAL_MODE3_DATASIZE - CAL_MODE3_CHUNKSIZE);
-
-    // nextmode //debug
-    cal_clear_df_flag();
-    state->cdi_dispatch.cal_count = 0;
-    new_unique_packet_id(state);
-    state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
-    state->cdi_dispatch.cal_appId = AppID_Calibrator_Debug;
-    state->cdi_dispatch.cal_size = CAL_MODE3_DATASIZE;
-    state->cdi_dispatch.cal_packet_size = CAL_MODE3_PACKETSIZE;
-}
 
 void get_mode11_minmax_signed(int32_t *max, int32_t *min, int reg)
 {
@@ -186,16 +162,61 @@ void get_mode11_minmax_unsigned(uint32_t *max, uint32_t *min, int reg)
     }
 }
 
-struct calibrator_metadata *process_cal_mode11(struct core_state *state)
+void get_mode11_positive_count(uint16_t *count, int reg)
+{
+    uint32_t *tgt = (uint32_t *)(CAL_DF + reg * CAL_MODE3_CHUNKSIZE);
+    for (int ant = 0; ant < 4; ant++)
+    {
+        count[ant] = 0;
+        for (int i = 0; i < 1024; i++)
+        {
+            uint32_t val = *tgt;
+            if (val > 0)
+                count[ant]++;
+            tgt++;
+        }
+    }
+}
+
+
+
+
+void packetize_mode11_raw(struct core_state *state)
+{
+
+    // first repack into 16 bytes
+    uint32_t *have_lock = (uint32_t *)(CAL_DF);
+    uint16_t *have_lock_tgt = (uint16_t *)(CAL_DATA);
+    for (int i = 0; i < 1024; i++)
+    {
+        *have_lock_tgt = ((*have_lock) & 0xFF) | (((*have_lock) & 0xFF0000) >> 8);
+        have_lock++;
+        have_lock_tgt++;
+    }
+    void *lock_ant = (void *)CAL_DATA + 1024 * sizeof(uint16_t);
+    cal_copy_errors((struct calibrator_errors *)lock_ant);
+
+    memcpy((void *)(CAL_DATA + CAL_MODE3_CHUNKSIZE), (void *)(CAL_DF + CAL_MODE3_CHUNKSIZE),
+           CAL_MODE3_DATASIZE - CAL_MODE3_CHUNKSIZE);
+
+    // nextmode //debug
+    cal_clear_df_flag();
+    state->cdi_dispatch.cal_count = 0;
+    new_unique_packet_id(state);
+    state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
+    state->cdi_dispatch.cal_appId = AppID_Calibrator_Debug;
+    state->cdi_dispatch.cal_size = CAL_MODE3_DATASIZE;
+    state->cdi_dispatch.cal_packet_size = CAL_MODE3_PACKETSIZE;
+}
+
+
+
+void packetize_mode11_processed(struct core_state *state, struct calibrator_stats* stats)
 {
 
     struct calibrator_metadata *out = (struct calibrator_metadata *)CAL_DATA;
     struct calibrator_state *cal = &(state->cal);
-    cal_transfer_data(0b11);
-
-    cal->errors = calib_get_errors();
-    cal->bitslicer_errors = calib_get_slicer_errors();
-
+ 
     out->version = VERSION_ID;
     new_unique_packet_id(state);
     out->unique_packet_id = state->unique_packet_id;
@@ -233,20 +254,41 @@ struct calibrator_metadata *process_cal_mode11(struct core_state *state)
         have_lock++;
     }
 
-    get_mode11_minmax_unsigned(out->SNR_max, out->SNR_min, 20);
-    get_mode11_minmax_unsigned(out->ptop_max, out->ptop_min, 2);
-    get_mode11_minmax_unsigned(out->pbot_max, out->pbot_min, 6);
-    get_mode11_minmax_signed(out->FD_max, out->FD_min, 10);
-    get_mode11_minmax_signed(out->SD_max, out->SD_min, 14);
-
+    out->stats = *stats;
+    
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count = 0;
     state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
     state->cdi_dispatch.cal_appId = AppID_Calibrator_MetaData;
     state->cdi_dispatch.cal_size = sizeof(struct calibrator_metadata);
 
-    return out;
 }
+
+void process_cal_mode11 (struct core_state *state, struct calibrator_stats *stats)
+{
+    struct calibrator_state *cal = &(state->cal);
+    cal_transfer_data(0b11);
+    cal->errors = calib_get_errors();
+    cal->bitslicer_errors = calib_get_slicer_errors();
+    
+    // now get stats;
+    get_mode11_minmax_unsigned(stats->SNR_max, stats->SNR_min, 20);
+    get_mode11_minmax_unsigned(stats->ptop_max, stats->ptop_min, 2);
+    get_mode11_minmax_unsigned(stats->pbot_max, stats->pbot_min, 6);
+    get_mode11_minmax_signed(stats->FD_max, stats->FD_min, 10);
+    get_mode11_minmax_signed(stats->SD_max, stats->SD_min, 14);
+    get_mode11_positive_count(stats->SD_positive_count, 14);
+    
+    cal->raw11_counter++;
+    if ((cal->raw11_every < 0xff) && (cal->raw11_counter >= cal->raw11_every)) {
+        cal->raw11_counter = 0;
+        packetize_mode11_raw(state);
+    } else {
+        packetize_mode11_processed(state, stats);
+    }
+
+}
+
 
 void process_cal_mode00(struct core_state *state)
 {
@@ -333,7 +375,8 @@ void process_calibrator(struct core_state *state)
     static int32_t hk = 0;
     static int32_t old_errors = 0xFF;
     static int32_t old_bitslicer_errors = 0;
-    struct calibrator_metadata *stats = NULL;
+    struct calibrator_stats stats;
+    bool pass_on = false; // passing stats from one mode to another
 
     // if we are not enabled, return
     if (!state->base.calibrator_enable)
@@ -364,10 +407,10 @@ void process_calibrator(struct core_state *state)
             calib_set_Navg(0, cal->Navg3);
             if (df_ready[3])
             {
-                stats = process_cal_mode11(state);
-                int ptop_shift = check_range_unsigned((uint32_t *)(stats->ptop_max), 1e7, cal->antenna_mask);
-                int sd_shift = check_range_signed(stats->SD_max, stats->SD_min, 1e6, cal->antenna_mask);
-                int fd_shift = check_range_signed(stats->FD_max, stats->FD_min, 1e7, cal->antenna_mask);
+                process_cal_mode11(state, &stats);
+                int ptop_shift = check_range_unsigned((uint32_t *)(stats.ptop_max), 1e7, cal->antenna_mask);
+                int sd_shift = check_range_signed(stats.SD_max, stats.SD_min, 1e6, cal->antenna_mask);
+                int fd_shift = check_range_signed(stats.FD_max, stats.FD_min, 1e7, cal->antenna_mask);
                 debug_print ("Shift:");
                 debug_print_dec(ptop_shift);
                 debug_print(" ");
@@ -385,19 +428,20 @@ void process_calibrator(struct core_state *state)
                     calib_set_Navg(cal->Navg2, cal->Navg3);
                     cal_reset();
                     cal->mode = CAL_MODE_SNR_SETTLE;
+                    pass_on = true;
                     debug_print("\r\n[ -> SNR]")
                 }
                 else
                 {
 
                     // if powertop changes, we need to adjust the slice, but wait with FD/SD since SD=sum0*sum2+sum1**2
-                    if (ptop_shift > 0) cal->powertop_slice = MAX(0, (int)(stats->powertop_slice) - ptop_shift);
+                    if (ptop_shift > 0) cal->powertop_slice = MAX(0, (int)(cal->powertop_slice) - ptop_shift);
                     if (sd_shift > 0) {
                         // powertop is ok. Let's increase sum1 and sum2 by half
                         int shift = (sd_shift+1)/2;
                         if (shift == 0 ) shift = 1;
-                        cal->sum1_slice = MAX(0, (int)(stats->sum1_slice) - shift);
-                        cal->sum2_slice = MAX(0, (int)(stats->sum2_slice) - shift);
+                        cal->sum1_slice = MAX(0, (int)(cal->sum1_slice) - shift);
+                        cal->sum2_slice = MAX(0, (int)(cal->sum2_slice) - shift);
                     }
                     if ((ptop_shift==0) & (sd_shift==0)) {
                         // powertop and sum1/sum2 are ok, let's adjust FD
@@ -406,10 +450,10 @@ void process_calibrator(struct core_state *state)
                         // if it is positive, we set it to fd_slice - fd_shift
                         // so that we can still have some margin for the next iteration
                         if (fd_shift < 0) {
-                            cal->fd_slice = MAX(0, (int)(stats->fd_slice));
+                            cal->fd_slice = MAX(0, (int)(cal->fd_slice));
                         } else {
                         // ok, the last one is FD
-                        cal->fd_slice = MAX(0, (int)(stats->fd_slice) - fd_shift);
+                        cal->fd_slice = MAX(0, (int)(cal->fd_slice) - fd_shift);
                         }
                     }
                     calibrator_set_slices(cal);
@@ -432,7 +476,7 @@ void process_calibrator(struct core_state *state)
                     debug_print(".0 ]\n\r");
                 }
             }
-        }
+       }
         else
         {
             // if not on auto slicer we can just move on            
@@ -442,10 +486,9 @@ void process_calibrator(struct core_state *state)
 
     if (cal->mode == CAL_MODE_SNR_SETTLE)
     {
-        if (df_ready[3] || (stats))
+        if (df_ready[3] || (pass_on))
         {
-            if (!stats)
-            stats = process_cal_mode11(state);
+            if (!pass_on) process_cal_mode11(state, &stats); // this allow for passing STATS directly from previous mode
             
             uint32_t SNR_on = 0;
             
@@ -454,27 +497,28 @@ void process_calibrator(struct core_state *state)
                 {
                     continue;
                 }
-                
-                float ratio = (stats->SNR_max[ant] / stats->SNR_min[ant]);
-                int diff = stats->SNR_max[ant] - stats->SNR_min[ant];
+
+                int ratio = (stats.SNR_max[ant] * 8 / stats.SNR_min[ant]);  // ratio is float(ratio)*8
+                int diff = stats.SNR_max[ant] - stats.SNR_min[ant];
                 debug_print("here:");
-                debug_print_dec (stats->SNR_max[ant]); debug_print (" "); debug_print_dec(stats->SNR_min[ant]);
-                if (ratio < 2.5)
+                debug_print_dec(ant);
+                debug_print(":");
+                debug_print_dec (stats.SNR_max[ant]); debug_print (" "); debug_print_dec(stats.SNR_min[ant]);
+                if (ratio < cal->SNR_minratio)
                 {
                     // we do not have the calibrator around, let's set the bar just over
-                    //cal->SNRon = stats->SNR_max[ant] + diff / 3;
+                    //cal->SNRon = stats.SNR_max[ant] + diff / 3;
                     //cal->SNRoff = 0;
                 }
                 else
                 {
                     // ok, the signal is present, let's just set the bar a bit below max;
-                    SNR_on =  MAX(SNR_on, stats->SNR_min[ant] + diff * 9 / 10);                    
+                    SNR_on =  MAX(SNR_on, stats.SNR_min[ant] + diff * 9 / 10);                    
                 }                
             }
             if (SNR_on>0) {
                 cal->mode = CAL_MODE_RUN;
                 cal->SNRon = SNR_on;
-                debug_print_dec(SNR_on);
                 debug_print("\r\n[ -> RUN]");
                 calibrator_set_SNR(cal);
             }    
@@ -490,31 +534,32 @@ void process_calibrator(struct core_state *state)
         }
         if (df_ready[3])
         {
-            cal->raw11_counter++;
-            if ((cal->raw11_every < 0xff) && (cal->raw11_counter >= cal->raw11_every))
+            process_cal_mode11(state, &stats);
+            // now check prod1 and prod2 slices
+            if (cal->auto_slice)
             {
-                cal->raw11_counter = 0;
-                process_cal_mode_raw11(state);
-            }
-            else
-            {
-                process_cal_mode11(state);
-                // now check prod1 and prod2 slices
-                if (cal->auto_slice)
+                uint32_t bit_slicer_flags = state->cal.bitslicer_errors;
+                if (bit_slicer_flags & SLICER_ERR_PROD2)
                 {
-                    uint32_t bit_slicer_flags = state->cal.bitslicer_errors;
-                    if (bit_slicer_flags & SLICER_ERR_PROD2)
-                    {
-                        cal->prod2_slice += 1;
-                        debug_print("\r\n[PROD2++]");
-                    }
-                    else if (bit_slicer_flags & SLICER_ERR_PROD1)
-                    {
-                        cal->prod1_slice += 1;
-                        debug_print("\r\n[PROD1++]");
-                    }
-                    calibrator_set_slices(cal);
+                    cal->prod2_slice += 1;
+                    debug_print("\r\n[PROD2++]");
                 }
+                else if (bit_slicer_flags & SLICER_ERR_PROD1)
+                {
+                    cal->prod1_slice += 1;
+                    debug_print("\r\n[PROD1++]");
+                }
+                calibrator_set_slices(cal);
+            }
+        
+            // now check if we are actually loosing lock; in steady state approximately half (512) are positive, other half negative
+            // so 430 is about 5 sigma in binomial
+            uint16_t *SD_pos = stats.SD_positive_count;
+            if ((SD_pos[0]>430) && (SD_pos[1]>430) && (SD_pos[2]>430) && (SD_pos[3]>430))
+            {
+                // we have lost the lock, let's go back to SNR settled mode
+                calib_set_SNR_lock_on(0xFFFFFF);
+                cal->mode = CAL_MODE_SNR_SETTLE;
             }
             return;
         }
@@ -542,7 +587,7 @@ void process_calibrator(struct core_state *state)
     {
         if (df_ready[3])
         {
-            process_cal_mode_raw11(state);
+            process_cal_mode11(state, &stats);
             return;
         }
     }

@@ -289,6 +289,9 @@
 // Enable / Disable automatic bitslicer
 #define RFS_SET_CAL_BITSLICE_AUTO  0x89 
 
+// Min SNR ratio in automatic SNR setter
+#define RFS_SET_CAL_SNR_RATIO  0x8A 
+
 // Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
 #define RFS_SET_ZOOM_CH  0x90 
 

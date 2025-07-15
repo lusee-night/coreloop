@@ -40,6 +40,7 @@ struct calibrator_state {
     uint8_t antenna_mask;
     uint8_t notch_index;
     uint32_t SNRon, SNRoff;
+    uint16_t SNR_minratio;
     uint32_t Nsettle, delta_drift_corA, delta_drift_corB; 
     uint32_t ddrift_guard, gphase_guard;
     uint16_t pfb_index; // for PFB and spectral zoom mode
@@ -59,6 +60,15 @@ struct calibrator_state {
     uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
 };
 
+struct calibrator_stats {
+  uint32_t SNR_max[4], SNR_min[4];
+  uint32_t ptop_max[4], ptop_min[4];
+  uint32_t pbot_max[4], pbot_min[4];
+  int32_t FD_max[4], FD_min[4];
+  int32_t SD_max[4], SD_min[4];
+  int16_t SD_positive_count[4];
+};
+
 
 struct calibrator_metadata {
   uint16_t version; 
@@ -67,15 +77,9 @@ struct calibrator_metadata {
   uint16_t time_16;
   uint16_t have_lock[4];
   uint32_t SNRon, SNRoff;
-  uint32_t SNR_max[4], SNR_min[4];
-  uint32_t ptop_max[4], ptop_min[4];
-  uint32_t pbot_max[4], pbot_min[4];
-  int32_t FD_max[4], FD_min[4];
-  int32_t SD_max[4], SD_min[4];
   int32_t drift [1024];
   uint32_t error_regs [30];  
-  
-  
+  struct calibrator_stats stats;
   uint8_t powertop_slice;
   uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
   uint8_t prod1_slice, prod2_slice;
@@ -103,7 +107,6 @@ void set_calibrator(struct calibrator_state* cal);
 void calibrator_set_SNR(struct calibrator_state* cal);
 void calibrator_slice_init(struct calibrator_state* cal);
 void calibrator_set_slices(struct calibrator_state* cal);
-struct calibrator_metadata* process_cal_mode11(struct core_state* state);
 void process_cal_zoom(struct core_state* state);
 
 #endif

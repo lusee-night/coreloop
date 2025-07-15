@@ -135,6 +135,7 @@
 | 0x87 | RFS_SET_CAL_WSAVE         | Store the weight set into one of the 16 slots specified in arg_low 
 | 0x88 | RFS_SET_CAL_WLOAD         | Restore the weight set 
 | 0x89 | RFS_SET_CAL_BITSLICE_AUTO | Enable / Disable automatic bitslicer 
+| 0x8A | RFS_SET_CAL_SNR_RATIO     | Min SNR ratio in automatic SNR setter 
 
 
 ### 0x9X spectral zoom functionality 

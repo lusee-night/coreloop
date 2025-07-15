@@ -606,6 +606,10 @@ bool process_cdi(struct core_state* state)
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
             break;
+        
+        case RFS_SET_CAL_SNR_RATIO:
+            state->cal.SNR_minratio = arg_low;
+            break;
 
         case RFS_SET_ZOOM_CH:
             state->cal.zoom_ch1 = arg_low & 0xb0011;
