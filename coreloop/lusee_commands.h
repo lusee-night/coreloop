@@ -190,6 +190,9 @@
 // set averaging mode. Valid values are 0 (use int32, divide immediately), 1 (use 40 bits, postpone division) and 2 (use floats)
 #define RFS_SET_AVG_MODE  0x58 
 
+// enable/disable notch detector mode
+#define RFS_SET_NOTCH_DETECTOR  0x59 
+
 // Set fraction to reject, 0 to disable rejections
 #define RFS_SET_REJ_SET  0x60 
 

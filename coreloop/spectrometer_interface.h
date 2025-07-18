@@ -32,6 +32,8 @@
 #define bit_select_X34R 0x1F
 #define bit_select_X34I 0x1F
 
+#define WD_TICKS_PER_S (102400000)
+
 extern uint32_t Navg1;
 extern bool add_noise;
 extern bool empty_hands_count;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
@@ -147,6 +149,9 @@ void spec_set_ADC_all_ones();
 void spec_set_ADC_toggle_pattern();
 void spec_set_ADC_load_custom_pattern();
 void spec_set_ADC_custom_pattern();
+
+// notch detector mode
+void spec_enable_notch_detector(bool enable);
 
 // read the argument registers from bootloader
 uint32_t spec_read_uC_register(uint8_t num);

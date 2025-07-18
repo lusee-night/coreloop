@@ -560,6 +560,7 @@ void process_calibrator(struct core_state *state)
                 // we have lost the lock, let's go back to SNR settled mode
                 calib_set_SNR_lock_on(0xFFFFFF);
                 cal->mode = CAL_MODE_SNR_SETTLE;
+                debug_print("\r\n[ -> SNR]")
             }
             return;
         }

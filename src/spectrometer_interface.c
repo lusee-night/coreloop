@@ -335,7 +335,6 @@ void spec_set_fw_cdi_delay(uint32_t delay) {}
  void spec_notch_disable_subtraction(bool disable) {}
 
 
-
-
+void  spec_enable_notch_detector (bool enable) {}
 
 

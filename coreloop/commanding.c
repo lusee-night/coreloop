@@ -627,6 +627,11 @@ bool process_cdi(struct core_state* state)
             } else {
                 state->base.averaging_mode = arg_low;
             }
+            break;
+
+        case RFS_SET_NOTCH_DETECTOR:
+            spec_enable_notch_detector(arg_low>0);
+            break;
 
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
