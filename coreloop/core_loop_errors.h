@@ -38,8 +38,9 @@
 #define DIGITAL_AGC_ACTION_CH1 (1<<22)
 #define DIGITAL_AGC_ACTION_CH2 (1<<23)
 #define DIGITAL_AGC_ACTION_CH3 (1<<24)
-#define DIGITAL_AGC_STUCK      (1<25)
+#define DIGITAL_AGC_STUCK      (1<<25)
 
+#define WATCHDOG_CDI_TIME      (1<<26)
 
 
 #define INTERNAL_ERROR (1<<31)

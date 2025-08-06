@@ -164,13 +164,13 @@ void get_mode11_minmax_unsigned(uint32_t *max, uint32_t *min, int reg)
 
 void get_mode11_positive_count(uint16_t *count, int reg)
 {
-    uint32_t *tgt = (uint32_t *)(CAL_DF + reg * CAL_MODE3_CHUNKSIZE);
+    int32_t *tgt = (uint32_t *)(CAL_DF + reg * CAL_MODE3_CHUNKSIZE);
     for (int ant = 0; ant < 4; ant++)
     {
         count[ant] = 0;
         for (int i = 0; i < 1024; i++)
         {
-            uint32_t val = *tgt;
+            int32_t val = *tgt;
             if (val > 0)
                 count[ant]++;
             tgt++;
@@ -558,6 +558,17 @@ void process_calibrator(struct core_state *state)
             if ((SD_pos[0]>430) && (SD_pos[1]>430) && (SD_pos[2]>430) && (SD_pos[3]>430))
             {
                 // we have lost the lock, let's go back to SNR settled mode
+                for (int i = 0; i < 4; i++)
+                {
+                    if (!(cal->antenna_mask & (1 << i)))
+                        continue; // skip if antenna is not enabled
+                    debug_print("SD:");
+                    debug_print_dec(i);
+                    debug_print(":");
+                    debug_print_dec(SD_pos[i]);
+                    debug_print(" ");
+                }
+                debug_print("\r\n[ -> SNR]");
                 calib_set_SNR_lock_on(0xFFFFFF);
                 cal->mode = CAL_MODE_SNR_SETTLE;
                 debug_print("\r\n[ -> SNR]")
