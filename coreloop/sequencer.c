@@ -12,6 +12,7 @@ void set_spectrometer(struct core_state* state)
     spec_set_avg1 (state->base.Navg1_shift);
     spec_notch_enable( state->base.notch & 0b111 );
     spec_notch_disable_subtraction( (state->base.notch & 0b10000)>0 );
+    spec_enable_notch_detector(     (state->base.notch & 0b100000)>0 );
     set_calibrator (&(state->cal));
 }
 

@@ -400,6 +400,15 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_AVG_NOTCH:
             state->base.notch = arg_low;
             break;
+
+        case RFS_SET_NOTCH_DETECTOR:
+            if (arg_low > 0) {
+                state->base.notch |= (1 << 5);
+            } else {
+                state->base.notch &= ~(1 << 5);
+            }
+            break;
+
         case RFS_SET_AVG_SET_HI:
             state->base.hi_frac = arg_low;
             break;
@@ -627,10 +636,6 @@ bool process_cdi(struct core_state* state)
             } else {
                 state->base.averaging_mode = arg_low;
             }
-            break;
-
-        case RFS_SET_NOTCH_DETECTOR:
-            spec_enable_notch_detector(arg_low>0);
             break;
 
         default:

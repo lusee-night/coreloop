@@ -169,7 +169,7 @@
 // set frequency averaging. Valid values are 01, 02, 03, 04. If 03 it averages by 4 ignoring every 4th (presumably PF infected)
 #define RFS_SET_AVG_FREQ  0x51 
 
-// set notch averaging, 0 = disabled, 2=x4, 4=x16, 6=x64, needs to be even.  Add 16 if you want to disable subtraction (but want to run calibrator)
+// set notch averaging, 0 = disabled, 2=x4, 4=x16, 6=x64, needs to be even.  Bit 4 if you want to disable subtraction (but want to run calibrator). Bit 5 for notch-detector
 #define RFS_SET_AVG_NOTCH  0x52 
 
 // set high priority fraction as a fraction DD/FF, low priorty = 1-high-medium
@@ -190,7 +190,7 @@
 // set averaging mode. Valid values are 0 (use int32, divide immediately), 1 (use 40 bits, postpone division) and 2 (use floats)
 #define RFS_SET_AVG_MODE  0x58 
 
-// enable/disable notch detector mode
+// enable/disable notch detector mode (note can also use bit 5 in RFS_SET_NOTCH)
 #define RFS_SET_NOTCH_DETECTOR  0x59 
 
 // Set fraction to reject, 0 to disable rejections
