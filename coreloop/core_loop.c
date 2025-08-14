@@ -152,6 +152,7 @@ static void display_greeting(void)
     debug_print (" (FW ");
     debug_print_hex (spec_get_version(1));
     debug_print (") ***** \n\r");
+    
 }
 
 void core_loop(struct core_state* state)

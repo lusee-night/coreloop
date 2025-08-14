@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000302
+#define VERSION_ID 0x00000304
 
 
 #include <inttypes.h>
@@ -19,7 +19,7 @@
 #define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
-#define CMD_BUFFER_SIZE 512 // size of command buffer for 0x10 commands
+#define CMD_BUFFER_SIZE 1024 // size of command buffer for 0x10 commands
 #define MAX_LOOPS 4   // how many nested loops we can do
 #define ADC_STAT_SAMPLES 16000 // how many samples we take when doign AGC statics/
 #define MAX_STATE_SLOTS 16  // 16 slots of 4k = 64k
@@ -38,6 +38,14 @@
 #define GRIMM_NDX1 835
 #define GRIMM_NDX2 1182
 #define GRIMM_NDX3 1672
+
+
+// HOUSEKEEPING REQUIEST
+
+#define HK_REQUEST_STATE 0
+#define HK_REQUEST_ADC 1
+#define HK_REQUEST_HEALTH 2
+#define HK_REQUEST_CAL_WEIGHT_CRC 3
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
 // tap counter increased in the interrupt
@@ -266,15 +274,31 @@ struct housekeeping_data_base {
     uint16_t housekeeping_type;
 };
 
+// corestate 
 struct housekeeping_data_0 {
     struct housekeeping_data_base base;
     struct core_state core_state;
 };
 
+// ADC stats
 struct housekeeping_data_1 {
     struct housekeeping_data_base base;
     struct ADC_stat ADC_stat[NINPUT];
     uint8_t actual_gain[NINPUT];
+};
+
+// telemetry
+struct housekeeping_data_2 {
+    struct housekeeping_data_base base;
+    struct heartbeat heartbeat;
+    // there was something I wanted to add here, but forgot what it was, bah, boh  
+};
+
+// cal weights sanity
+struct housekeeping_data_3 {
+    struct housekeeping_data_base base;
+    uint32_t crc;
+    uint16_t weight_ndx; // weight index when storing weights, to make sure we have reached the end
 };
 
 

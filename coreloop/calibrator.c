@@ -178,6 +178,20 @@ void get_mode11_positive_count(uint16_t *count, int reg)
     }
 }
 
+void get_mode11_lock_count(uint16_t *count)
+{
+
+    // at zero
+    int32_t *tgt = (uint32_t *)(CAL_DF + 0 * CAL_MODE3_CHUNKSIZE);
+    *count = 0;
+    for (int i = 0; i < 1024; i++)
+    {
+        int32_t val = *tgt;
+        if (val > 0)
+            *count++;
+        tgt++;
+    }
+}
 
 
 
@@ -278,7 +292,8 @@ void process_cal_mode11 (struct core_state *state, struct calibrator_stats *stat
     get_mode11_minmax_signed(stats->FD_max, stats->FD_min, 10);
     get_mode11_minmax_signed(stats->SD_max, stats->SD_min, 14);
     get_mode11_positive_count(stats->SD_positive_count, 14);
-    
+    get_mode11_lock_count(&(stats->lock_count));
+
     cal->raw11_counter++;
     if ((cal->raw11_every < 0xff) && (cal->raw11_counter >= cal->raw11_every)) {
         cal->raw11_counter = 0;
@@ -554,8 +569,10 @@ void process_calibrator(struct core_state *state)
         
             // now check if we are actually loosing lock; in steady state approximately half (512) are positive, other half negative
             // so 430 is about 5 sigma in binomial
+            // this also only makes sense if we are lock, otherwise we might be transitioning towards lock
+            // FW will not lock on positive SD.
             uint16_t *SD_pos = stats.SD_positive_count;
-            if ((SD_pos[0]>430) && (SD_pos[1]>430) && (SD_pos[2]>430) && (SD_pos[3]>430))
+            if ((stats.lock_count>800) && ((SD_pos[0]>430) || (SD_pos[1]>430) || (SD_pos[2]>430) || (SD_pos[3]>430)) )
             {
                 // we have lost the lock, let's go back to SNR settled mode
                 for (int i = 0; i < 4; i++)

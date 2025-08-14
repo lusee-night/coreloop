@@ -127,7 +127,7 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_HK_REQ:
-            if ((arg_low < 2) || (arg_low == 99)) {
+            if ((arg_low < 4) || (arg_low == 99)) {
                 state->housekeeping_request = 1+arg_low;
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
@@ -491,7 +491,8 @@ bool process_cdi(struct core_state* state)
             state->cal.notch_index = arg_low;
             break;
         case RFS_SET_CAL_DRIFT_GUARD:
-            state->cal.drift_guard = arg_low;
+            state->cal.drift_guard = arg_low*20;
+            
             break;
         case RFS_SET_CAL_DRIFT_STEP:
             state->cal.drift_step = arg_low;
@@ -540,9 +541,12 @@ bool process_cdi(struct core_state* state)
 
         case RFS_SET_CAL_WEIGHT_VAL:
             // this prevents some resolution loss, but mostly compulsive obsessive disorder
-            //if (arg_low == 0xFF)
-            //    calib_set_weight(state->cal.weight_ndx, 0x100);
+            // and does not seem to work either
+            //if (arg_low == 0xff)
+            //   calib_set_weight(state->cal.weight_ndx, 0x100);
             //else
+            
+            
             calib_set_weight(state->cal.weight_ndx, arg_low);
             state->cal.weight_ndx++;
             break;
@@ -601,6 +605,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_CAL_WSAVE:
             if (arg_low<16) {
                 flash_calweights_store(arg_low);
+                state->housekeeping_request = 1+HK_REQUEST_CAL_WEIGHT_CRC;
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }

@@ -67,6 +67,7 @@ struct calibrator_stats {
   int32_t FD_max[4], FD_min[4];
   int32_t SD_max[4], SD_min[4];
   int16_t SD_positive_count[4];
+  int16_t lock_count;
 };
 
 
