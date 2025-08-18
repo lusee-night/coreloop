@@ -225,6 +225,7 @@ bool process_cdi(struct core_state* state)
             switch (arg_low) {
                 case 0x13:
                     state->watchdog.feed_uc = false;  // stop feeding uC watchdog
+                    state->timing.heartbeat_counter = 0xFFFFFFFFFFFFFFFF;
                     break;
                 case 0x49:
                     state->watchdog.tripped_mask |= (1 << 0);  // simulate another WD (bit 0 = ADC)

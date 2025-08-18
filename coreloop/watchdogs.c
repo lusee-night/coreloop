@@ -36,7 +36,7 @@ bool process_watchdogs (struct core_state* state) {
             // CDI clock watchdog tripped, we just set the error and ignore
             debug_print("WD[2]");
             state->base.errors |= WATCHDOG_CDI_TIME;
-        } else if (tripped > 0) {
+        }  else if (tripped > 0) {
             debug_print("WDT[");
             debug_print_dec(tripped);
             debug_print("]");
