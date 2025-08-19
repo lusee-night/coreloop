@@ -80,6 +80,9 @@
 // Metadata (timestamps mainly); Priority:  High     
 #define AppID_RawADC_Meta 0x02FA
 
+// FW generated watchdog packet; Priority:  High     
+#define AppID_FW_Watchdog 0x02FF
+
 
 
 #endif

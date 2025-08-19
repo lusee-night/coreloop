@@ -83,3 +83,6 @@ AppID_RawADC = 0x02F0
 # Metadata (timestamps mainly); Priority:  High     
 AppID_RawADC_Meta = 0x02FA
 
+# FW generated watchdog packet; Priority:  High     
+AppID_FW_Watchdog = 0x02FF
+

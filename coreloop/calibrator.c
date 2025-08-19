@@ -52,7 +52,7 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->gphase_guard = 200000;
     cal->use_float_fft = true;
     cal->zoom_avg_idx = 0;
-    cal->raw11_every = 0x00; // always 0xFF; // never
+    cal->raw11_every = 20; // every 20 we do a full packet
     cal->raw11_counter = 0;
 }
 
@@ -178,19 +178,20 @@ void get_mode11_positive_count(uint16_t *count, int reg)
     }
 }
 
-void get_mode11_lock_count(uint16_t *count)
+uint16_t get_mode11_lock_count()
 {
 
     // at zero
-    int32_t *tgt = (uint32_t *)(CAL_DF + 0 * CAL_MODE3_CHUNKSIZE);
-    *count = 0;
+    uint32_t *tgt = (uint32_t *)(CAL_DF + 0 * CAL_MODE3_CHUNKSIZE);
+    uint16_t count = 0;
     for (int i = 0; i < 1024; i++)
     {
-        int32_t val = *tgt;
+        uint32_t val = *tgt;
         if (val > 0)
-            *count++;
+            count++;
         tgt++;
     }
+    return count;
 }
 
 
@@ -249,8 +250,26 @@ void packetize_mode11_processed(struct core_state *state, struct calibrator_stat
     out->errors = state->cal.errors;
     out->bitslicer_errors = state->cal.bitslicer_errors;
 
-    // drift is chunk
-    memcpy((void *)&(out->drift), (void *)CAL_DF + 1 * CAL_MODE3_CHUNKSIZE, CAL_MODE3_CHUNKSIZE);
+    // now copy drift over
+    int32_t* drift = (int32_t *)(CAL_DF + 1 * CAL_MODE3_CHUNKSIZE);
+    int leading_zeros = 32;
+    uint8_t shift;
+    for (int i=0; i<1024; i+=8) {
+        int32_t val = drift[i];
+        int lz = 32;
+        if (val != 0) {
+            uint32_t uval = (val < 0) ? ~((uint32_t)val) : (uint32_t)val;
+            lz = __builtin_clz(uval);
+        }
+        if (lz < leading_zeros) leading_zeros = lz;
+    }
+    
+    if (leading_zeros<17) {shift = 17 - leading_zeros;} else {shift = 0;}
+    for (int i=0,j=0; i<1024; i+=8, j++)  {
+        out->drift[j] = (int16_t)(drift[i]>>shift);
+    }
+
+    out->drift_shift = shift;
 
     // sume have_locks
     uint32_t *have_lock = (uint32_t *)(CAL_DF + 0 * CAL_MODE3_CHUNKSIZE);
@@ -292,7 +311,7 @@ void process_cal_mode11 (struct core_state *state, struct calibrator_stats *stat
     get_mode11_minmax_signed(stats->FD_max, stats->FD_min, 10);
     get_mode11_minmax_signed(stats->SD_max, stats->SD_min, 14);
     get_mode11_positive_count(stats->SD_positive_count, 14);
-    get_mode11_lock_count(&(stats->lock_count));
+    stats->lock_count = get_mode11_lock_count();
 
     cal->raw11_counter++;
     if ((cal->raw11_every < 0xff) && (cal->raw11_counter >= cal->raw11_every)) {
@@ -486,7 +505,7 @@ void process_calibrator(struct core_state *state)
                     debug_print_dec(cal->prod1_slice);
                     debug_print(".");
                     debug_print_dec(cal->prod2_slice);
-                    debug_print(".0");
+                    debug_print(".0.");
                     debug_print_dec(cal->fd_slice);
                     debug_print(".0 ]\n\r");
                 }
@@ -494,6 +513,7 @@ void process_calibrator(struct core_state *state)
        }
         else
         {
+            calib_set_Navg(cal->Navg2, cal->Navg3);
             // if not on auto slicer we can just move on            
             cal->mode = CAL_MODE_SNR_SETTLE;
         }
@@ -514,8 +534,7 @@ void process_calibrator(struct core_state *state)
                 }
 
                 int ratio = (stats.SNR_max[ant] * 8 / stats.SNR_min[ant]);  // ratio is float(ratio)*8
-                int diff = stats.SNR_max[ant] - stats.SNR_min[ant];
-                debug_print("here:");
+                int diff = stats.SNR_max[ant] - stats.SNR_min[ant];                
                 debug_print_dec(ant);
                 debug_print(":");
                 debug_print_dec (stats.SNR_max[ant]); debug_print (" "); debug_print_dec(stats.SNR_min[ant]);
@@ -572,7 +591,18 @@ void process_calibrator(struct core_state *state)
             // this also only makes sense if we are lock, otherwise we might be transitioning towards lock
             // FW will not lock on positive SD.
             uint16_t *SD_pos = stats.SD_positive_count;
-            if ((stats.lock_count>800) && ((SD_pos[0]>430) || (SD_pos[1]>430) || (SD_pos[2]>430) || (SD_pos[3]>430)) )
+            
+            
+            debug_print_dec(stats.lock_count);
+            debug_print(" ");
+            for (int i = 0; i < 4; i++)
+            {
+                debug_print_dec(SD_pos[i]);
+                debug_print(" ");
+            } 
+
+
+            if ((stats.lock_count>800) && ((SD_pos[0]>430) && (SD_pos[1]>430) && (SD_pos[2]>430) && (SD_pos[3]>430)) )
             {
                 // we have lost the lock, let's go back to SNR settled mode
                 for (int i = 0; i < 4; i++)
@@ -587,8 +617,8 @@ void process_calibrator(struct core_state *state)
                 }
                 debug_print("\r\n[ -> SNR]");
                 calib_set_SNR_lock_on(0xFFFFFF);
+                calib_set_SNR_lock_off(0xFFFFFF);
                 cal->mode = CAL_MODE_SNR_SETTLE;
-                debug_print("\r\n[ -> SNR]")
             }
             return;
         }

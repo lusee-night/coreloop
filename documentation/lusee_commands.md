@@ -138,6 +138,7 @@
 | 0x88 | RFS_SET_CAL_WLOAD         | Restore the weight set 
 | 0x89 | RFS_SET_CAL_BITSLICE_AUTO | Enable / Disable automatic bitslicer 
 | 0x8A | RFS_SET_CAL_SNR_RATIO     | Min SNR ratio in automatic SNR setter 
+| 0x8B | RFS_SET_CAL_RAW11_EVERY   | How often to send full raw11. 0=always, 0xFF disable
 
 
 ### 0x9X spectral zoom functionality 

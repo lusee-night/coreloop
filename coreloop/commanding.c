@@ -626,6 +626,10 @@ bool process_cdi(struct core_state* state)
             state->cal.SNR_minratio = arg_low;
             break;
 
+        case RFS_SET_CAL_RAW11_EVERY:
+            state->cal.raw11_every = arg_low;
+            break;
+
         case RFS_SET_ZOOM_CH:
             state->cal.zoom_ch1 = arg_low & 0xb0011;
             state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;

@@ -78,13 +78,14 @@ struct calibrator_metadata {
   uint16_t time_16;
   uint16_t have_lock[4];
   uint32_t SNRon, SNRoff;
-  int32_t drift [1024];
-  uint32_t error_regs [30];  
-  struct calibrator_stats stats;
   uint8_t powertop_slice;
   uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
   uint8_t prod1_slice, prod2_slice;
   uint32_t errors, bitslicer_errors;
+  uint8_t drift_shift;
+  int16_t drift [128];
+  uint32_t error_regs [30];    
+  struct calibrator_stats stats;
 };
 
 struct calibrator_errors {
