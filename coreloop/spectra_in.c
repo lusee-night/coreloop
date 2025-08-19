@@ -84,7 +84,7 @@ write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int off
 {
     if (averaging_mode == AVG_INT32) {
 
-        int32_t* ddr_ptr = (int*)(_ddr_ptr);
+        int32_t* ddr_ptr = (int32_t*)(_ddr_ptr);
 
         // we divide immediately in this mode
         if (avg_counter == 0)
@@ -109,7 +109,7 @@ write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int off
         uint32_t uvalue = safe_abs_val(value);
 
         if (avg_counter) {
-            uint32_t new_low_bits;
+            unsigned int new_low_bits;
             bool overflow = __builtin_uadd_overflow(ddr_ptr->low[total_idx], uvalue, &new_low_bits);
 
             if (overflow) {
