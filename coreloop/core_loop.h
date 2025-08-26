@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000203
+#define VERSION_ID 0x00000305
 
 
 #include <inttypes.h>
@@ -19,22 +19,42 @@
 #define DISPATCH_DELAY 6 // number of timer interrupts to wait before sending CDI
 #define RESETTLE_DELAY 5 // number of timer interrupts to wait before settling after a change
 #define HEARTBEAT_DELAY 1024 // number of timer interrupts to wait before sending heartbeat
-#define CMD_BUFFER_SIZE 128 // size of command buffer for 0x10 commands
+#define CMD_BUFFER_SIZE 1024 // size of command buffer for 0x10 commands
+#define MAX_LOOPS 4   // how many nested loops we can do
+#define ADC_STAT_SAMPLES 16000 // how many samples we take when doign AGC statics/
+#define MAX_STATE_SLOTS 16  // 16 slots of 4k = 64k
+#define BITSLICER_MAX_ACTION 5  // how many iterations before we bitslicer stuck
+
+#define TVS_AVG 128 // number of clock ticks before we average TVS
+#define TVS_AVG_VSHIFT 6 // shift for V sensors
+#define TVS_AVG_TSHIFT 4 // shift for T sensor
+
+#define LOOP_COUNT_RST 1024 // number of clock ticks before we reset loop count
+
+#define GRIMM_BINS 4 // number of bins in grimm's tales mode
+// Rover frequencies are 14.3625,  20.8875,  29.5625,  41.8125 MHz
+// Corresponding to bins 
+#define GRIMM_NDX0 574
+#define GRIMM_NDX1 835
+#define GRIMM_NDX2 1182
+#define GRIMM_NDX3 1672
 
 
-#define ADC_STAT_SAMPLES 16000
+// HOUSEKEEPING REQUIEST
 
-#define MAX_STATE_SLOTS 64
-//consistent with 4k erases
-#define PAGES_PER_SLOT 256
-
+#define HK_REQUEST_STATE 0
+#define HK_REQUEST_ADC 1
+#define HK_REQUEST_HEALTH 2
+#define HK_REQUEST_CAL_WEIGHT_CRC 3
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
-// flag to tell main we are doing a soft reset
-extern bool soft_reset_flag;
 // tap counter increased in the interrupt
 extern volatile uint64_t tap_counter;
+// TVS sensors averaged in timer interrupt
 extern volatile uint32_t TVS_sensors_avg[4];
+// loop count in timer interrupt
+extern volatile uint16_t loop_count_min_latch, loop_count_max_latch;
+
 
 // note that gain auto is missing here, since these are actual spectrometer set gains
 enum gain_state{
@@ -53,6 +73,13 @@ enum output_format {
     OUTPUT_16BIT_SHARED_LZ
 };
 
+enum averaging_mode {
+    AVG_INT32,
+    AVG_INT_40_BITS,
+    AVG_FLOAT
+};
+
+
 struct route_state {
     uint8_t plus, minus;  // we route "plus" - "minus". if minus is FF, it is ground;
 };
@@ -70,11 +97,12 @@ struct time_counters {
 struct core_state_base {
     uint64_t uC_time;
     uint32_t time_32;
-    uint16_t time_16;    
+    uint16_t time_16;
     uint16_t TVS_sensors[4]; // temperature and voltage sensors, registers 1.0V, 1.8V, 2.5V and Temp
+    uint16_t loop_count_min, loop_count_max;
     // former sequencer state starts here
     uint8_t gain [NINPUT]; // this defines the commanded gain state (can be auto)
-    uint16_t gain_auto_min[NINPUT];   
+    uint16_t gain_auto_min[NINPUT];
     uint16_t gain_auto_mult[NINPUT];
     struct route_state route[NINPUT];
     uint8_t Navg1_shift, Navg2_shift;   // Stage1 (FW) and Stage2 (uC) averaging
@@ -88,6 +116,8 @@ struct core_state_base {
     uint8_t reject_maxbad; // how many need to be bad to reject.
     uint16_t tr_start, tr_stop, tr_avg_shift; // time resolved start, stop and averaging
     // former sequencer state ends here
+    uint8_t grimm_enable; // grimm enable is true when the grimm's tales mode is running
+    uint8_t averaging_mode; // perform stage 2 averaging using int32, 40 bit encoding or float
 
     uint32_t errors;
     uint16_t corr_products_mask; // which of 16 products to be used, starting with LSB
@@ -95,11 +125,16 @@ struct core_state_base {
     uint8_t actual_bitslice[NSPECTRA];
     uint16_t spec_overflow;  // mean specta overflow mask
     uint16_t notch_overflow; // notch filter overflow mask
-    struct ADC_stat ADC_stat[4];    
+    struct ADC_stat ADC_stat[4];
     bool spectrometer_enable; // spectrometer_enable is true when FFT enegine is running
     bool calibrator_enable; // calibrator enable is true will enable calibrator with enabling the FFT engine.
     uint32_t rand_state;
-    uint8_t weight_previous, weight_current;
+
+    uint16_t weight, weight_current;
+    uint16_t num_bad_min_current, num_bad_max_current; // actual number of bad bins in the previous integration
+    uint16_t num_bad_min, num_bad_max; // actual number of bad bins in the previous integration
+
+
 };
 
 struct cdi_stats {
@@ -115,6 +150,7 @@ struct delayed_cdi_sending {
     uint8_t format;
     uint8_t prod_count; // product ID that needs to be sent
     uint8_t tr_count; // time-resolved packet number that needs to be sent
+    uint8_t grimm_count; // number of grimm packets that need to be sent (just one)
     uint8_t cal_count; // number of calibrator packets that need to be sent;
     uint16_t Nfreq; // number of frequencies that actually need to be sent
     uint16_t Navgf; // frequency averaging factor
@@ -125,9 +161,19 @@ struct delayed_cdi_sending {
 };
 
 
-struct watchdog_config {
+struct watchdog_state {
     uint8_t FPGA_max_temp;
-    // here add watchdog configuration if needed
+    uint8_t watchdogs_enabled;
+    bool feed_uc;
+    uint8_t tripped_mask;
+};
+
+
+// Watchdog packet struct (packed)
+struct __attribute__((packed)) watchdog_packet {
+    uint16_t unique_packet_id;
+    uint64_t uC_time;
+    uint8_t tripped;
 };
 
 // core state cointains the seuqencer state and the base state and a number of utility variables
@@ -135,33 +181,50 @@ struct core_state {
     struct core_state_base base;
     struct cdi_stats cdi_stats;
     struct calibrator_state cal;
-    // A number be utility values 
+    // A number be utility values
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
-    struct watchdog_config watchdog;
+    struct watchdog_state watchdog;
+    bool soft_reset_flag;
     uint16_t cdi_wait_spectra;
     uint16_t avg_counter;
     uint32_t unique_packet_id;
     uint8_t leading_zeros_min[NSPECTRA];
     uint8_t leading_zeros_max[NSPECTRA];
     uint8_t housekeeping_request;
-    uint8_t range_adc, resettle, request_waveform, request_eos; 
+    uint8_t range_adc, resettle, request_waveform, request_eos;
     bool tick_tock;
     bool drop_df;
     uint32_t heartbeat_packet_count;
-    uint16_t flash_store_pointer;
+    int8_t flash_slot;
     uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
-    uint16_t cmd_start, cmd_end;
+    // pointeres to the beginning and end of commands, also used during sequence upload
+    uint16_t cmd_ptr, cmd_end;
+    // are we uploading -- if so block sequences
+    bool sequence_upload;
+    // for loops
+    uint8_t loop_depth; // how many nested loops
+    uint16_t loop_start[MAX_LOOPS];
+    uint8_t loop_count[MAX_LOOPS];
     uint32_t cmd_counter;
     uint16_t dispatch_delay; // number of timer interrupts to wait before sending CDI
     uint16_t reg_address; // address of the register to be written (for commands that do that)
     int32_t reg_value; // value to be written to the register
+    int8_t bitslicer_action_counter;  // counting how many times in a row we have changed bit slicer to prevent infinite loop
+    uint32_t fft_time;
+    bool fft_computed;
 };
 
-struct saved_core_state {
+struct saved_state {
     uint32_t in_use;
-    struct core_state state;
+    uint8_t cmd_arg_high[CMD_BUFFER_SIZE], cmd_arg_low[CMD_BUFFER_SIZE];
+    uint16_t cmd_ptr, cmd_end;
     uint32_t CRC;
+};
+
+struct state_recover_notification {
+    uint32_t slot;
+    uint32_t size;
 };
 
 struct end_of_sequence {
@@ -190,36 +253,54 @@ struct heartbeat {
     char magic[6];
 };
 
+struct waveform_metadata {
+    uint32_t unique_packet_id;
+    uint32_t time_32;
+    uint16_t time_16;
+    uint64_t timestamp;
+};
+
 // metadata payload, compatible with core_state
 struct meta_data {
-    uint16_t version; 
+    uint16_t version;
     uint32_t unique_packet_id;
     struct core_state_base base;
 };
 
 struct housekeeping_data_base {
-    uint16_t version; 
+    uint16_t version;
     uint32_t unique_packet_id;
     uint32_t errors;
     uint16_t housekeeping_type;
 };
 
+// corestate 
 struct housekeeping_data_0 {
     struct housekeeping_data_base base;
     struct core_state core_state;
 };
 
+// ADC stats
 struct housekeeping_data_1 {
     struct housekeeping_data_base base;
     struct ADC_stat ADC_stat[NINPUT];
     uint8_t actual_gain[NINPUT];
 };
 
+// telemetry
+struct housekeeping_data_2 {
+    struct housekeeping_data_base base;
+    struct heartbeat heartbeat;
+    // there was something I wanted to add here, but forgot what it was, bah, boh  
+};
 
+// cal weights sanity
+struct housekeeping_data_3 {
+    struct housekeeping_data_base base;
+    uint32_t crc;
+    uint16_t weight_ndx; // weight index when storing weights, to make sure we have reached the end
+};
 
-
-//extern struct core_state state;
-extern bool soft_reset_flag;
 
 // main function
 void core_loop(struct core_state*);
@@ -228,7 +309,9 @@ void core_loop(struct core_state*);
 bool process_cdi(struct core_state*);
 
 // process watchdogs and temperature alarms
-void process_watchdogs (struct core_state*);
+#include <stdbool.h>
+bool process_watchdogs (struct core_state*);
+void cmd_soft_reset(uint8_t arg, struct core_state* state);
 
 // starts / stops / restarts the spectrometer
 void RFS_stop(struct core_state*);
@@ -286,7 +369,7 @@ bool process_hearbeat(struct core_state*);
 bool process_housekeeping(struct core_state*);
 
 // create end-of-sequence packet
-bool process_eos(struct core_state*); 
+bool process_eos(struct core_state*);
 
 // cdi dispatch with counting
 void cdi_dispatch_uC (struct cdi_stats* cdi_stats, uint16_t appID, uint32_t length);
@@ -342,7 +425,7 @@ void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size
 
 // encode/decode 4 int32_t values into 5 int16_t values: first one for shift info
 void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out);
-void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out);
+void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);
@@ -350,5 +433,10 @@ uint32_t CRC(const void* data, size_t size);
 // fft
 void fft_precompute_tables();
 void fft(uint32_t *real, uint32_t *imag);
+
+#ifndef NOTREAL
+// get amount of free stack
+size_t get_free_stack();
+#endif
 
 #endif // CORE_LOOP_H

@@ -11,7 +11,7 @@
 // Dumps all register values from the RFS into packet; Priority:  High     
 #define AppID_Registers_RB 0x0205
 
-// uC generater housekeeping; Priority:  High     
+// uC generated housekeeping; Priority:  High     
 #define AppID_uC_Housekeeping 0x0206
 
 // End of sequence; Priority:  High     
@@ -25,6 +25,12 @@
 
 // Regular hearbeat packet; Priority:  NONE     
 #define AppID_uC_Heartbeat 0x020A
+
+// Automatically restored saved state; Priority:  High     
+#define AppID_uC_Restored 0x020B
+
+// Used for Watchdog related telemetry packets; Priority:  xxxxx    
+#define AppID_Watchdog 0x020C
 
 // x = 0..F for 16 correlations; Priority:  High     
 #define AppID_MetaData 0x020F
@@ -62,14 +68,20 @@
 // Calibrator debug data (8 packets); Priority:  High     
 #define AppID_Calibrator_Debug 0x028C
 
-// Very low priority, not expected to be normally downloaded; Priority:  VeryLow  
-#define AppID_SpectraVeryLow 0x02D0
+// Grimm's tales spectra; Priority:  High     
+#define AppID_SpectraGrimm 0x02A0
 
-// x= 0...4 for 4 autocorrelatins; Priority:  High     
+// x= 0...3 for 4 autocorrelatins; Priority:  High     
 #define AppID_FW_DirectSpectrum 0x02E0
 
-// x= 0..4 for 4 raw ADC data streams; Priority:  High     
+// x= 0..3 for 4 raw ADC data streams; Priority:  High     
 #define AppID_RawADC 0x02F0
+
+// Metadata (timestamps mainly); Priority:  High     
+#define AppID_RawADC_Meta 0x02FA
+
+// FW generated watchdog packet; Priority:  High     
+#define AppID_FW_Watchdog 0x02FF
 
 
 

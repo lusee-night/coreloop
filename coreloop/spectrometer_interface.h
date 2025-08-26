@@ -32,6 +32,8 @@
 #define bit_select_X34R 0x1F
 #define bit_select_X34I 0x1F
 
+#define WD_TICKS_PER_S (102400000)
+
 extern uint32_t Navg1;
 extern bool add_noise;
 extern bool empty_hands_count;  // how many times to return nothing before spectrum on calling new_spectrum_ready;
@@ -57,7 +59,16 @@ struct ADC_stat {
 void spectrometer_init();
 
 void spec_set_Navg1(uint32_t Navg1);
+
+// Enable PFB spectrometer engine
 void spec_set_spectrometer_enable(bool on);
+
+// Enable watchdogs
+void spec_enable_watchdogs(uint8_t enable);
+// Return value if watchdog trips
+uint8_t spec_watchdog_tripped(void);
+// feed the uC watchdogs, if we don't call this too often it will trip.
+void spec_feed_uC_watchdog(void);
 
 
 // Get various version ID
@@ -69,6 +80,10 @@ void spec_set_reset();
 
 // make the CDI interface generate raw waveform (together with delay, set to zero for something sensible)
 void spec_request_waveform(uint8_t ch, int dly);
+
+// last_waveform time as implemented in FW 242
+uint64_t spec_last_waveform_timestamp();
+
 
 // set the counter between packets sent by the CDI interface when it needs to chop
 void spec_set_fw_cdi_delay(uint32_t delay);
@@ -89,6 +104,10 @@ void spec_get_TVS(uint16_t *TVS);
 // enable or disable notch filter
 // 0 = disable, 1 = x4, 2 = x16, 3=x64, 4=x256
 void spec_notch_enable (uint8_t arg);
+
+// disable notch subtraction. This is useful if you want calibrator to run (for which you need the notch engine to run)
+// but you don't really want notch- subtracted spectra;
+void spec_notch_disable_subtraction(bool disable);
 
 // get overflow bitmasks for wf, 16 correlation channels and their notch counter-parts (MSB)
 void spec_get_digital_overflow (uint16_t* corr_owf, uint16_t *notch_owf);
@@ -130,6 +149,9 @@ void spec_set_ADC_all_ones();
 void spec_set_ADC_toggle_pattern();
 void spec_set_ADC_load_custom_pattern();
 void spec_set_ADC_custom_pattern();
+
+// notch detector mode
+void spec_enable_notch_detector(bool enable);
 
 // read the argument registers from bootloader
 uint32_t spec_read_uC_register(uint8_t num);

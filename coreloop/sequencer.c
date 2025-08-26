@@ -1,5 +1,5 @@
 #include "core_loop.h"
-
+#include "LuSEE_IO.h"
 
 
 void set_spectrometer(struct core_state* state)
@@ -7,10 +7,12 @@ void set_spectrometer(struct core_state* state)
     for (int i = 0; i < NINPUT; i++) {
         spec_set_gain(i, state->base.actual_gain[i]);
         spec_set_route(i, state->base.route[i].plus, state->base.route[i].minus);
-    }
+    }   
     spec_set_bitslice(state->base.actual_bitslice);
     spec_set_avg1 (state->base.Navg1_shift);
-    spec_notch_enable(state->base.notch);
+    spec_notch_enable( state->base.notch & 0b111 );
+    spec_notch_disable_subtraction( (state->base.notch & 0b10000)>0 );
+    spec_enable_notch_detector(     (state->base.notch & 0b100000)>0 );
     set_calibrator (&(state->cal));
 }
 
@@ -38,5 +40,6 @@ void default_state (struct core_state_base *seq)
     seq->reject_maxbad = 0;
     seq->tr_start = 1;
     seq->tr_stop = 0;
+    seq->grimm_enable = 0;
 }
 

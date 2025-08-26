@@ -9,6 +9,9 @@
 #include <assert.h>
 #include <time.h>
 #include "LuSEE_IO.h"
+#include <stdbool.h>
+#include "core_loop.h" // for tap_counter
+#include "interface_utils.h"
 
 const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
@@ -30,6 +33,9 @@ uint8_t channel_gain[NINPUT];
 
 #define N_BOOT_REGISTERS 16
 uint32_t boot_registers[N_BOOT_REGISTERS];
+uint64_t waveform_time; 
+
+uint8_t watchdog_enabled = 0;
 
 // Mapping of channels to cross-correlations
 const int ch_ant1[] = {0,1,2,3, 0,0,  0,0,  0,0,  1,1,  1,1, 2, 2};
@@ -37,36 +43,10 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 
 
 
-void spectrometer_init() {
-    FILE* file = fopen(true_spectrum_filename, "r");
-    if (file == NULL) {
-        printf("Error opening file: %s\n", true_spectrum_filename);
-        return;
-    }
-    for (int i = 0; i < NCHANNELS * NSPECTRA; i++) {
-        if (fscanf(file, "%i", &true_spectrum[i]) != 1) {                
-            printf("Error reading from file: %s\n", true_spectrum_filename);
-            fclose(file);
-            return;
-        }
-    }
-    fclose(file);
-    
-    file = fopen(ramp_spectrum_filename, "r");
-    if (file == NULL) {
-        printf("Error opening file: %s\n", ramp_spectrum_filename);
-        return;
-    }
+void spectrometer_pre_init() {
+    read_array_uint(true_spectrum_filename, true_spectrum, NCHANNELS * NSPECTRA);
+    read_array_double(ramp_spectrum_filename, ramp_spectrum, NCHANNELS);
 
-    for (int i = 0; i < NCHANNELS; i++) {
-        if (fscanf(file, "%lf", &ramp_spectrum[i]) != 1) {
-            printf("Error reading from file: %s\n", ramp_spectrum_filename);
-            fclose(file);
-            return;
-        }
-    }
-
-    fclose(file);
     SPEC_BUF = malloc(NCHANNELS*NSPECTRA*sizeof(int32_t));
     adc_trigger = false;
     printf("Spectrometer init.\n");
@@ -74,6 +54,8 @@ void spectrometer_init() {
         boot_registers[i] = 0;
     }
 }
+
+void spectrometer_init() {}
 
 uint32_t spec_get_version(int s) {
     switch (s) {
@@ -99,14 +81,6 @@ void spec_set_spectrometer_enable(bool on) {
     }
 }
 
-
-
-double generate_gaussian_variate() {
-    double u1 = rand() / (double)RAND_MAX;
-    double u2 = rand() / (double)RAND_MAX;
-    double z = sqrt(-2 * log(u1)) * cos(2 * M_PI * u2);
-    return z;
-}
 
 
 bool spec_new_spectrum_ready() {
@@ -197,8 +171,47 @@ void spec_set_avg1 (uint8_t Navg1_shift) {
     Navg1 = (1 << Navg1_shift);
     printf ("NAVg1 set to %i\n",Navg1);
 }
+//enables watchdogs
+
+static bool watchdogs_enabled = false;
+static bool watchdog_triggered = false;
+static uint64_t watchdog_start_tick = 0;
+static const uint64_t WATCHDOG_TICK_THRESHOLD = 600;  // ~6 second
+
+void spec_enable_watchdogs(uint8_t enable) {
+    watchdogs_enabled = (enable > 0);
+    watchdog_triggered = false;
+    watchdog_start_tick = tap_counter;  // reset start tick
+}
+
+uint8_t spec_watchdog_tripped(void) {
+    if (!watchdogs_enabled) {
+        return 0;
+    }
+
+    uint64_t ticks_elapsed = tap_counter - watchdog_start_tick;
+
+    if (ticks_elapsed > WATCHDOG_TICK_THRESHOLD) {
+        watchdog_triggered = true;
+        printf("[watchdog] TRIPPED at tick %lu\n", tap_counter);
+    }
+    
+    return watchdog_triggered ? (1 << 7) : 0;
+}
+
+void spec_clear_watchdog_tripped(void) {
+    watchdog_triggered = false;
+    watchdog_start_tick = tap_counter;  // reset for the next interval
+}
 
 
+
+
+void spec_feed_uC_watchdog(void) {
+    if (watchdogs_enabled) {
+        watchdog_start_tick = tap_counter;
+    }
+}
 
 void spec_trigger_ADC_stat(uint16_t Nsamples) {
     adc_trigger = true;
@@ -258,8 +271,11 @@ void spec_request_waveform(uint8_t ch, int dly) {
             }
         }
         cdi_dispatch (AppID_RawADC+ch, Nsamples*sizeof(uint16_t));
+        clock_gettime(CLOCK_REALTIME, &time_now);                    
     }
 }
+
+uint64_t spec_last_waveform_timestamp() { return waveform_time; }
 
 void spec_disable_channel (uint8_t ch) {}
 
@@ -279,6 +295,9 @@ void spec_disable_channel (uint8_t ch) {}
  bool spec_df_dropped() {
      return false;
  }
+
+
+ 
 
 void spec_set_ADC_normal_ops() {
     ADC_mode = ADC_NORMAL_OPS;
@@ -313,3 +332,9 @@ void spec_set_fw_cdi_delay(uint32_t delay) {}
 
  void spec_reg_write(uint16_t reg, uint32_t value) {}
  
+ void spec_notch_disable_subtraction(bool disable) {}
+
+
+void  spec_enable_notch_detector (bool enable) {}
+
+

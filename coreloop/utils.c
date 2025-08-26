@@ -244,7 +244,7 @@ void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out)
     }
 }
 
-void decode_5_into_4(const int16_t* const vals_in, int32_t* vals_out)
+void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out)
 {
     const uint16_t shifts = *vals_in;
     const uint16_t* compressed = vals_in + 1;
@@ -286,4 +286,17 @@ uint32_t print_buf(const void* data, size_t size) {
     debug_print("\r\n")
 }
 
+#ifndef NOTREAL
+extern char __stack_bottom;  // Defined in linker script
+extern char __stack_top;    // Defined in linker script
 
+size_t get_free_stack() {
+    volatile char dummy;
+    char *current_sp = (char*)&dummy;
+
+    size_t total_stack = &__stack_top - &__stack_bottom;
+    size_t used_stack = &__stack_top - current_sp;
+
+    return total_stack - used_stack;
+}
+#endif

@@ -1,15 +1,15 @@
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+#include "core_loop.h"
 #include "lusee_commands.h"
 #include "spectrometer_interface.h"
 #include "cdi_interface.h"
 #include "lusee_appIds.h"
-#include "core_loop.h"
-#include <stdlib.h>
-#include <stdint.h>
 #include "flash_interface.h"
 #include "LuSEE_IO.h"
-#include <string.h>
-
-
+#include "high_prec_avg.h"
 
 
 void cdi_dispatch_uC (struct cdi_stats* cdi_stats, uint16_t appID, uint32_t length) {
@@ -49,8 +49,9 @@ void write_packet_id(uint32_t packet_id, char** data_ptr, char** crc_ptr)
 
 void dispatch_32bit_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const int32_t *ddr_ptr = spectra_read_buffer(state->tick_tock);
-    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state->Nfreq; // pointer to current block of data.
+    const void *ddr_ptr = spectra_read_buffer(state->tick_tock);
+    const uint32_t* ddr_ptr_high = spectra_read_buffer_high(state->tick_tock);
+    int offset = state->cdi_dispatch.prod_count * NCHANNELS;
     int32_t *cdi_ptr = (int32_t *)TLM_BUF;
     int32_t *crc_ptr;
 
@@ -61,38 +62,24 @@ void dispatch_32bit_data(struct core_state* state) {
     uint32_t data_size = state->cdi_dispatch.Nfreq*sizeof(int32_t);
     uint32_t packet_size = data_size+2*sizeof(int32_t);
     wait_for_cdi_ready();
-    switch (state->cdi_dispatch.Navgf) {
-        case 1:
-            memcpy(cdi_ptr, ddr_ptr, state->cdi_dispatch.Nfreq * sizeof(uint32_t));
-            break;
-        case 2:
-            for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
-            }
-            break;
-        case 3:
-            for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
-            }
-            break;
-        case 4:
-            for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-                cdi_ptr[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
-            }
-            break;
+
+    for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
+        cdi_ptr[i] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->base.Navg2_shift, state->base.averaging_mode, ddr_ptr_high);
     }
 
     // we don't want to do this ,since the incoming data are still compared
     // against this. Instead, we will zero it in df_transfer
-    //memset(ddr_ptr, 0, state->state->cdi_dispatch.Nfreq * sizeof(uint32_t));
+    //memset(ddr_ptr, 0, state.state->cdi_dispatch.Nfreq * sizeof(uint32_t));
     *crc_ptr = CRC(cdi_ptr, data_size);
     cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
 
+
 void dispatch_16bit_10_plus_6_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const int32_t *ddr_ptr = spectra_read_buffer(state->tick_tock);
-    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS; //state->Nfreq; // pointer to current block of data.
+    const void* ddr_ptr = spectra_read_buffer(state->tick_tock);
+    const uint32_t* ddr_ptr_high = spectra_read_buffer_high(state->tick_tock);
+    int offset = state->cdi_dispatch.prod_count * NCHANNELS;
 
     char* crc_ptr;
     char* data_ptr;
@@ -108,15 +95,7 @@ void dispatch_16bit_10_plus_6_data(struct core_state* state) {
     int32_t val_in;
 
     for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-        if (state->cdi_dispatch.Navgf == 1) {
-            val_in = ddr_ptr[i];
-        } else if (state->cdi_dispatch.Navgf == 2) {
-            val_in = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
-        } else if (state->cdi_dispatch.Navgf == 3) {
-            val_in = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
-        } else if (state->cdi_dispatch.Navgf == 4) {
-            val_in = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
-        }
+        val_in = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->base.Navg2_shift, state->base.averaging_mode, ddr_ptr_high);
         val_out = encode_10plus6(val_in);
         memcpy(data_ptr, &val_out, sizeof val_out);
         data_ptr += sizeof val_out;
@@ -128,6 +107,7 @@ void dispatch_16bit_10_plus_6_data(struct core_state* state) {
 
     cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
+
 
 void dispatch_16bit_updates_data() {
     cdi_not_implemented("16bit w updates data format");
@@ -143,8 +123,9 @@ void dispatch_16bit_shared_lz_data() {
 
 void dispatch_16bit_4_to_5_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
-    const int32_t *ddr_ptr = spectra_read_buffer(state->tick_tock);
-    ddr_ptr += state->cdi_dispatch.prod_count * NCHANNELS;
+    const void* ddr_ptr = spectra_read_buffer(state->tick_tock);
+    const uint32_t* ddr_ptr_high = spectra_read_buffer_high(state->tick_tock);
+    int offset = state->cdi_dispatch.prod_count * NCHANNELS;
 
     char* crc_ptr;
     char* data_ptr;
@@ -168,15 +149,7 @@ void dispatch_16bit_4_to_5_data(struct core_state* state) {
             memcpy(data_ptr, vals_out, sizeof vals_out);
             data_ptr += sizeof vals_out;
         }
-        if (state->cdi_dispatch.Navgf == 1) {
-            vals_in[i % 4] = ddr_ptr[i];
-        } else if (state->cdi_dispatch.Navgf == 2) {
-            vals_in[i % 4] = (ddr_ptr[i*2]>>1) + (ddr_ptr[i*2+1]>>1);
-        } else if (state->cdi_dispatch.Navgf == 3) {
-            vals_in[i % 4] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2);
-        } else if (state->cdi_dispatch.Navgf == 4) {
-            vals_in[i] = (ddr_ptr[i*4]>>2) + (ddr_ptr[i*4+1]>>2) + (ddr_ptr[i*4+2]>>2) + (ddr_ptr[i*4+3]>>2);
-        }
+        vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->base.Navg2_shift, state->base.averaging_mode, ddr_ptr_high);
     }
 
     // compute CRC
@@ -185,6 +158,24 @@ void dispatch_16bit_4_to_5_data(struct core_state* state) {
 
     cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
+
+
+void dispatch_grimm_data(struct core_state *state) {
+
+
+    // if we are in tick, we are copyng over TOCK, otherwise TICK !!
+    const void* ddr_ptr = grimm_spectra_read_buffer(state->tick_tock);
+    uint16_t data_size = NSPECTRA * 10 * get_Navg2(state); // we pack 4 int32_t into 5 int16_t
+
+    wait_for_cdi_ready();
+    void *cdi_ptr = (char*)TLM_BUF;
+    *((uint32_t *)(cdi_ptr)) = state->cdi_dispatch.packet_id;
+    cdi_ptr += sizeof(int32_t);
+    memcpy(cdi_ptr, ddr_ptr, data_size);
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_SpectraGrimm, data_size + sizeof(int32_t));
+}
+
+
 
 // send NSPECTRA packets
 void dispatch_tr_data(struct core_state* state) {
@@ -287,6 +278,11 @@ void transfer_to_cdi(struct core_state* state) {
     } else {
         state->cdi_dispatch.tr_count = 0xFF; // disable
     }
+    if (state->base.grimm_enable) {
+        state->cdi_dispatch.grimm_count = 0; // dispatch the grimm spectra
+    } else {
+        state->cdi_dispatch.grimm_count = 0xFF; // disable
+    }
     state->cdi_dispatch.Nfreq = get_Nfreq(state);
     state->cdi_dispatch.Navgf = state->base.Navgf;
     state->cdi_dispatch.appId = get_next_baseAppID(state);
@@ -297,24 +293,31 @@ void transfer_to_cdi(struct core_state* state) {
 }
 
 bool delayed_cdi_dispatch_done (struct core_state* state) {
-    return (state->cdi_dispatch.prod_count >= NSPECTRA && state->cdi_dispatch.tr_count >= NSPECTRA && state->cdi_dispatch.cal_count >= NCALPACKETS);
+    return (state->cdi_dispatch.prod_count >= NSPECTRA && 
+            state->cdi_dispatch.tr_count >=  NSPECTRA   && 
+            state->cdi_dispatch.grimm_count >= 1 &&
+            state->cdi_dispatch.cal_count >= NCALPACKETS);
 }
-
 bool process_delayed_cdi_dispatch (struct core_state* state) {
 
     // if we are waiting, let's prevent anyone else to send stuff untill we are done
     if (state->timing.cdi_dispatch_counter > tap_counter) return true;
 
-    // we always send 16 products + some time resolved
+    // we always send 16 products + maybe some time resolved + maybe grimm
     // we sent all we had, return to the core loop and let spectra accumulate
     if (delayed_cdi_dispatch_done(state)) {
         // we already sent all spectra, averaged and time resolved, nothing to do
         return false;
     }
-        
+
+#ifdef LN_CORELOOP_TIME_DISPATCH
+    timer_start();
+#endif
+
     if (state->cdi_dispatch.prod_count < NSPECTRA) {
         if (state->base.corr_products_mask & (1<<state->cdi_dispatch.prod_count)) {
             debug_print(".");
+
             switch (state->cdi_dispatch.format) {
                 case OUTPUT_32BIT:
                     dispatch_32bit_data(state);
@@ -341,17 +344,43 @@ bool process_delayed_cdi_dispatch (struct core_state* state) {
         }
         state->cdi_dispatch.appId++;
         state->cdi_dispatch.prod_count++;
+
+#ifdef LN_CORELOOP_TIME_DISPATCH
+        uint32_t elapsed = timer_stop();
+        debug_print("disp (s): ");
+        debug_print_dec(elapsed);
+        debug_print("\r\n");
+#endif
+
     } else if (state->cdi_dispatch.tr_count < NSPECTRA) {
         // actually, this check is redundant
         // if we are here, number_of_time_resolved > 0, and we send it without checks
         dispatch_tr_data(state);
         state->cdi_dispatch.tr_count++;
         state->cdi_dispatch.tr_appId++;
+
+#ifdef LN_CORELOOP_TIME_DISPATCH
+        uint32_t elapsed = timer_stop();
+        debug_print("disp (tr): ");
+        debug_print_dec(elapsed);
+        debug_print("\r\n");
+#endif
+    } else if (state->cdi_dispatch.grimm_count < 1) {
+        dispatch_grimm_data(state);
+        state->cdi_dispatch.grimm_count++;        
     } else if (state->cdi_dispatch.cal_count < NCALPACKETS) {
         dispatch_calibrator_data(state);
         state->cdi_dispatch.cal_count++;
+
+#ifdef LN_CORELOOP_TIME_DISPATCH
+        uint32_t elapsed = timer_stop();
+        debug_print("disp (cal): ");
+        debug_print_dec(elapsed);
+        debug_print("\r\n");
+#endif
     }
 
     state->timing.cdi_dispatch_counter = tap_counter + state->dispatch_delay;
     return true;
 }
+

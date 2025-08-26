@@ -1,22 +1,28 @@
 #include "LuSEE_SPI.h"
+#include <string.h>
+#include <stdio.h>
 
-uint32_t  Flash_Recov_Region_1;
+uint32_t  Flash_FS_Save, Flash_CAL_Save;
 void*  SFL_RD_BUFF;
 void* SFL_WR_BUFF;
 
-
-void  SPI_EN_write() {}
-
-void  SPI_read_page(uint32_t address) {}
-
-void  SPI_write_page(uint32_t address) {}
-
-void  SPI_4k_erase_step1(uint32_t address) {}
-void  SPI_4k_erase_step2() {}
-void  SPI_4k_erase_step3() {}
+char flash_sim[256*1024];
 
 
-void  SPI_write_page_step1(uint32_t address) {}
-void  SPI_write_page_step2() {}
-void  SPI_write_page_step3() {}
+void  SPI_4k_erase(uint32_t address) {
+    //printf("SPI_4k_erase: 0x%08X\n", address);
+    memset(flash_sim + address, 0, 0x1000);
+
+}
+
+void memcpy_to_flash(uint32_t tgt, void *src, uint32_t size) {
+    //printf("memcpy_to_flash: 0x%08X, size: %u\n", tgt, size);
+    memcpy(flash_sim + tgt, src, size);
+
+}
+
+void memcpy_from_flash(void* tgt, uint32_t src, uint32_t size) {
+    //printf("memcpy_from_flash: 0x%08X, size: %u\n", src, size);
+    memcpy(tgt, flash_sim + src, size);
+}
 
