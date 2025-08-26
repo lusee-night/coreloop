@@ -102,35 +102,52 @@ write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int off
             ddr_ptr[total_idx] += (float)(value);
 
     } else if (averaging_mode == AVG_INT_40_BITS) {
+        uint32_t* ddr_ptr = _ddr_ptr;
 
-        struct SpectraIn* ddr_ptr = (struct SpectraIn*)(_ddr_ptr);
+        const uint32_t byte_shift = (total_idx % 4) * 8;
+        const uint32_t sign_mask  = 0x80u << byte_shift;
+        const uint32_t high_idx   = total_idx >> 2;
 
-        bool is_negative = value < 0;
-        uint32_t uvalue = safe_abs_val(value);
+        // if (total_idx == 8 * NCHANNELS || total_idx == 8 * NCHANNELS + 1 || total_idx == 8 * NCHANNELS + 2 || total_idx == 8 * NCHANNELS + 3)
 
-        if (avg_counter) {
-            unsigned int new_low_bits;
-            bool overflow = __builtin_uadd_overflow(ddr_ptr->low[total_idx], uvalue, &new_low_bits);
 
-            if (overflow) {
-                ddr_ptr_high[total_idx >> 2] += (1 << ((total_idx %4) * 8));
-            }
-
-            ddr_ptr->low[total_idx] = new_low_bits;
-        } else {
-            // set low bits to value, set high bits to zero in one go for this spectrum
-            ddr_ptr->low[total_idx] = uvalue;
-            if (total_idx == offset) {
-                memset(ddr_ptr_high + (offset / 4), 0, (NCHANNELS / 4) * sizeof(uint32_t));
-            }
+        if (avg_counter == 0) {
+            // First value in this frame
+            ddr_ptr[total_idx] = (value < 0) ? -value : value;
+            if (total_idx == offset)
+                memset(ddr_ptr_high + offset / 4, 0, (NCHANNELS / 4) * sizeof(int32_t));
+            if (value < 0)
+                ddr_ptr_high[high_idx] |= sign_mask;
+            else
+                ddr_ptr_high[high_idx] &= ~sign_mask;
+            return;
         }
 
-        // highest of 8 extra bits: sign
-        // NB: must be after memset, don't move up
-        if (is_negative) {
-            ddr_ptr_high[total_idx >> 2] |= (1 << (7 + (total_idx %4) * 8));
-        }
+        // extract current 40-bit signed value
+        uint32_t extra_byte = (ddr_ptr_high[high_idx] >> byte_shift) & 0xFF;
+        uint32_t high_mag   = extra_byte & 0x7F;   // magnitude high bits
+        bool old_neg        = (extra_byte & 0x80) != 0;
 
+        int64_t current_val = ((int64_t)high_mag << 32) | ddr_ptr[total_idx];
+        if (old_neg)
+            current_val = -current_val;
+
+        // accumulate: add value
+        int64_t new_val = current_val + (int64_t)value;
+
+        // store back into arrays
+        bool new_neg = (new_val < 0);
+        uint64_t abs_val = (new_val < 0) ? -new_val : new_val;
+
+        uint32_t low32  = (uint32_t)(abs_val & 0xFFFFFFFFu);
+        uint32_t new_hi = (uint32_t)(abs_val >> 32) & 0x7F; // only 7 bits
+
+        ddr_ptr[total_idx] = low32;
+
+        // Replace magnitude bits in extra byte, keep sign separate
+        uint32_t new_extra = new_hi | (new_neg ? 0x80 : 0);
+        ddr_ptr_high[high_idx] &= ~(0xFFu << byte_shift);
+        ddr_ptr_high[high_idx] |= (new_extra << byte_shift);
     }
 }
 
