@@ -155,9 +155,9 @@ bool transfer_from_df(struct core_state* state)
 
         for (uint16_t sp = 0; sp < NSPECTRA_AUTO; sp++) {
 
-            int offset = sp * NSPECTRA;
+            int offset = sp * NCHANNELS;
 
-            if (state->base.corr_products_mask & mask) {
+            if (state->base.corr_products_mask & mask) {                
                 for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
                     bad += is_bad(df_ptr, ddr_ptr_prev, ddr_ptr_prev_high, total_idx, state->base.weight, state->base.reject_ratio, state->base.Navg2_shift, state->base.averaging_mode);
                     df_ptr++;
@@ -165,7 +165,6 @@ bool transfer_from_df(struct core_state* state)
             } else {
                 df_ptr += NCHANNELS;
             }
-
             mask <<= 1;
         }
 
@@ -175,6 +174,7 @@ bool transfer_from_df(struct core_state* state)
         if (bad > state->base.reject_maxbad)  {
             accept = false;
             debug_print("X");
+            debug_print_dec(bad);
         }
 
         // reinitialize the pointers

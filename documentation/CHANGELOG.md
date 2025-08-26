@@ -1,6 +1,15 @@
 
 # CHANGELOG
 
+### Version 3r05
+ * Many tweaks to the calibrator algorithm
+ * Working zoom functionality
+ * Added notch detector functionality
+ * Working watchdog functionality
+ * Auto bit slicer buffer increased to two
+ * Tested multiple averagers
+ * Two more HK requests
+ 
 ### Version 3r0
  * Implemented basic calibrator compatible with post-Eric FW
  * Implemented loop counting in heartbeat
