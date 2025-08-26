@@ -3,6 +3,7 @@
 
 ### Version 3r05
  * Many tweaks to the calibrator algorithm
+ * Can save calibrator weights to flash
  * Working zoom functionality
  * Added notch detector functionality
  * Working watchdog functionality
