@@ -21,7 +21,7 @@
 #define CAL_MODE_BIT_SLICER_SETTLE 0x10
 // find SNRon by heuristics
 #define CAL_MODE_SNR_SETTLE   0x20
-// acquire data automatically 
+// acquire data automatically
 #define CAL_MODE_RUN   0x30
 // run as a blind search mode // to be implemented
 #define CAL_MODE_BLIND 0x40
@@ -41,7 +41,7 @@ struct calibrator_state {
     uint8_t notch_index;
     uint32_t SNRon, SNRoff;
     uint16_t SNR_minratio;
-    uint32_t Nsettle, delta_drift_corA, delta_drift_corB; 
+    uint32_t Nsettle, delta_drift_corA, delta_drift_corB;
     uint32_t ddrift_guard, gphase_guard;
     uint16_t pfb_index; // for PFB and spectral zoom mode
     // for saving weights
@@ -55,9 +55,9 @@ struct calibrator_state {
     uint8_t zoom_ch1, zoom_ch2;
     uint8_t zoom_prod;
     uint16_t zoom_Navg;
-    uint8_t zoom_avg_idx;
+    uint16_t zoom_avg_idx;
     bool use_float_fft;
-    uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
+    uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time.
 };
 
 struct calibrator_stats {
@@ -72,7 +72,7 @@ struct calibrator_stats {
 
 
 struct calibrator_metadata {
-  uint16_t version; 
+  uint16_t version;
   uint32_t unique_packet_id;
   uint32_t time_32;
   uint16_t time_16;
@@ -84,7 +84,7 @@ struct calibrator_metadata {
   uint32_t errors, bitslicer_errors;
   uint8_t drift_shift;
   int16_t drift [128];
-  uint32_t error_regs [30];    
+  uint32_t error_regs [30];
   struct calibrator_stats stats;
 };
 
