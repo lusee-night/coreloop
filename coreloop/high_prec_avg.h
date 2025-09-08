@@ -7,36 +7,6 @@
 #include "core_loop.h"
 #include "LuSEE_IO.h"
 
-//#define NAIVE_HIGH_PREC_AVG
-
-#ifdef NAIVE_HIGH_PREC_AVG
-
-//struct SpectraIn {
-//    int32_t low[NCHANNELS * NSPECTRA];      /* Lower 32 bits */
-//    int32_t high[NCHANNELS * NSPECTRA / 4]; /* Packed 8-bit values, 4 spectra per int32 */
-//};
-
-
-struct SpectraIn {
-    int64_t values[NCHANNELS * NSPECTRA];      /* Lower 32 bits */
-};
-
-static inline int64_t get_packed_value(const struct SpectraIn* buf, int total_idx) {
-    return buf->values[total_idx];
-}
-
-static inline int32_t get_averaged_value_int40(const struct SpectraIn* buf, int offset, int i, int Navgf, int shift_by)
-{
-    return (int32_t)(buf->values[offset + i] >> shift_by);
-}
-
-#else
-
-struct SpectraIn {
-    uint32_t low[2048 * 16];      /* Lower 32 bits */
-};
-
-
 /* Helper functions to work with packed high bits */
 static inline int8_t get_high_bits(const uint32_t* buf_high, int total_idx) {
     int pack_idx = total_idx >> 2;
@@ -57,13 +27,11 @@ static inline int8_t is_negative(const uint32_t* buf_high, int total_idx) {
 }
 
 
-static inline int64_t get_packed_value(const struct SpectraIn* buf, const uint32_t* buf_high, int total_idx) {
-    return (((int64_t)get_high_bits(buf_high, total_idx) << 32) | (int64_t)buf->low[total_idx]) * get_packed_sign(buf_high, total_idx);
+static inline int64_t get_packed_value(const uint32_t* buf, const uint32_t* buf_high, int total_idx) {
+    return (((int64_t)get_high_bits(buf_high, total_idx) << 32) | (int64_t)buf[total_idx]) * get_packed_sign(buf_high, total_idx);
 }
 
-
-
-static inline int32_t get_averaged_value_int40(const struct SpectraIn* buf, int offset, int i, int Navgf, int shift_by, const uint32_t* buf_high)
+static inline int32_t get_averaged_value_int40(const uint32_t* buf, int offset, int i, int Navgf, int shift_by, const uint32_t* buf_high)
 {
     int64_t result;
 
@@ -156,5 +124,3 @@ static inline int32_t get_averaged_value(const void* buf, int offset, int i, int
         return get_averaged_value_float(buf, offset, i, Navgf, shift_by);
     }
 }
-
-#endif //LN_CORELOOP_HIGH_PREC_AVG_H
