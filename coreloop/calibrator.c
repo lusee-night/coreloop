@@ -164,7 +164,7 @@ void get_mode11_minmax_unsigned(uint32_t *max, uint32_t *min, int reg)
 
 void get_mode11_positive_count(uint16_t *count, int reg)
 {
-    int32_t *tgt = (uint32_t *)(CAL_DF + reg * CAL_MODE3_CHUNKSIZE);
+    int32_t *tgt = (int32_t *)(CAL_DF + reg * CAL_MODE3_CHUNKSIZE);
     for (int ant = 0; ant < 4; ant++)
     {
         count[ant] = 0;
@@ -381,7 +381,7 @@ int check_range_unsigned(uint32_t *fields, uint32_t value, uint8_t antenna_mask)
     return maxshift;
 }
 
-int check_range_signed(int32_t fields_max[4], uint32_t *fields_min, int32_t value, uint8_t antenna_mask)
+int check_range_signed(int32_t fields_max[4], int32_t *fields_min, int32_t value, uint8_t antenna_mask)
 {
     int maxshift = 0;
     for (int i = 0; i < 4; i++)

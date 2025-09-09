@@ -277,7 +277,7 @@ uint32_t CRC(const void* data, size_t size) {
 }
 
 
-uint32_t print_buf(const void* data, size_t size) {
+void print_buf(const void* data, size_t size) {
     uint8_t *b = (uint8_t *)(data);
     for (int i=0; i<size; i++) {
         debug_print_hex(b[i]);
