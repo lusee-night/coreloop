@@ -1,6 +1,9 @@
 
 # CHANGELOG
 
+### Version 3r06
+ * fixed bug in 40bit averaging
+
 ### Version 3r05
  * Many tweaks to the calibrator algorithm
  * Can save calibrator weights to flash

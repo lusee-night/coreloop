@@ -32,7 +32,7 @@ AppID_uC_Heartbeat = 0x020A
 # Automatically restored saved state; Priority:  High     
 AppID_uC_Restored = 0x020B
 
-# Used for Watchdog related telemetry packets; Priority:  xxxxx    
+# Used for Watchdog related telemetry packets; Priority:  High     
 AppID_Watchdog = 0x020C
 
 # x = 0..F for 16 correlations; Priority:  High     
