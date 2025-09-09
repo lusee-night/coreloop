@@ -41,18 +41,15 @@ static inline int32_t get_averaged_value_int40(const uint32_t* buf, int offset, 
     } else if (Navgf == 2) {
         result = get_packed_value(buf, buf_high, offset + 2*i);
         result += get_packed_value(buf, buf_high, offset + 2*i + 1);
-        shift_by += 1;
     } else if (Navgf == 3) {
         result = get_packed_value(buf, buf_high, offset + 4*i);
         result += get_packed_value(buf, buf_high, offset + 4*i + 1);
         result += get_packed_value(buf, buf_high, offset + 4*i + 2);
-        shift_by += 2;
     } else if (Navgf == 4) {
         result = get_packed_value(buf, buf_high, offset + 4*i);
         result += get_packed_value(buf, buf_high, offset + 4*i + 1);
         result += get_packed_value(buf, buf_high, offset + 4*i + 2);
         result += get_packed_value(buf, buf_high, offset + 4*i + 3);
-        shift_by += 2;
     }
 
     return (int32_t)(result >> shift_by);
@@ -61,7 +58,7 @@ static inline int32_t get_averaged_value_int40(const uint32_t* buf, int offset, 
 
 #endif
 
-static inline int32_t get_averaged_value_int32(const int32_t* buf, int offset, int i, int Navgf, int shift_by)
+static inline int32_t get_averaged_value_int32(const int32_t* buf, int offset, int i, int Navgf)
 {
     int32_t result;
 
@@ -73,13 +70,13 @@ static inline int32_t get_averaged_value_int32(const int32_t* buf, int offset, i
         result += buf[offset + 2*i + 1] / 2;
     } else if (Navgf == 3) {
         result = buf[offset + 4*i] / 4;
-        result = buf[offset + 4*i + 1] / 4;
-        result = buf[offset + 4*i + 2] / 4;
+        result += buf[offset + 4*i + 1] / 4;
+        result += buf[offset + 4*i + 2] / 4;
     } else if (Navgf == 4) {
         result = buf[offset + 4*i] / 4;
-        result = buf[offset + 4*i + 1] / 4;
-        result = buf[offset + 4*i + 2] / 4;
-        result = buf[offset + 4*i + 3] / 4;
+        result += buf[offset + 4*i + 1] / 4;
+        result += buf[offset + 4*i + 2] / 4;
+        result += buf[offset + 4*i + 3] / 4;
     }
 
     return result;
@@ -97,18 +94,15 @@ static inline int32_t get_averaged_value_float(const void* _buf, int offset, int
     } else if (Navgf == 2) {
         result = (int64_t)buf[offset + 2 * i];
         result += (int64_t)buf[offset + 2 * i + 1];
-        shift_by += 1;
     } else if (Navgf == 3) {
         result = (int64_t)buf[offset + 4 * i];
         result += (int64_t)buf[offset + 4 * i + 1];
         result += (int64_t)buf[offset + 4 * i + 2];
-        shift_by += 2;
     } else if (Navgf == 4) {
         result = (int64_t)buf[offset + 4 * i];
         result += (int64_t)buf[offset + 4 * i + 1];
         result += (int64_t)buf[offset + 4 * i + 2];
         result += (int64_t)buf[offset + 4 * i + 3];
-        shift_by += 2;
     }
 
     return (int32_t)(result >> shift_by);
@@ -117,7 +111,8 @@ static inline int32_t get_averaged_value_float(const void* _buf, int offset, int
 static inline int32_t get_averaged_value(const void* buf, int offset, int i, int Navgf, int shift_by, uint8_t averaging_mode, const uint32_t* buf_high)
 {
     if (averaging_mode == AVG_INT32) {
-        return get_averaged_value_int32(buf, offset, i, Navgf, shift_by);
+        // in int32 mode
+        return get_averaged_value_int32(buf, offset, i, Navgf);
     } else if (averaging_mode == AVG_INT_40_BITS) {
         return get_averaged_value_int40(buf, offset, i, Navgf, shift_by, buf_high);
     } else if (averaging_mode == AVG_FLOAT) {
