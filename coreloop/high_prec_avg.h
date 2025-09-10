@@ -1,11 +1,8 @@
 #ifndef LN_CORELOOP_HIGH_PREC_AVG_H
 #define LN_CORELOOP_HIGH_PREC_AVG_H
 
-#include <stdio.h>
 #include <string.h>
-#include "spectrometer_interface.h"
 #include "core_loop.h"
-#include "LuSEE_IO.h"
 
 /* Helper functions to work with packed high bits */
 static inline int8_t get_high_bits(const uint32_t* buf_high, int total_idx) {
@@ -54,9 +51,6 @@ static inline int32_t get_averaged_value_int40(const uint32_t* buf, int offset, 
 
     return (int32_t)(result >> shift_by);
 }
-
-
-#endif
 
 static inline int32_t get_averaged_value_int32(const int32_t* buf, int offset, int i, int Navgf)
 {
@@ -119,3 +113,5 @@ static inline int32_t get_averaged_value(const void* buf, int offset, int i, int
         return get_averaged_value_float(buf, offset, i, Navgf, shift_by);
     }
 }
+
+#endif
