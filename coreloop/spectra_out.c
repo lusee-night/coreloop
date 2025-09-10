@@ -3,11 +3,9 @@
 #include <stdint.h>
 
 #include "core_loop.h"
-#include "lusee_commands.h"
 #include "spectrometer_interface.h"
 #include "cdi_interface.h"
 #include "lusee_appIds.h"
-#include "flash_interface.h"
 #include "LuSEE_IO.h"
 #include "high_prec_avg.h"
 
@@ -126,7 +124,9 @@ static void dispatch_data(struct core_state* state) {
     // against this. Instead, we will zero it in df_transfer
     //memset(ddr_ptr, 0, state.state->cdi_dispatch.Nfreq * sizeof(uint32_t));
 
-    *crc_ptr = CRC(data_start_ptr, data_size);
+    uint32_t crc_value = CRC(data_start_ptr, data_size);
+    memcpy(crc_ptr, &crc_value, sizeof crc_value);
+
     cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
 
