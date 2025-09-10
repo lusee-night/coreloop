@@ -1,5 +1,10 @@
+#include <stdlib.h>
+#include <stdint.h>
+
 #include "core_loop.h"
 #include "interface_utils.h"
+
+#include "LuSEE_IO.h"
 
 char user_spectrum_filename[2048];
 
@@ -43,7 +48,7 @@ int read_dynamic_array(const char* fname, int32_t** data)
         return 0;
     }
 
-    fprintf(stdout, "Reading %d entries from file: %s\n", size, fname);
+    fprintf(stderr, "Reading %d entries from file: %s\n", size, fname);
 
     if (size % NCHANNELS) {
         fprintf(stderr, "Error: size %d is not a multiple of NCHANELS=%d, will truncate\n", size, NCHANNELS);
