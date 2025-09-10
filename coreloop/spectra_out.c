@@ -106,7 +106,7 @@ static void dispatch_data(struct core_state* state) {
         int32_t vals_in[4];
         uint16_t vals_out[5];
 
-        for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
+        for (int i = 0; i <= state->cdi_dispatch.Nfreq; i++) {
             if (i > 0 && i % 4 == 0) {
                 // we accumulated 4 values in vals_in;
                 // now we compress them into vals_out and copy to CDI buffer
@@ -114,7 +114,9 @@ static void dispatch_data(struct core_state* state) {
                 memcpy(data_ptr, vals_out, sizeof vals_out);
                 data_ptr += sizeof vals_out;
             }
-            vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->base.Navg2_shift, state->base.averaging_mode, ddr_ptr_high);
+            if (i != state->cdi_dispatch.Nfreq) {
+                vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->base.Navg2_shift, state->base.averaging_mode, ddr_ptr_high);
+            }
         }
     } else {
         cdi_not_implemented("data format not supported");
