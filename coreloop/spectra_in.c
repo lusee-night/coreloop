@@ -309,9 +309,9 @@ void process_spectrometer(struct core_state* state) {
 
                 if (bit_slice_changed) {
                     (state->bitslicer_action_counter)++;
+                    debug_print(" B");
+                    debug_print_dec(state->bitslicer_action_counter);
                     restart_spectrometer(state); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
-                 } else {
-                    state ->bitslicer_action_counter = 0;
                  }
             } else {
                 state->base.errors |= DIGITAL_AGC_STUCK;
@@ -328,6 +328,7 @@ void process_spectrometer(struct core_state* state) {
                 state->base.num_bad_min_current = 0xFFFF;
                 state->base.num_bad_max_current = 0;
                 state->base.weight_current = 0;
+                if (state->bitslicer_action_counter>0) state->bitslicer_action_counter--;
                 // Now one by one, we will loop through the packets placed in DDR Memory
                 // For each channel, set the APID, send it to the SRAM
                 // Then check to see if this software or the client will control the CDI writes

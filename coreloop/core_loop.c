@@ -91,6 +91,7 @@ void core_init_state(struct core_state* state){
     state->cmd_counter = 0;
     state->cdi_stats.cdi_packets_sent = 0;
     state->cdi_stats.cdi_bytes_sent = 0;
+    state->bitslicer_action_counter = 0;
 
     set_spectrometer(state);
 
@@ -364,7 +365,6 @@ void RFS_start(struct core_state* state) {
     state->base.weight = state->base.weight_current = 0;
     state->base.num_bad_min = state->base.num_bad_min_current = 0xFFFF;
     state->base.num_bad_max = state->base.num_bad_min_current = 0;
-    state->bitslicer_action_counter = 0;
     state->avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));

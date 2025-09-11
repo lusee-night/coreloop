@@ -2,6 +2,8 @@
 # CHANGELOG
 
 ### Version 3r06
+ * fixed bug and changed the bitslicer stuck logic (now reset counter only after pushing some data out)
+ * waveforms request feed the uC watchdog
  * fixed bug in 40bit averaging
 
 ### Version 3r05
