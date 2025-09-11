@@ -9,7 +9,7 @@
 #include "LuSEE_IO.h"
 #include "high_prec_avg.h"
 
-#define CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
+// #define CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
 
 
 static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {

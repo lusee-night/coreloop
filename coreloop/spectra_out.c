@@ -41,13 +41,15 @@ static int get_shift(struct core_state* state) {
     return state->base.Navg2_shift;
 }
 
-static void prepare_spectrum_packet(struct core_state* state, int32_t* data_size, int32_t* packet_size, char** data_ptr, char** crc_ptr) {
+static void prepare_spectrum_packet(struct core_state* state, uint32_t* data_size, uint32_t* packet_size, char** data_ptr, char** crc_ptr) {
     // compute sizes
     uint8_t format = state->cdi_dispatch.format;
     if (state->cdi_dispatch.format == OUTPUT_32BIT) {
         *data_size = state->cdi_dispatch.Nfreq * sizeof(uint32_t);
-    } else if (format == OUTPUT_16BIT_4_TO_5 || format == OUTPUT_16BIT_10_PLUS_6 || format == OUTPUT_16BIT_FLOAT1 || format == OUTPUT_16BIT_SHARED_LZ) {
+    } else if (format == OUTPUT_16BIT_10_PLUS_6 || format == OUTPUT_16BIT_FLOAT1 || format == OUTPUT_16BIT_SHARED_LZ) {
         *data_size = state->cdi_dispatch.Nfreq * sizeof(uint16_t);
+    } else if (format == OUTPUT_16BIT_4_TO_5) {
+        *data_size = 5 * state->cdi_dispatch.Nfreq * sizeof(uint16_t) / 4;
     }
 
     char *cdi_ptr = TLM_BUF;
@@ -74,7 +76,7 @@ static void dispatch_data(struct core_state* state) {
     const uint32_t* ddr_ptr_high = spectra_read_buffer_high(state->tick_tock);
     int offset = state->cdi_dispatch.prod_count * NCHANNELS;
 
-    int32_t data_size, packet_size;
+    uint32_t data_size, packet_size;
     char *data_ptr, *crc_ptr;
 
     prepare_spectrum_packet(state, &data_size, &packet_size, &data_ptr, &crc_ptr);
@@ -96,7 +98,7 @@ static void dispatch_data(struct core_state* state) {
         int32_t val_in;
 
         for (int i = 0; i < state->cdi_dispatch.Nfreq; i++) {
-            val_in = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->base.Navg2_shift, state->base.averaging_mode, ddr_ptr_high);
+            val_in = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, shift_by, state->base.averaging_mode, ddr_ptr_high);
             val_out = encode_10plus6(val_in);
             memcpy(data_ptr, &val_out, sizeof val_out);
             data_ptr += sizeof val_out;
@@ -115,7 +117,7 @@ static void dispatch_data(struct core_state* state) {
                 data_ptr += sizeof vals_out;
             }
             if (i != state->cdi_dispatch.Nfreq) {
-                vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, state->base.Navg2_shift, state->base.averaging_mode, ddr_ptr_high);
+                vals_in[i % 4] = get_averaged_value(ddr_ptr, offset, i, state->cdi_dispatch.Navgf, shift_by, state->base.averaging_mode, ddr_ptr_high);
             }
         }
     } else {
