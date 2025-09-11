@@ -206,6 +206,7 @@ bool transfer_from_df(struct core_state* state)
     const uint32_t* ddr_ptr_prev_high = spectra_read_buffer_high(state->tick_tock);
     uint16_t mask = 1;
     bool accept = true;
+
     //debug_print("Processing spectra...\n\r");
     if ((state->base.reject_ratio>0) && (state->base.weight>(get_Navg2(state)/2))) {
         uint32_t bad = 0;
@@ -217,10 +218,11 @@ bool transfer_from_df(struct core_state* state)
 
             if (state->base.corr_products_mask & mask) {                
                 for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                    uint32_t bad_entry =is_bad(*df_ptr, ddr_ptr_prev, ddr_ptr_prev_high, total_idx, state->base.weight, state->base.reject_ratio, state->base.Navg2_shift, state->base.averaging_mode, all_prev_accepted);
                     bad += is_bad(*df_ptr, ddr_ptr_prev, ddr_ptr_prev_high, total_idx, state->base.weight, state->base.reject_ratio, state->base.Navg2_shift, state->base.averaging_mode, all_prev_accepted);
                     df_ptr++;
                 }
+
+                // print(stderr, "spectrum:%d, bad: %d, maxbad=%d, reject_ration=%d\n", sp, bad, state->base.reject_maxbad, state->base.reject_ratio);
 
             } else {
                 df_ptr += NCHANNELS;
