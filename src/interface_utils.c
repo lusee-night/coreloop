@@ -57,18 +57,11 @@ int read_dynamic_array(const char* fname, int32_t** data)
 
     *data = malloc(size * sizeof(int32_t));
 
-    for(int i =0; i < size/ (NCHANNELS*NSPECTRA); i++) {
-        fprintf(stderr, "read_dynamic_array: group %d address = %p\n", i, (void*)(*data + i*NCHANNELS*NSPECTRA));
-    }
-
     for (int i = 0; i < size; i++) {
         int32_t val;
         if (fscanf(file, "%d", &val) != 1) {
             fprintf(stderr, "Error reading entry %d from file: %s\n", i, fname);
             break;
-        }
-        if (i < 4) {
-            fprintf(stderr, "read_dynamic_array: Entry %d: %d\n", i, val);
         }
         (*data)[i] = val;
     }

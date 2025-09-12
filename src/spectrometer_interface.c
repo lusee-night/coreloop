@@ -122,7 +122,6 @@ bool spec_new_spectrum_ready() {
 
         if (user_spectrum_size) {
             int offset = call_idx * NCHANNELS * NSPECTRA;
-            // fprintf(stderr, "call_idx = %d, offset = %d, memcpy src = %p\n", call_idx, offset, (void*)(user_spectrum + offset));
             memcpy(SPEC_BUF_INT32, user_spectrum + offset, NCHANNELS * NSPECTRA * sizeof(int32_t));
             // fprintf(stderr, "Using user spectrum number %d, offset = %d, sp[0] = %d, sp[1] = %d, sp[2] = %d, sp[3] = %d, sp[4] = %d, sp[5] = %d, sp[6] = %d, sp[7] = %d, sp[8] = %d, sp[9] = %d \n", call_idx, offset, SPEC_BUF_INT32[0], SPEC_BUF_INT32[1], SPEC_BUF_INT32[2], SPEC_BUF_INT32[3], SPEC_BUF_INT32[4], SPEC_BUF_INT32[5], SPEC_BUF_INT32[6], SPEC_BUF_INT32[7], SPEC_BUF_INT32[8], SPEC_BUF_INT32[9]);
             call_idx = (call_idx + 1) % (user_spectrum_size / (NCHANNELS * NSPECTRA));
