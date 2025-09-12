@@ -30,6 +30,11 @@ bool transfer_grimm_from_df(struct core_state* state);
 
 static inline uint32_t is_bad_int32(const int32_t curr_val, const void* ddr_ptr_prev, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift, bool all_prev_accepted)
 {
+    // too small values should be ignored: we divide by Navg2 _before_ accumulating
+    // so for a small bin many values can become 0
+    if (curr_val < reject_ratio * (1 << Navg2_shift))
+        return 0;
+
     int32_t prev_val = ((int32_t*)ddr_ptr_prev)[total_idx];
     if (!all_prev_accepted) {
         // we may lose some precision here, but it's cheaper than int64
