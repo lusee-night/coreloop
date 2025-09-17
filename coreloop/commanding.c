@@ -109,11 +109,13 @@ bool process_cdi(struct core_state* state)
                 RFS_start(state);
             }
             break;
+
         case RFS_SET_STOP:
             if (state->base.spectrometer_enable) {
                 RFS_stop(state);
             }
             break;
+
         case RFS_SET_RESET:
             cmd_soft_reset(arg_low, state);
             return true;
@@ -294,6 +296,7 @@ bool process_cdi(struct core_state* state)
                     state->base.gain[i] = state->base.actual_gain[i];
                 }
             }
+            break;
 
         case RFS_SET_DISABLE_ADC:
             for (int i=0; i<NINPUT; i++){
@@ -310,23 +313,27 @@ bool process_cdi(struct core_state* state)
             val = (arg_low & 0xFC) >> 2;
             state->base.gain_auto_min[ch] = 16*val; //max 16*64 = 1024, which is 1/8th
             break;
+
         case RFS_SET_GAIN_ANA_CFG_MULT:
             ch = arg_low & 0x03;
             val = (arg_low & 0xFC) >> 2;
             state->base.gain_auto_mult[ch] = val;
             break;
+
         case RFS_SET_BITSLICE_LOW:
             xcor = arg_low & 0x07;
             val = (arg_low & 0xF8) >> 3;
             state->base.bitslice[xcor] = val;
             state->base.actual_bitslice[xcor] = val;
             break;
+
         case RFS_SET_BITSLICE_HIGH:
             xcor = (arg_low & 0x07) + 8;
             val = (arg_low & 0xF8) >> 3;
             state->base.bitslice[xcor] = val;
             state->base.actual_bitslice[xcor] = val;
             break;
+
         case RFS_SET_BITSLICE_AUTO:
             if (arg_low > 0) {
                 for (int i=0; i<NSPECTRA; i++) state->base.bitslice[i] = 0xFF;
@@ -387,8 +394,8 @@ bool process_cdi(struct core_state* state)
                 state->base.Navg1_shift = 8 + (arg_low & 0x0F);
                 state->base.Navg2_shift = (arg_low & 0xF0) >> 4;
             }
-
             break;
+
         case RFS_SET_AVG_FREQ:
             if (state->base.spectrometer_enable) {
                 // changing settings while spectrometer is running is not allowed;
@@ -398,6 +405,7 @@ bool process_cdi(struct core_state* state)
                 state->base.Navgf = arg_low;
             }
             break;
+
         case RFS_SET_AVG_NOTCH:
             state->base.notch = arg_low;
             break;
@@ -413,9 +421,11 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_AVG_SET_HI:
             state->base.hi_frac = arg_low;
             break;
+
         case RFS_SET_AVG_SET_MID:
             state->base.med_frac = arg_low;
             break;
+
         case RFS_SET_OUTPUT_FORMAT:
             if (arg_low > (uint8_t)OUTPUT_16BIT_SHARED_LZ) {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
@@ -427,6 +437,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_PRODMASK_LOW:
             state->base.corr_products_mask = (state->base.corr_products_mask & 0xFF00) | arg_low;
             break;
+
         case RFS_SET_PRODMASK_HIGH:
             state->base.corr_products_mask = (state->base.corr_products_mask & 0x00FF) | (arg_low << 8);
             break;
@@ -434,6 +445,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_REJ_SET:
             state->base.reject_ratio = arg_low;
             break;
+
         case RFS_SET_REJ_NBAD:
             state->base.reject_maxbad = arg_low;
             break;
@@ -447,6 +459,7 @@ bool process_cdi(struct core_state* state)
                 state->base.tr_start = ((state->base.tr_start & 0xFF00) +arg_low);
             }
             break;
+
         case RFS_SET_TR_STOP_LSB:
             if (state->base.spectrometer_enable) {
                 state->base.errors |= CDI_COMMAND_BAD;
@@ -454,6 +467,7 @@ bool process_cdi(struct core_state* state)
                 state->base.tr_stop = ((state->base.tr_stop & 0xFF00) +arg_low);
             }
             break;
+
         case RFS_SET_TR_ST_MSB:
             if (state->base.spectrometer_enable) {
                 state->base.errors |= CDI_COMMAND_BAD;
@@ -462,6 +476,7 @@ bool process_cdi(struct core_state* state)
                 state->base.tr_stop = ((state->base.tr_stop & 0x00FF) + ((arg_low & (0xF0)) << 4));
             }
             break;
+
         case RFS_SET_TR_AVG_SHIFT:
             if (state->base.spectrometer_enable) {
                 state->base.errors |= CDI_COMMAND_BAD;
@@ -472,6 +487,7 @@ bool process_cdi(struct core_state* state)
 
         case RFS_SET_GRIMMS_TALES:            
             state->base.grimm_enable = arg_low;
+            break;
 
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
@@ -482,6 +498,7 @@ bool process_cdi(struct core_state* state)
                 state->base.calibrator_enable = false;
             }
             break;
+
         case RFS_SET_CAL_AVG:
             state->cal.Navg2 = arg_low & 0x03;
             state->cal.Navg3 = (arg_low & 0x3C) >> 2;
@@ -491,21 +508,26 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_CAL_NINDEX:
             state->cal.notch_index = arg_low;
             break;
+
         case RFS_SET_CAL_DRIFT_GUARD:
-            state->cal.drift_guard = arg_low*20;
-            
+            state->cal.drift_guard = arg_low*20;            
             break;
+
         case RFS_SET_CAL_DRIFT_STEP:
             state->cal.drift_step = arg_low;
             break;
+
         case RFS_SET_CAL_ANT_EN:
             state->cal.antenna_mask = arg_low;
             break;
+
         case RFS_SET_CAL_SNR_ON:
             state->cal.SNRon = arg_low;
             break;
+
         case RFS_SET_CAL_SNR_ON_HIGH:
             state->cal.SNRon += (arg_low<<8);
+            break;
 
         case RFS_SET_CAL_SNR_OFF:
             state->cal.SNRoff = arg_low;
@@ -522,7 +544,6 @@ bool process_cdi(struct core_state* state)
             case RFS_SET_CAL_CORRA_MSB:
             state->cal.delta_drift_corA += (arg_low << 8);
             break;
-
 
         case RFS_SET_CAL_CORRB_LSB:
             state->cal.delta_drift_corB = arg_low;
@@ -545,9 +566,7 @@ bool process_cdi(struct core_state* state)
             // and does not seem to work either
             //if (arg_low == 0xff)
             //   calib_set_weight(state->cal.weight_ndx, 0x100);
-            //else
-            
-            
+            //else                     
             calib_set_weight(state->cal.weight_ndx, arg_low);
             state->cal.weight_ndx++;
             break;
@@ -601,7 +620,6 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_CAL_GPHASE_GUARD:
             state->cal.gphase_guard = arg_low*2000;
             break;
-
 
         case RFS_SET_CAL_WSAVE:
             if (arg_low<16) {
