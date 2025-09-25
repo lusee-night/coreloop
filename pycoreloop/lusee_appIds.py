@@ -5,84 +5,90 @@
 # generated from the documentation/lusee_appIds.md file.
 
 # AppIds
-# RFS register read back; Priority:  High     
+# X; Priority:  5     
 AppID_Read_Response = 0x0200
 
-# RFS watchdog is requesting a reset + metadata; Priority:  High     
+# No description available; Priority:  5     
 AppID_Reset_Request = 0x0201
 
-# Dumps all register values from the RFS into packet; Priority:  High     
+# X; Priority:  5     
 AppID_Registers_RB = 0x0205
 
-# uC generated housekeeping; Priority:  High     
+# No description available; Priority:  5     
 AppID_uC_Housekeeping = 0x0206
 
-# End of sequence; Priority:  High     
+# No description available; Priority:  5     
 AppID_End_Of_Sequence = 0x0207
 
-# Data from the bootloader; Priority:  High     
+# X; Priority:  5     
 AppID_uC_Bootloader = 0x0208
 
-# Flight SW has booted; Priority:  High     
+# No description available; Priority:  5     
 AppID_uC_Start = 0x0209
 
-# Regular hearbeat packet; Priority:  NONE     
+# No description available; Priority:  NONE  
 AppID_uC_Heartbeat = 0x020A
 
-# Automatically restored saved state; Priority:  High     
+# No description available; Priority:  5     
 AppID_uC_Restored = 0x020B
 
-# Used for Watchdog related telemetry packets; Priority:  High     
+# No description available; Priority:  5     
 AppID_Watchdog = 0x020C
 
-# x = 0..F for 16 correlations; Priority:  High     
+# No description available; Priority:  5     
+AppID_Reserved1 = 0x020D
+
+# No description available; Priority:  5     
+AppID_Reserved2 = 0x020E
+
+# No description available; Priority:  5     
 AppID_MetaData = 0x020F
 
-# Main correlation products, high priorty; Priority:  High     
+# No description available; Priority:  6     
 AppID_SpectraHigh = 0x0210
 
-# Main correlation products, medium priority; Priority:  Med      
+# No description available; Priority:  7     
 AppID_SpectraMed = 0x0220
 
-# Main correlation products, low priority; Priority:  Low      
+# No description available; Priority:  8     
 AppID_SpectraLow = 0x0230
 
-# Time-resolved spectra, high priority; Priority:  High     
+# No description available; Priority:  6     
 AppID_SpectraTRHigh = 0x0240
 
-# Time-resolved spectra, medium priority; Priority:  Med      
+# No description available; Priority:  7     
 AppID_SpectraTRMed = 0x0250
 
-# Time-resolved Spectra, low priority; Priority:  Low      
+# No description available; Priority:  8     
 AppID_SpectraTRLow = 0x0260
 
-# Spectral zoom-in spectra; Priority:  High     
+# No description available; Priority:  6     
 AppID_ZoomSpectra = 0x0270
 
-# Calibrator metadata packet; Priority:  High     
+# No description available; Priority:  5     
 AppID_Calibrator_MetaData = 0x0280
 
-# Calibrator main payload (x3); Priority:  High     
+# No description available; Priority:  6     
 AppID_Calibrator_Data = 0x0281
 
-# Calibrator raw PFB (8 packets for 4 x R/I); Priority:  High     
+# No description available; Priority:  9     
 AppID_Calibrator_RawPFB = 0x0284
 
-# Calibrator debug data (8 packets); Priority:  High     
+# No description available; Priority:  9     
 AppID_Calibrator_Debug = 0x028C
 
-# Grimm's tales spectra; Priority:  High     
+# No description available; Priority:  6     
 AppID_SpectraGrimm = 0x02A0
 
-# x= 0...3 for 4 autocorrelatins; Priority:  High     
+# X; Priority:  9     
 AppID_FW_DirectSpectrum = 0x02E0
 
-# x= 0..3 for 4 raw ADC data streams; Priority:  High     
+# X; Priority:  6     
 AppID_RawADC = 0x02F0
 
-# Metadata (timestamps mainly); Priority:  High     
+# No description available; Priority:  6     
 AppID_RawADC_Meta = 0x02FA
 
-# FW generated watchdog packet; Priority:  High     
+# X; Priority:  5     
 AppID_FW_Watchdog = 0x02FF
 

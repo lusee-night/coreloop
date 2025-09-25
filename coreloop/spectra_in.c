@@ -232,16 +232,52 @@ bool transfer_from_df(struct core_state* state)
 
 bool transfer_grimm_from_df (struct core_state* state) {
     if (!state->base.grimm_enable) return false;
+    uint16_t vals_out[NSPECTRA*5]; // buffer to make we deal with alignment
     for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
         const int32_t* const spectrum_ptr = (int32_t *)SPEC_BUF + sp * NCHANNELS;
-        uint32_t vals_in[4];
-        vals_in[0] = spectrum_ptr[GRIMM_NDX0];
-        vals_in[1] = spectrum_ptr[GRIMM_NDX1];
-        vals_in[2] = spectrum_ptr[GRIMM_NDX2];
-        vals_in[3] = spectrum_ptr[GRIMM_NDX3];
-        uint16_t* const grimm_ptr = grimm_spectra_write_buffer(state->tick_tock) + state->avg_counter * NSPECTRA * 5 * sizeof(uint16_t);
-        encode_4_into_5(vals_in, grimm_ptr);
+        int32_t vals_in[4];
+        int64_t value;
+        vals_in[0] = ( (int64_t)state->grimm_weights[0] * spectrum_ptr[GRIMM_NDX0-3]
+                     + (int64_t)state->grimm_weights[1] * spectrum_ptr[GRIMM_NDX0-2]
+                     + (int64_t)state->grimm_weights[2] * spectrum_ptr[GRIMM_NDX0-1]
+                     + (int64_t)state->grimm_weights[3] * spectrum_ptr[GRIMM_NDX0]
+                     + (int64_t)state->grimm_weights[4] * spectrum_ptr[GRIMM_NDX0+1]
+                     + (int64_t)state->grimm_weights[5] * spectrum_ptr[GRIMM_NDX0+2]
+                     + (int64_t)state->grimm_weights[6] * spectrum_ptr[GRIMM_NDX0+3]
+                     + (int64_t)state->grimm_weights[7] * spectrum_ptr[GRIMM_NDX0+4] ) / 1024;
+
+        vals_in[1] = ( (int64_t)state->grimm_weights[8]  * spectrum_ptr[GRIMM_NDX1-3]
+                     + (int64_t)state->grimm_weights[9]  * spectrum_ptr[GRIMM_NDX1-2]
+                     + (int64_t)state->grimm_weights[10] * spectrum_ptr[GRIMM_NDX1-1]
+                     + (int64_t)state->grimm_weights[11] * spectrum_ptr[GRIMM_NDX1]
+                     + (int64_t)state->grimm_weights[12] * spectrum_ptr[GRIMM_NDX1+1]
+                     + (int64_t)state->grimm_weights[13] * spectrum_ptr[GRIMM_NDX1+2]
+                     + (int64_t)state->grimm_weights[14] * spectrum_ptr[GRIMM_NDX1+3]
+                     + (int64_t)state->grimm_weights[15] * spectrum_ptr[GRIMM_NDX1+4] ) / 1024;
+
+        vals_in[2] = ( (int64_t)state->grimm_weights[16] * spectrum_ptr[GRIMM_NDX2-3]
+                     + (int64_t)state->grimm_weights[17] * spectrum_ptr[GRIMM_NDX2-2]
+                     + (int64_t)state->grimm_weights[18] * spectrum_ptr[GRIMM_NDX2-1]
+                     + (int64_t)state->grimm_weights[19] * spectrum_ptr[GRIMM_NDX2]
+                     + (int64_t)state->grimm_weights[20] * spectrum_ptr[GRIMM_NDX2+1]
+                     + (int64_t)state->grimm_weights[21] * spectrum_ptr[GRIMM_NDX2+2]
+                     + (int64_t)state->grimm_weights[22] * spectrum_ptr[GRIMM_NDX2+3]
+                     + (int64_t)state->grimm_weights[23] * spectrum_ptr[GRIMM_NDX2+4] ) / 1024;
+
+        vals_in[3] = ( (int64_t)state->grimm_weights[24] * spectrum_ptr[GRIMM_NDX3-3]
+                     + (int64_t)state->grimm_weights[25] * spectrum_ptr[GRIMM_NDX3-2]
+                     + (int64_t)state->grimm_weights[26] * spectrum_ptr[GRIMM_NDX3-1]
+                     + (int64_t)state->grimm_weights[27] * spectrum_ptr[GRIMM_NDX3]
+                     + (int64_t)state->grimm_weights[28] * spectrum_ptr[GRIMM_NDX3+1]
+                     + (int64_t)state->grimm_weights[29] * spectrum_ptr[GRIMM_NDX3+2]
+                     + (int64_t)state->grimm_weights[30] * spectrum_ptr[GRIMM_NDX3+3]
+                     + (int64_t)state->grimm_weights[31] * spectrum_ptr[GRIMM_NDX3+4] ) / 1024;              
+        encode_4_into_5(vals_in, &(vals_out[sp*5]));
     }
+    
+    void* const grimm_ptr = grimm_spectra_write_buffer(state->tick_tock) + state->avg_counter * NSPECTRA * 5 * sizeof(uint16_t);    
+    memcpy(grimm_ptr, vals_out, NSPECTRA * 5 * sizeof(uint16_t));
+    
 }
 
 

@@ -101,6 +101,9 @@
 | 0x64 | RFS_SET_TR_ST_MSB    | Time-resolved spectra stopping MSB (b4-7), starting MSB (b0-3)       |
 | 0x65 | RFS_SET_TR_AVG_SHIFT | frequency averaging       |
 | 0x66 | RFS_SET_GRIMMS_TALES | Enable Grimm's tales mode 
+| 0x67 | RFS_SET_GRIMM_W_NDX  | Index for the Grimm's weights 
+| 0x68 | RFS_SET_GRIMM_W_VAL  | Value for the Grimm's weights 
+
 
 
 

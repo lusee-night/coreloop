@@ -214,6 +214,12 @@
 // Enable Grimm's tales mode
 #define RFS_SET_GRIMMS_TALES  0x66 
 
+// Index for the Grimm's weights
+#define RFS_SET_GRIMM_W_NDX  0x67 
+
+// Value for the Grimm's weights
+#define RFS_SET_GRIMM_W_VAL  0x68 
+
 // Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
 #define RFS_SET_CAL_ENABLE  0x70 
 

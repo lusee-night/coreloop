@@ -32,6 +32,7 @@
 #define LOOP_COUNT_RST 1024 // number of clock ticks before we reset loop count
 
 #define GRIMM_BINS 4 // number of bins in grimm's tales mode
+#define NGRIMM_WEIGHTS (GRIMM_BINS*8) // number of bins we take into account when caclulating those tones.
 // Rover frequencies are 14.3625,  20.8875,  29.5625,  41.8125 MHz
 // Corresponding to bins 
 #define GRIMM_NDX0 574
@@ -212,6 +213,8 @@ struct core_state {
     int32_t reg_value; // value to be written to the register
     int8_t bitslicer_action_counter;  // counting how many times in a row we have changed bit slicer to prevent infinite loop
     uint32_t fft_time;
+    uint32_t grimm_weights[NGRIMM_WEIGHTS]; // weights for Grimm's tales mode
+    uint8_t grimm_weight_ndx; // index of the weight we are changing
     bool fft_computed;
 };
 

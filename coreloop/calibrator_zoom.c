@@ -1,4 +1,5 @@
 #include "core_loop.h"
+#include "calibrator.h"
 #include "calibrator_interface.h"
 #include "cdi_interface.h"
 #include "lusee_appIds.h"

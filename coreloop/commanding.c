@@ -489,6 +489,20 @@ bool process_cdi(struct core_state* state)
             state->base.grimm_enable = arg_low;
             break;
 
+        case RFS_SET_GRIMM_W_NDX:
+            if (arg_low>NGRIMM_WEIGHTS)
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            else
+                state->grimm_weight_ndx = arg_low;
+            break;
+
+        case RFS_SET_GRIMM_W_VAL:
+            if (arg_low<0xFF)
+                state->grimm_weights[state->grimm_weight_ndx] = arg_low;
+            else
+                state->grimm_weights[state->grimm_weight_ndx] = 0x100;
+            break;
+            
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
             if (arg_low<0xFF) {
