@@ -2,6 +2,8 @@
 # CHANGELOG
 
 ### Version 3r06
+ * Report zoom bin in zoom packets 
+ * fixed zoom average counter to be 32 bits to allow long integration times
  * fixed Grimm's tales mode
  * fixed bug and changed the bitslicer stuck logic (now reset counter only after pushing some data out)
  * waveforms request feed the uC watchdog

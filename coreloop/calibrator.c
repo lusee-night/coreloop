@@ -52,9 +52,9 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->ddrift_guard = 2500;
     cal->gphase_guard = 200000;
     cal->use_float_fft = true;
-    cal->zoom_avg_idx = 0;
     cal->raw11_every = 20; // every 20 we do a full packet
     cal->raw11_counter = 0;
+    cal->zoom_ndx_range = 0;
 }
 
 void set_calibrator(struct calibrator_state *cal)
@@ -71,7 +71,8 @@ void set_calibrator(struct calibrator_state *cal)
     calib_set_PFB_index(cal->pfb_index);
     calib_set_ddrift_max(cal->ddrift_guard);
     calib_set_gphase_max(cal->gphase_guard);
-
+    cal->zoom_avg_idx = 0;
+    cal->zoom_ndx_current = 0;
 
     memset((void *)CAL_DF, 0, CAL_MODE0_DATASIZE);
 

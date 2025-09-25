@@ -52,7 +52,7 @@ static void prepare_spectrum_packet(struct core_state* state, uint32_t* data_siz
         *data_size = 5 * state->cdi_dispatch.Nfreq * sizeof(uint16_t) / 4;
     }
 
-    char *cdi_ptr = TLM_BUF;
+    char *cdi_ptr = (char*) TLM_BUF;
 
     // write packet_id
     uint32_t packet_id = state->cdi_dispatch.packet_id;

@@ -154,10 +154,20 @@ void dispatch_cal_zoom(struct core_state* state, void* to_send)
     else
         d->cal_size = 4 * sizeof(int32_t) * FFT_SIZE;
 
-    memcpy((void*) TLM_BUF, to_send, d->cal_size);
+    new_unique_packet_id(state);
+    /*uint32_t* p32 = (uint32_t*)(TLM_BUF);
+    *p32 = state->unique_packet_id;
+    uint16_t* p16 = (uint16_t*)(TLM_BUF+4);
+    *p16 = state->cal.pfb_index + state->cal.zoom_ndx_current; */
+    
+    ((uint32_t*)(TLM_BUF))[0] = state->unique_packet_id;
+    ((uint16_t*)(TLM_BUF))[2] = state->cal.pfb_index + state->cal.zoom_ndx_current;
+    
+
+    memcpy((void*) (TLM_BUF+6), to_send, d->cal_size);
 
     // TODO: add CRC?
-    cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId, d->cal_size);
+    cdi_dispatch_uC(&(state->cdi_stats),d->cal_appId, d->cal_size+6);
 
     debug_print("z#");
 
@@ -239,6 +249,17 @@ void process_cal_zoom(struct core_state* state) {
 
     if (state->cal.zoom_avg_idx == state->cal.zoom_Navg) {
         dispatch_cal_zoom(state, to_send);
-        state->cal.zoom_avg_idx = 0;
+        if (state->cal.zoom_ndx_range > 0) {
+            state->cal.zoom_ndx_current++;
+            int16_t new_ndx = state->cal.pfb_index+state->cal.zoom_ndx_current;
+
+            if ((state->cal.zoom_ndx_current >= state->cal.zoom_ndx_range) || (new_ndx>2048)) {
+                state->cal.zoom_ndx_current = 0; // drop na extra one
+            }
+            calib_set_PFB_index(new_ndx);
+            state->cal.zoom_avg_idx = -1; // drop an extra one
+        } else {
+            state->cal.zoom_avg_idx = 0;
+        }
     }
 }

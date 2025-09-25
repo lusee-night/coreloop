@@ -310,6 +310,9 @@
 // log 2 averaging (of NFFT chunks) before spitting out data
 #define RFS_SET_ZOOM_NAVG  0x92 
 
+// Set cal_ndx_range using (arg + arg*arg//32)
+#define RFS_SET_ZOOM_RANGE  0x93 
+
 
 
 #endif
