@@ -13,7 +13,6 @@ void cdi_not_implemented(const char *msg)
 {
     debug_print("\r\nCDI command not implemented: ");
     debug_print(msg);
-    return;
 }
 
 void cmd_soft_reset(uint8_t arg_low, struct core_state* state)
@@ -381,7 +380,6 @@ bool process_cdi(struct core_state* state)
                     state->base.errors |= CDI_COMMAND_BAD_ARGS;
                     break;
             }
-                spec_set_ADC_ramp(arg_low);
             break;
 
 
