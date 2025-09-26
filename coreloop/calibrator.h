@@ -54,7 +54,7 @@ struct calibrator_state {
     uint32_t errors, bitslicer_errors;
     uint8_t zoom_ch1, zoom_ch2;
     uint8_t zoom_prod;
-    uint32_t zoom_Navg;
+    int32_t zoom_Navg;
     int32_t zoom_avg_idx; // we make this into to be able to use -1 to force it to drop one sample
     int16_t zoom_ndx_range; // range up from pfb_index
     int16_t zoom_ndx_current; // current index (0.. zoom_ndx_range-1)
