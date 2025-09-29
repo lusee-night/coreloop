@@ -49,9 +49,13 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->fd_slice = 8;
     cal->zoom_ch1 = 0;
     cal->zoom_ch2 = 1;
+    cal->zoom_ch1_minus = 2;
+    cal->zoom_ch2_minus = 3;
+    cal->zoom_diff_1 = false;
+    cal->zoom_diff_2 = false;
     cal->ddrift_guard = 2500;
     cal->gphase_guard = 200000;
-    cal->use_float_fft = true;
+    // cal->use_float_fft = true; // now a define
     cal->raw11_every = 20; // every 20 we do a full packet
     cal->raw11_counter = 0;
     cal->zoom_ndx_range = 0;

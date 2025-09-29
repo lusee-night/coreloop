@@ -29,6 +29,10 @@
 #define CAL_MODE_ZOOM  0x50
 
 
+#define USE_FLOAT_FFT (true)
+// happens to be the same as NCHANNELS, but semantically very different
+#define NPFB (2048)
+
 
 
 
@@ -53,12 +57,13 @@ struct calibrator_state {
     uint8_t prod1_slice, prod2_slice;
     uint32_t errors, bitslicer_errors;
     uint8_t zoom_ch1, zoom_ch2;
-    uint8_t zoom_prod;
+    bool zoom_diff_1, zoom_diff_2; // if true we difference the two channels
+    uint8_t zoom_ch1_minus, zoom_ch2_minus; // if set we difference with channels    
     int32_t zoom_Navg;
     int32_t zoom_avg_idx; // we make this into to be able to use -1 to force it to drop one sample
     int16_t zoom_ndx_range; // range up from pfb_index
     int16_t zoom_ndx_current; // current index (0.. zoom_ndx_range-1)
-    bool use_float_fft;
+    //bool use_float_fft; // made into a define
     uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
 };
 

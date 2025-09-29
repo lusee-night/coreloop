@@ -661,9 +661,10 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_ZOOM_CH:
-            state->cal.zoom_ch1 = arg_low & 0xb0011;
+            state->cal.zoom_ch1 = arg_low & 0b0011;
             state->cal.zoom_ch2 = (arg_low & 0b1100) >> 2;
-            state->cal.zoom_prod = (arg_low & 0b110000) >> 4;
+            state->cal.zoom_ch1_minus = (arg_low & 0b00110000) >> 4;
+            state->cal.zoom_ch2_minus = (arg_low & 0b11000000) >> 6;
             break;
 
         case RFS_SET_ZOOM_NAVG:
@@ -673,6 +674,12 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_ZOOM_RANGE:
             state->cal.zoom_ndx_range = MIN(arg_low + (arg_low*arg_low)/32, 2048); 
             break;
+        
+        case RFS_SET_ZOOM_DIFF:
+            state->cal.zoom_diff_1 = (arg_low & 0b01) != 0;
+            state->cal.zoom_diff_2 = (arg_low & 0b10) != 0;
+            break;
+
 
         case RFS_SET_AVG_MODE:
             if (arg_low > (uint8_t)AVG_FLOAT) {

@@ -2,6 +2,10 @@
 # CHANGELOG
 
 ### Version 3r06
+ * 
+ * fixed missing last few outs in 4-5 output [??]
+ * fixed bug in rejection [??]
+ * fixed bug in zoom channel select and differencing [??]
  * Report zoom bin in zoom packets 
  * fixed zoom average counter to be 32 bits to allow long integration times
  * fixed Grimm's tales mode

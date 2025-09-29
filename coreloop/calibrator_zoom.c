@@ -22,21 +22,21 @@ void compute_fft_for_zoom_mult(int fft_batch_idx, const struct core_state* state
     int32_t* fft_input_ch2_re = ch2_real + fft_offset;
     int32_t* fft_input_ch2_im = ch2_imag + fft_offset;
 
-    if (state->cal.use_float_fft) {
+    if (USE_FLOAT_FFT) {
 
         float* fft_output_ch1_re = (float*)(CAL_DATA) + fft_batch_idx * NUM_FFTS_IN_ONE_GO * FFT_SIZE;
-        float* fft_output_ch1_im = fft_output_ch1_re + NCHANNELS;
-        float* fft_output_ch2_re = fft_output_ch1_im + NCHANNELS;
-        float* fft_output_ch2_im = fft_output_ch2_re + NCHANNELS;
+        float* fft_output_ch1_im = fft_output_ch1_re + NPFB;
+        float* fft_output_ch2_re = fft_output_ch1_im + NPFB;
+        float* fft_output_ch2_im = fft_output_ch2_re + NPFB;
 
         fft_float_multiple(fft_input_ch1_re, fft_input_ch1_im, fft_output_ch1_re, fft_output_ch1_im);
         fft_float_multiple(fft_input_ch2_re, fft_input_ch2_im, fft_output_ch2_re, fft_output_ch2_im);
     } else {
 
         int32_t* fft_output_ch1_re = (int32_t*)(CAL_DATA) + fft_batch_idx * NUM_FFTS_IN_ONE_GO * FFT_SIZE;
-        int32_t* fft_output_ch1_im = fft_output_ch1_re + NCHANNELS;
-        int32_t* fft_output_ch2_re = fft_output_ch1_im + NCHANNELS;
-        int32_t* fft_output_ch2_im = fft_output_ch2_re + NCHANNELS;
+        int32_t* fft_output_ch1_im = fft_output_ch1_re + NPFB;
+        int32_t* fft_output_ch2_re = fft_output_ch1_im + NPFB;
+        int32_t* fft_output_ch2_im = fft_output_ch2_re + NPFB;
 
         fft_int_multiple(fft_input_ch1_re, fft_input_ch1_im, fft_output_ch1_re, fft_output_ch1_im);
         fft_int_multiple(fft_input_ch2_re, fft_input_ch2_im, fft_output_ch2_re, fft_output_ch2_im);
@@ -56,12 +56,12 @@ void compute_fft_for_zoom(int fft_idx, const struct core_state* state,
     int32_t* fft_input_ch2_im = ch2_imag + fft_offset;
 
 
-    if (state->cal.use_float_fft) {
+    if (USE_FLOAT_FFT) {
 
         float* fft_output_ch1_re = (float*)(CAL_DATA) + fft_idx * FFT_SIZE;
-        float* fft_output_ch1_im = fft_output_ch1_re + NCHANNELS;
-        float* fft_output_ch2_re = fft_output_ch1_im + NCHANNELS;
-        float* fft_output_ch2_im = fft_output_ch2_re + NCHANNELS;
+        float* fft_output_ch1_im = fft_output_ch1_re + NPFB;
+        float* fft_output_ch2_re = fft_output_ch1_im + NPFB;
+        float* fft_output_ch2_im = fft_output_ch2_re + NPFB;
 
         fft_float(fft_input_ch1_re, fft_input_ch1_im, fft_output_ch1_re, fft_output_ch1_im);
         fft_float(fft_input_ch2_re, fft_input_ch2_im, fft_output_ch2_re, fft_output_ch2_im);
@@ -78,7 +78,7 @@ void compute_fft_for_zoom(int fft_idx, const struct core_state* state,
 }
 
 void correlate_and_accumulate(const struct core_state* state, int fft_idx, void* to_send) {
-    if (state->cal.use_float_fft) {
+    if (USE_FLOAT_FFT) {
         float* ch1_re = (float*)(CAL_DATA) + fft_idx * FFT_SIZE;
         float* ch1_im = (float*)(CAL_DATA) + (ZOOM_NFFT + fft_idx) * FFT_SIZE;
         float* ch2_re = (float*)(CAL_DATA) + (2 * ZOOM_NFFT + fft_idx) * FFT_SIZE;
@@ -149,7 +149,7 @@ void dispatch_cal_zoom(struct core_state* state, void* to_send)
     d->cal_appId = AppID_ZoomSpectra;
 
     // just to be pedantic; it's 4 bytes per entry in both cases
-    if (state->cal.use_float_fft)
+    if (USE_FLOAT_FFT)
         d->cal_size = 4 * sizeof(float) * FFT_SIZE;
     else
         d->cal_size = 4 * sizeof(int32_t) * FFT_SIZE;
@@ -176,6 +176,10 @@ void dispatch_cal_zoom(struct core_state* state, void* to_send)
     d->cal_size = old_cal_size;
 }
 
+int32_t* pfb_channel_data_real (int channel) {
+    return (int32_t*) CAL_DF + channel*2*NPFB;
+}
+
 void process_cal_zoom(struct core_state* state) {
     void* to_send = (void *)CAL_DATA + 4 * FFT_SIZE * ZOOM_NFFT * sizeof(int32_t);
 
@@ -197,11 +201,27 @@ void process_cal_zoom(struct core_state* state) {
     if (state->cal.zoom_avg_idx < state->cal.zoom_Navg) {
         // after this function finishes, raw PFB outputs will be in CAL_DF
         cal_transfer_data(2);
+        int32_t* ch1_real = pfb_channel_data_real(state->cal.zoom_ch1);
+        int32_t* ch1_imag = ch1_real + NPFB;
+        int32_t* ch2_real = pfb_channel_data_real(state->cal.zoom_ch2);
+        int32_t* ch2_imag = ch2_real + NPFB;
 
-        int32_t* ch1_real = (int32_t*) CAL_DF;
-        int32_t* ch1_imag = ch1_real + NCHANNELS;
-        int32_t* ch2_real = ch1_imag + NCHANNELS;
-        int32_t* ch2_imag = ch2_real + NCHANNELS;
+        if (state->cal.zoom_diff_1) {
+            int32_t* ch1m_real = pfb_channel_data_real(state->cal.zoom_ch1_minus);
+            int32_t* ch1m_imag = ch1m_real + NPFB;
+            for(int i = 0; i < 2*NPFB; i++) {
+                ch1_real[i] -= ch1m_real[i];
+                //ch1_imag[i] -= ch1m_imag[i];
+            }
+        }
+        if (state->cal.zoom_diff_2) {
+            int32_t* ch2m_real = pfb_channel_data_real(state->cal.zoom_ch2_minus);
+            int32_t* ch2m_imag = ch2m_real + NPFB;
+            for(int i = 0; i < NPFB; i++) {
+                ch2_real[i] -= ch2m_real[i];
+                ch2_imag[i] -= ch2m_imag[i];
+            }
+        }
 
 #ifdef NOTREAL
         n_call++;
@@ -211,7 +231,10 @@ void process_cal_zoom(struct core_state* state) {
         timer_start();
 #endif
 
-        for(int fft_batch_idx = 0; fft_batch_idx < ZOOM_NFFT / NUM_FFTS_IN_ONE_GO; ++fft_batch_idx) {
+        /*debug_print_hex(ch1_real);
+        debug_print_hex(ch2_real); */
+
+       for(int fft_batch_idx = 0; fft_batch_idx < ZOOM_NFFT / NUM_FFTS_IN_ONE_GO; ++fft_batch_idx) {
             compute_fft_for_zoom_mult(fft_batch_idx, state, ch1_real, ch1_imag, ch2_real, ch2_imag);
         }
 

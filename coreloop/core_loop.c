@@ -180,8 +180,6 @@ void core_loop(struct core_state* state)
         send_hello_packet(state);
         // ignore any data waiting in the data formatter
         spec_clear_df_flag();
-        // precomput the FFT tables for zoom (FIX THIS)
-        fft_precompute_tables();
     
         // now empty the CDI command buffer in case we are doing the reset.
         #ifndef NOTREAL

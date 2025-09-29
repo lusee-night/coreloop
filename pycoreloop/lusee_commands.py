@@ -305,7 +305,7 @@ RFS_SET_CAL_SNR_RATIO =  0x8A
 # How often to send full raw11. 0=always, 0xFF disable
 RFS_SET_CAL_RAW11_EVERY =  0x8B 
 
-# Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
+# Set zoom channels / prods to use. Bits 0-1 for ZCHA and 2-3 for ZCHB, 4-5 for ZCHA_minus, 6-7 for ZCHB_minus
 RFS_SET_ZOOM_CH =  0x90 
 
 # log 2 averaging (of NFFT chunks) before spitting out data
@@ -313,4 +313,7 @@ RFS_SET_ZOOM_NAVG =  0x92
 
 # Set cal_ndx_range using (arg + arg*arg//32)
 RFS_SET_ZOOM_RANGE =  0x93 
+
+# Enable CH differencing for zoom (bit 0 for CHA and bit 1 for CHB)
+RFS_SET_ZOOM_DIFF =  0x94 
 
