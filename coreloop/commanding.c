@@ -703,25 +703,42 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
-        case RFS_SET_REGION_ENABLE:
-            state->region_enabled = (arg_low == 0xAB);
+        case RFS_SET_REGION_UNLOCK:
+            state->region_have_lock = (arg_low == 0xAB);
             break;
 
         case RFS_SET_REGION_INFO:
-            if (state->region_enabled) {
+            if (state->region_have_lock) {
                 flash_send_region_info(state); 
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
             break;
         case RFS_SET_REGION_CPY:
-            if (state->region_enabled) {
+            if (state->region_have_lock) {
                 int region_src = arg_low & 0x0F;
                 int region_tgt = (arg_low & 0xF0) >> 4;
                 flash_copy_region_cmd(state, region_src, region_tgt);
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
+            break;
+        case RFS_SET_REGION_ENABLE:
+            if ((state->region_have_lock) & (arg_low>=1) & (arg_low<=6)) {
+                flash_region_enable(arg_low, true);
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
+        case RFS_SET_REGION_DISABLE:
+            if ((state->region_have_lock) & (arg_low>=1) & (arg_low<=6)) {
+                flash_region_enable(arg_low, false);
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
             state->base.errors |= CDI_COMMAND_UNKNOWN;

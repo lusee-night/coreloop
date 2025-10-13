@@ -1,5 +1,6 @@
 #ifndef FLASH_INTERFACE_H
 #define FLASH_INTERFACE_H
+#pragma pack(1)
 
 #include <stdint.h>
 

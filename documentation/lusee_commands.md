@@ -162,9 +162,11 @@ input ADC channel using 0x90 command below
 
 Note that during region mess, no housekeeping packets are emitted.
 
-| 0XAM | Name                  |  Description                                        |
-|------|-----------------------|-----------------------------------------------------|                             
-| 0xA0 | RFS_SET_REGION_ENABLE | Call with arg = 0xAB to enable messing with regions |
-| 0xA1 | RFS_SET_REGION_INFO   | Get all region info in Housekpeeping packet         |
-| 0xA2 | RFS_SET_REGION_CPY    | src = low 4 bits, tgt is upper 4 bits.              |
+| 0XAM | Name                   |  Description                                                   |
+|------|------------------------|----------------------------------------------------------------|                             
+| 0xA0 | RFS_SET_REGION_UNLOCK  | Call with arg = 0xAB to enable messing with regions            |
+| 0xA1 | RFS_SET_REGION_INFO    | Get all region info in Housekpeeping packet                    |
+| 0xA2 | RFS_SET_REGION_CPY     | src = low 4 bits, tgt is upper 4 bits.                         |
+| 0xA3 | RFS_SET_REGION_ENABLE  | arg= region number to enable by writing correct metadata       |
+| 0xA4 | RFS_SET_REGION_DISABLE | arg= region number to enable by writing correct metadata       |
 

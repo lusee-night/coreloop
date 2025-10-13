@@ -320,13 +320,19 @@
 #define RFS_SET_ZOOM_DIFF  0x94 
 
 // Call with arg = 0xAB to enable messing with regions
-#define RFS_SET_REGION_ENABLE  0xA0 
+#define RFS_SET_REGION_UNLOCK  0xA0 
 
 // Get all region info in Housekpeeping packet
 #define RFS_SET_REGION_INFO  0xA1 
 
 // src = low 4 bits, tgt is upper 4 bits.
 #define RFS_SET_REGION_CPY  0xA2 
+
+// arg= region number to enable by writing correct metadata
+#define RFS_SET_REGION_ENABLE  0xA3 
+
+// arg= region number to enable by writing correct metadata
+#define RFS_SET_REGION_DISABLE  0xA4 
 
 
 

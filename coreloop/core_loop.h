@@ -217,7 +217,7 @@ struct core_state {
     uint32_t grimm_weights[NGRIMM_WEIGHTS]; // weights for Grimm's tales mode
     uint8_t grimm_weight_ndx; // index of the weight we are changing
     bool fft_computed;
-    bool region_enabled;
+    bool region_have_lock;
 };
 
 struct saved_state {
@@ -410,6 +410,7 @@ inline static void new_unique_packet_id(struct core_state* s) {s->unique_packet_
 // region stuff
 void flash_send_region_info(struct core_state *state); 
 void flash_copy_region_cmd(struct core_state *state, int region_src, int region_tgt);
+void flash_region_enable (int region, bool enable);
 
 // utility functions
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))

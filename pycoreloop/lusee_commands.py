@@ -321,11 +321,17 @@ RFS_SET_ZOOM_RANGE =  0x93
 RFS_SET_ZOOM_DIFF =  0x94 
 
 # Call with arg = 0xAB to enable messing with regions
-RFS_SET_REGION_ENABLE =  0xA0 
+RFS_SET_REGION_UNLOCK =  0xA0 
 
 # Get all region info in Housekpeeping packet
 RFS_SET_REGION_INFO =  0xA1 
 
 # src = low 4 bits, tgt is upper 4 bits.
 RFS_SET_REGION_CPY =  0xA2 
+
+# arg= region number to enable by writing correct metadata
+RFS_SET_REGION_ENABLE =  0xA3 
+
+# arg= region number to enable by writing correct metadata
+RFS_SET_REGION_DISABLE =  0xA4 
 

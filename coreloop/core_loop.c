@@ -105,7 +105,7 @@ void core_init_state(struct core_state* state){
     state->request_waveform = 0 ;
     state->request_eos = 0;
     state->range_adc = 0;
-    state->region_enabled = false;
+    state->region_have_lock = false;
     loop_count = loop_count_max = 0;
     loop_count_min = UINT16_MAX;
 
