@@ -21,6 +21,7 @@
 #define CAL_MODE3_CHUNKSIZE (1024 * sizeof(uint32_t))
 #define CAL_MODE3_DATASIZE (24 * CAL_MODE3_CHUNKSIZE) // 24 channels
 #define CAL_MODE3_PACKETSIZE (3 * 1024 * sizeof(uint32_t))
+#define CAL_MODE3_NPACKETS  (24/3)
 #define CAL_MODE3_APPID_OFFSET 11
 uint32_t register_scratch[CAL_NREGS];
 
@@ -229,7 +230,6 @@ void packetize_mode11_raw(struct core_state *state)
     state->cdi_dispatch.cal_size = CAL_MODE3_DATASIZE;
     state->cdi_dispatch.cal_packet_size = CAL_MODE3_PACKETSIZE;
 }
-
 
 
 void packetize_mode11_processed(struct core_state *state, struct calibrator_stats* stats)
@@ -688,8 +688,16 @@ void dispatch_calibrator_data(struct core_state *state)
             d->cal_packet_size = d->cal_size - start;
             d->cal_count = 0xFE;
         }
-        memcpy((void *)(ptr), (void *)(CAL_DATA + start), d->cal_packet_size);
-        cdi_dispatch_uC(&(state->cdi_stats), appid, d->cal_packet_size + 12); // +12 for the header
-        debug_print("c");
+        //debug_print_hex(appid); debug_print(" "); debug_print_hex(AppID_Calibrator_Debug); debug_print(" "); debug_print_hex((AppID_Calibrator_Data+ CAL_MODE3_NPACKETS)); debug_print(" | ");
+        if ((appid>=AppID_Calibrator_Debug) & (appid< (AppID_Calibrator_Debug+ CAL_MODE3_NPACKETS))) {
+            size_t size = rle_encode((const uint8_t *)(CAL_DATA + start), CAL_MODE3_PACKETSIZE, (uint8_t *)(ptr), CAL_MODE3_PACKETSIZE, 37);
+            while (size%4>0) { ptr[size]=0; size++; }
+            cdi_dispatch_uC(&(state->cdi_stats), appid, size + 12); // +12 for the header
+            debug_print("r");
+        } else {
+            memcpy((void *)(ptr), (void *)(CAL_DATA + start), d->cal_packet_size);
+            cdi_dispatch_uC(&(state->cdi_stats), appid, d->cal_packet_size + 12); // +12 for the header
+            debug_print("c");
+        }
     }
 }

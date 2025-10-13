@@ -89,6 +89,8 @@ bool process_cdi(struct core_state* state)
 
     if (state->timing.cdi_wait_counter>tap_counter) return false; //not taking any commands while in the CDI wait state
     if (state->cdi_wait_spectra>0) return false; // not taking any command while waitig for spectra.
+    if (state->clear_buffers && (!delayed_cdi_dispatch_done(state)) ) return false; // not taking any commands while waiting buffers to clear
+    state->clear_buffers = false; // now clear the request
     if (state->sequence_upload) return false; // not taking any commands while uploading sequence.
     if (state->cmd_ptr == state->cmd_end) return false; // no new commands
 
@@ -112,6 +114,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_STOP:
             if (state->base.spectrometer_enable) {
                 RFS_stop(state);
+                state->clear_buffers = true;
             }
             break;
 
@@ -235,6 +238,13 @@ bool process_cdi(struct core_state* state)
                     state->base.errors |= CDI_COMMAND_BAD_ARGS;  // standard bad argument error
                     break;
             }
+            break;
+
+        case RFS_SET_EMPTY_BUFFERS:
+            if (!state->base.spectrometer_enable)
+                state->clear_buffers = true;
+            else
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;  // can only be done when spectrometer is stopped
             break;
 
         case RFS_SET_LOOP_START:
@@ -589,10 +599,14 @@ bool process_cdi(struct core_state* state)
 
         case RFS_SET_CAL_PFB_NDX_LO:
             state->cal.pfb_index = arg_low + (state->cal.pfb_index & 0xFF00);
+            calib_set_PFB_index(state->cal.pfb_index);
+            state->cal.zoom_avg_idx = -1; 
             break;
 
         case RFS_SET_CAL_PFB_NDX_HI:
             state->cal.pfb_index = ((arg_low & 0x07) << 8) + (state->cal.pfb_index & 0x00FF);
+            calib_set_PFB_index(state->cal.pfb_index);
+            state->cal.zoom_avg_idx = -1; 
             break;
 
         case RFS_SET_CAL_BITSLICE: {
@@ -689,6 +703,25 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
+        case RFS_SET_REGION_ENABLE:
+            state->region_enabled = (arg_low == 0xAB);
+            break;
+
+        case RFS_SET_REGION_INFO:
+            if (state->region_enabled) {
+                flash_send_region_info(state); 
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
+            break;
+        case RFS_SET_REGION_CPY:
+            if (state->region_enabled) {
+                int region_src = arg_low & 0x0F;
+                int region_tgt = (arg_low & 0xF0) >> 4;
+                flash_copy_region_cmd(state, region_src, region_tgt);
+            } else {
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
+            }
         default:
             debug_print ("UNRECOGNIZED RFS_SET COMMAND\n\r");
             state->base.errors |= CDI_COMMAND_UNKNOWN;

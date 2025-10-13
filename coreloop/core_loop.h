@@ -12,7 +12,7 @@
 #include "spectrometer_interface.h"
 #include "calibrator.h"
 #include "core_loop_errors.h"
-
+#include "flash_interface.h"
 
 
 // Constants
@@ -186,6 +186,7 @@ struct core_state {
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
     struct watchdog_state watchdog;
+    bool clear_buffers;
     bool soft_reset_flag;
     uint16_t cdi_wait_spectra;
     uint16_t avg_counter;
@@ -216,6 +217,7 @@ struct core_state {
     uint32_t grimm_weights[NGRIMM_WEIGHTS]; // weights for Grimm's tales mode
     uint8_t grimm_weight_ndx; // index of the weight we are changing
     bool fft_computed;
+    bool region_enabled;
 };
 
 struct saved_state {
@@ -304,6 +306,20 @@ struct housekeeping_data_3 {
     uint16_t weight_ndx; // weight index when storing weights, to make sure we have reached the end
 };
 
+struct housekeeping_data_100 {
+    struct housekeeping_data_base base;
+    uint8_t meta_valid[6];
+    uint32_t size [6];
+    uint32_t checksum_meta [6];
+    uint32_t checksum_data [6];
+    
+};
+
+struct housekeeping_data_101 {
+    struct housekeeping_data_base base;
+    struct flash_copy_report_t report;
+};
+
 
 // main function
 void core_loop(struct core_state*);
@@ -390,6 +406,11 @@ void dispatch_calibrator_data(struct core_state* state);
 inline static void update_random_state(struct core_state* s) {s->base.rand_state = 1103515245 * s->base.rand_state + 12345;}
 inline static void new_unique_packet_id(struct core_state* s) {s->unique_packet_id++;}
 
+
+// region stuff
+void flash_send_region_info(struct core_state *state); 
+void flash_copy_region_cmd(struct core_state *state, int region_src, int region_tgt);
+
 // utility functions
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -429,6 +450,10 @@ void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size
 // encode/decode 4 int32_t values into 5 int16_t values: first one for shift info
 void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out);
 void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out);
+
+// rle encoding for cal packets
+size_t rle_encode(const uint8_t* stream, size_t stream_len, uint8_t* encoded, size_t max_encoded_len, uint8_t magic);
+size_t rle_decode(const uint8_t* stream, size_t stream_len, uint8_t* decoded, size_t max_decoded_len, uint8_t magic, size_t max_length);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);

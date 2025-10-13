@@ -56,6 +56,7 @@ void core_init_state(struct core_state* state){
     default_state (&state->base);
     calibrator_default_state(&state->cal);
     state->soft_reset_flag = false;
+    state->clear_buffers = false;
     state->base.errors = 0;
     state->cmd_ptr = state->cmd_end = 0;
     state->sequence_upload = false;
@@ -104,6 +105,7 @@ void core_init_state(struct core_state* state){
     state->request_waveform = 0 ;
     state->request_eos = 0;
     state->range_adc = 0;
+    state->region_enabled = false;
     loop_count = loop_count_max = 0;
     loop_count_min = UINT16_MAX;
 
@@ -161,6 +163,17 @@ static void display_greeting(void)
     
 }
 
+void process_dispatches(struct core_state* state) {
+    if (cdi_ready()) {
+        if (process_hearbeat(state)) {}
+        else if (process_delayed_cdi_dispatch(state)) {}
+        else if (process_housekeeping(state)) {}
+        else if (process_waveform(state)) {}
+        else process_eos(state);
+    }
+}
+
+
 void core_loop(struct core_state* state)
 {
     // this is the outer soft-reboot loop
@@ -192,7 +205,7 @@ void core_loop(struct core_state* state)
         #endif
         
         restore_state(state);
-        
+                
         // this is the inner loop, the actual core loop that provides some sort of
         // cooperative multitasking.
         for (;;)
@@ -205,15 +218,7 @@ void core_loop(struct core_state* state)
             process_calibrator(state);
             process_gain_range(state);
             if (state->soft_reset_flag) { break; }
-            // we always process just one CDI interfacing things
-            // compiler
-            if (cdi_ready()) {
-                if (process_hearbeat(state)) {}
-                else if (process_delayed_cdi_dispatch(state)) {}
-                else if (process_housekeeping(state)) {}
-                else if (process_waveform(state)) {}
-                else process_eos(state);
-            }
+            process_dispatches(state);
             loop_count++;
             
             #ifdef NOTREAL
@@ -237,12 +242,8 @@ void core_loop(struct core_state* state)
             clear_current_slot(state);
             // empty buffers
             while (true) {
-                if (process_hearbeat(state)) {}
-                else if (process_delayed_cdi_dispatch(state)) {}
-                else if (process_housekeeping(state)) {}
-                else if (process_waveform(state)) {}
-                else if (process_eos(state)) {}
-                else if (delayed_cdi_dispatch_done(state)  && cdi_ready()) {break;}
+                process_dispatches(state);
+                if (delayed_cdi_dispatch_done(state) && cdi_ready()) {break;}
             }
             
             if (state->watchdog.tripped_mask > 0) {

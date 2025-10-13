@@ -304,6 +304,7 @@ bool process_delayed_cdi_dispatch (struct core_state* state) {
     } else if (state->cdi_dispatch.tr_count < NSPECTRA) {
         // actually, this check is redundant
         // if we are here, number_of_time_resolved > 0, and we send it without checks
+        debug_print(":");
         dispatch_tr_data(state);
         state->cdi_dispatch.tr_count++;
         state->cdi_dispatch.tr_appId++;
@@ -315,6 +316,7 @@ bool process_delayed_cdi_dispatch (struct core_state* state) {
         debug_print("\r\n");
 #endif
     } else if (state->cdi_dispatch.grimm_count < 1) {
+        debug_print("g");
         dispatch_grimm_data(state);
         state->cdi_dispatch.grimm_count++;        
     } else if (state->cdi_dispatch.cal_count < NCALPACKETS) {

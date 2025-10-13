@@ -63,6 +63,10 @@ int32_t decode_10plus6(uint16_t val) {
     return out;
 }
 
+
+
+
+
 static inline int8_t get_shift_by(uint32_t val)
 {
     int8_t lz = __builtin_clz(val);
@@ -300,3 +304,119 @@ size_t get_free_stack() {
     return total_stack - used_stack;
 }
 #endif
+
+
+
+/**
+ * RLE encode data using magic byte approach
+ * Returns encoded length, or 0 on error
+ * If encoded data would be larger than original, returns original data unchanged
+ */
+size_t rle_encode(const uint8_t* stream, size_t stream_len, uint8_t* encoded, size_t max_encoded_len, uint8_t magic) {
+    if (!stream || !encoded || stream_len == 0) {
+        return 0;
+    }
+    
+    size_t encoded_pos = 0;
+    size_t count = 1;
+    uint8_t prev_char = stream[0];
+    
+    for (size_t i = 1; i < stream_len; i++) {
+        uint8_t char_val = stream[i];
+        
+        if (char_val == prev_char) {
+            count++;
+            if (count == 255) {
+                // Write magic, count, char
+                if (encoded_pos + 3 > max_encoded_len) break;
+                encoded[encoded_pos++] = magic;
+                encoded[encoded_pos++] = (uint8_t)count;
+                encoded[encoded_pos++] = prev_char;
+                count = 0; // This will be incremented to 1 on next iteration
+            }
+        } else {
+            // Write previous character(s)
+            if (count > 2 || prev_char == magic) {
+                    encoded[encoded_pos++] = magic;
+                    encoded[encoded_pos++] = (uint8_t)count;
+                    encoded[encoded_pos++] = prev_char;
+            } else if (count == 2) { // for two character just write them out, twice (second time below)
+                    encoded[encoded_pos++] = prev_char;
+                    encoded[encoded_pos++] = prev_char;
+            } else if (count == 1) {
+                encoded[encoded_pos++] = prev_char;
+            }
+            count = 1;
+            prev_char = char_val;
+        }        
+    }
+    
+    // Handle final character(s)
+    if (count > 0) {
+            if (count > 2 || prev_char == magic) {
+                    encoded[encoded_pos++] = magic;
+                    encoded[encoded_pos++] = (uint8_t)count;
+                    encoded[encoded_pos++] = prev_char;
+            } else if (count == 2) { // for two character just write them out, twice (second time below)
+                    encoded[encoded_pos++] = prev_char;
+                    encoded[encoded_pos++] = prev_char;
+            } else if (count == 1) {
+                encoded[encoded_pos++] = prev_char;
+            }
+    }
+    
+    // If encoded data is not smaller, return original data
+    if (encoded_pos >= stream_len) {
+        memcpy(encoded, stream, stream_len);
+        return stream_len;
+    }
+    return encoded_pos;
+}
+
+/**
+ * RLE decode data using magic byte approach
+ * Returns decoded length, or 0 on error
+ * If input length >= max_length, returns original data unchanged
+ */
+size_t rle_decode(const uint8_t* stream, size_t stream_len, uint8_t* decoded, size_t max_decoded_len, uint8_t magic, size_t max_length) {
+    if (!stream || !decoded || stream_len == 0) {
+        return 0;
+    }
+    
+    // If input is already at max length, return unchanged
+    if (stream_len >= max_length) {
+        if (stream_len > max_decoded_len) return 0;
+        memcpy(decoded, stream, stream_len);
+        return stream_len;
+    }
+    
+    size_t decoded_pos = 0;
+    size_t i = 0;
+    
+    while (i < stream_len) {
+        if (stream[i] == magic && i + 2 < stream_len) {
+            uint8_t count = stream[i + 1];
+            uint8_t char_val = stream[i + 2];
+            
+            // Check output buffer space
+            if (decoded_pos + count > max_decoded_len) {
+                return 0;
+            }
+            
+            // Expand the run
+            for (uint8_t j = 0; j < count; j++) {
+                decoded[decoded_pos++] = char_val;
+            }
+            i += 3;
+        } else {
+            // Regular character
+            if (decoded_pos >= max_decoded_len) {
+                return 0;
+            }
+            decoded[decoded_pos++] = stream[i];
+            i++;
+        }
+    }
+    
+    return decoded_pos;
+}

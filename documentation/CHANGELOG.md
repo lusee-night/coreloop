@@ -2,13 +2,15 @@
 # CHANGELOG
 
 ### Version 3r06
- * 
- * fixed missing last few outs in 4-5 output [??]
+ * RLE encoding for calibrator debug packets
+ * remove int version of FFTs to save some space 
+ * clear buffers before taking commands on spectrometer stop
+ * fixed missing last few outs in 4-5 output 
  * fixed bug in rejection [??]
- * fixed bug in zoom channel select and differencing [??]
+ * fixed bug in zoom channel select and differencing 
  * Report zoom bin in zoom packets 
  * fixed zoom average counter to be 32 bits to allow long integration times
- * fixed Grimm's tales mode
+ * fixed Grimm's tales mode to take weights
  * fixed bug and changed the bitslicer stuck logic (now reset counter only after pushing some data out)
  * waveforms request feed the uC watchdog
  * fixed bug in 40bit averaging

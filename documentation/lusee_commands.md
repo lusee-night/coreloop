@@ -38,6 +38,7 @@
 | 0x18 | RFS_SET_WR_VAL_3           | Val bits 24-32 
 | 0x19 | RFS_SET_ENABLE_WATCHDOGS   | Enables or disables the watchdogs. Accepts a single byte argument.
 | 0x1A | RFS_SET_TEST_WATCHDOG      | arg = 0x13 - stop feed uC WD, 0x49 - simulate a watchdog trip 
+| 0x1B | RFS_SET_EMPTY_BUFFERS      | Empty buffers before accepting next command
 
 ### 0x2X Program flow control
 
@@ -156,4 +157,14 @@ input ADC channel using 0x90 command below
 | 0x93 | RFS_SET_ZOOM_RANGE   | Set cal_ndx_range using (arg + arg*arg//32)
 | 0x94 | RFS_SET_ZOOM_DIFF    | Enable CH differencing for zoom (bit 0 for CHA and bit 1 for CHB)
 
+
+### 0xAX boot region support
+
+Note that during region mess, no housekeeping packets are emitted.
+
+| 0XAM | Name                  |  Description                                        |
+|------|-----------------------|-----------------------------------------------------|                             
+| 0xA0 | RFS_SET_REGION_ENABLE | Call with arg = 0xAB to enable messing with regions |
+| 0xA1 | RFS_SET_REGION_INFO   | Get all region info in Housekpeeping packet         |
+| 0xA2 | RFS_SET_REGION_CPY    | src = low 4 bits, tgt is upper 4 bits.              |
 

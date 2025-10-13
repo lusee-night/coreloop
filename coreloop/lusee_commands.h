@@ -106,6 +106,9 @@
 // arg = 0x13 - stop feed uC WD, 0x49 - simulate a watchdog trip
 #define RFS_SET_TEST_WATCHDOG  0x1A 
 
+// Empty buffers before accepting next command
+#define RFS_SET_EMPTY_BUFFERS  0x1B 
+
 // RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
 #define RFS_SET_SEQ_BEGIN  0x20 
 
@@ -315,6 +318,15 @@
 
 // Enable CH differencing for zoom (bit 0 for CHA and bit 1 for CHB)
 #define RFS_SET_ZOOM_DIFF  0x94 
+
+// Call with arg = 0xAB to enable messing with regions
+#define RFS_SET_REGION_ENABLE  0xA0 
+
+// Get all region info in Housekpeeping packet
+#define RFS_SET_REGION_INFO  0xA1 
+
+// src = low 4 bits, tgt is upper 4 bits.
+#define RFS_SET_REGION_CPY  0xA2 
 
 
 

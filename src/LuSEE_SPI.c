@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-uint32_t  Flash_FS_Save, Flash_CAL_Save;
+uint32_t  Flash_FS_Save, Flash_CAL_Save,  Flash_Region_1, Flash_Region_Size, Flash_Meta_Offset;
 void*  SFL_RD_BUFF;
 void* SFL_WR_BUFF;
 

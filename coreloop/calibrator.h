@@ -3,6 +3,9 @@
 #pragma pack(1)
 #include <inttypes.h>
 
+// Forward declaration
+struct core_state;
+
 // set of modes for the calibrator
 
 // first few modes are for manual control and actually writeablle to the correct register
