@@ -2,6 +2,8 @@
 # CHANGELOG
 
 ### Version 3r06
+ * moved calibrator weights checking from CRC to checksum
+ * Added region copy/disable/enable capability
  * RLE encoding for calibrator debug packets
  * remove int version of FFTs to save some space 
  * clear buffers before taking commands on spectrometer stop

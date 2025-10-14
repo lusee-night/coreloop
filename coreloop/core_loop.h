@@ -302,7 +302,7 @@ struct housekeeping_data_2 {
 // cal weights sanity
 struct housekeeping_data_3 {
     struct housekeeping_data_base base;
-    uint32_t crc;
+    uint32_t checksum; // checksum of the weights
     uint16_t weight_ndx; // weight index when storing weights, to make sure we have reached the end
 };
 

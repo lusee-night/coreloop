@@ -38,12 +38,14 @@ bool process_cdi(struct core_state* state)
     if (cdi_new_command(&cmd, &arg_high, &arg_low)) {
         // process incoming commands
         state->cmd_counter++;
+        /*
         debug_print ("[>>");
         debug_print_hex(cmd);
         debug_print_hex(arg_high);
         debug_print_hex(arg_low);
         debug_print("]");
-
+        */
+       
         if (cmd == RFS_SPECIAL) {
             switch (arg_high) {
             case RFS_SET_RESET:

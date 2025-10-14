@@ -105,7 +105,10 @@ bool process_housekeeping(struct core_state* state) {
             debug_print ("[K3]");
             struct housekeeping_data_3 *hk3 = (struct housekeeping_data_3 *)TLM_BUF;
             for (int i=0; i<512; i++) weight_crc_scratch[i] = calib_get_weight(i);
-            hk3->crc = CRC(&weight_crc_scratch, 512*sizeof(uint16_t));
+            hk3->checksum = CRC(&weight_crc_scratch, 512*sizeof(uint16_t));
+            uint32_t checksum = 0;
+            for (int i=0; i<256; i++) checksum += (calib_get_weight(2*i)<<16 | calib_get_weight(2*i+1));
+            hk3->checksum = checksum;
             hk3->weight_ndx = state->cal.weight_ndx;
             cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Housekeeping, sizeof(struct housekeeping_data_3));
             break;

@@ -280,7 +280,7 @@ void flash_send_region_info(struct core_state *state) {
     data->base.housekeeping_type = 100;
     for (int i=0; i<6; i++) {
         bool valid; 
-        region_check_checksum(i, &valid, &data->size[i], &data->checksum_meta[i], &data->checksum_data[i]);
+        region_check_checksum(i+1, &valid, &data->size[i], &data->checksum_meta[i], &data->checksum_data[i]);
         data->meta_valid[i] = valid;
     }
     cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Housekeeping, sizeof(struct housekeeping_data_100));
