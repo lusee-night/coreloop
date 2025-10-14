@@ -2,7 +2,7 @@
 # CHANGELOG
 
 ### Version 3r06
- * moved calibrator weights checking from CRC to checksum
+ * moved calibrator weights checking from CRC to checksum for HK3 (but we still store with CRC)
  * Added region copy/disable/enable capability
  * RLE encoding for calibrator debug packets
  * remove int version of FFTs to save some space 

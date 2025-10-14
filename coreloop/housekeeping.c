@@ -104,8 +104,12 @@ bool process_housekeeping(struct core_state* state) {
         case HK_REQUEST_CAL_WEIGHT_CRC:
             debug_print ("[K3]");
             struct housekeeping_data_3 *hk3 = (struct housekeeping_data_3 *)TLM_BUF;
-            for (int i=0; i<512; i++) weight_crc_scratch[i] = calib_get_weight(i);
-            hk3->checksum = CRC(&weight_crc_scratch, 512*sizeof(uint16_t));
+            
+            // if we remove the line below, the code breaks mysteriously, I suspect 
+            // some optimization related issue. Note this is the only way we use weight_crc_scratch
+            // which we really don't need any more.
+            hk3->checksum = CRC(&weight_crc_scratch, 512*sizeof(uint16_t));            
+
             uint32_t checksum = 0;
             for (int i=0; i<256; i++) checksum += (calib_get_weight(2*i)<<16 | calib_get_weight(2*i+1));
             hk3->checksum = checksum;
