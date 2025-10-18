@@ -45,7 +45,7 @@ bool process_cdi(struct core_state* state)
         debug_print_hex(arg_low);
         debug_print("]");
         */
-       
+
         if (cmd == RFS_SPECIAL) {
             switch (arg_high) {
             case RFS_SET_RESET:
@@ -652,7 +652,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_CAL_WSAVE:
             if (arg_low<16) {
                 flash_calweights_store(arg_low);
-                state->housekeeping_request = 1+HK_REQUEST_CAL_WEIGHT_CRC;
+                state->housekeeping_request = 1+HK_REQUEST_CAL_WEIGHT_CHECKSUM;
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }

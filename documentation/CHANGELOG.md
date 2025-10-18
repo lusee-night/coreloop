@@ -2,13 +2,16 @@
 # CHANGELOG
 
 ### Version 3r06
+ * ensured we are outputing unique packet id wherever possible
+ * prevent calibrator to get stuck in bit slicer settle
+ * increased stack size to 12k (we were running out of stack but were saved by some static buffer!!)
  * moved calibrator weights checking from CRC to checksum for HK3 (but we still store with CRC)
  * Added region copy/disable/enable capability
  * RLE encoding for calibrator debug packets
  * remove int version of FFTs to save some space 
  * clear buffers before taking commands on spectrometer stop
- * fixed missing last few outs in 4-5 output 
- * fixed bug in rejection [??]
+ * fixed missing last few outputs in 4-5 output 
+ * fixed bug in rejection 
  * fixed bug in zoom channel select and differencing 
  * Report zoom bin in zoom packets 
  * fixed zoom average counter to be 32 bits to allow long integration times

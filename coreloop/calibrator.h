@@ -35,6 +35,7 @@ struct core_state;
 #define USE_FLOAT_FFT (true)
 // happens to be the same as NCHANNELS, but semantically very different
 #define NPFB (2048)
+#define MAX_SETTLE_COUNT (8)
 
 
 
@@ -68,6 +69,7 @@ struct calibrator_state {
     int16_t zoom_ndx_current; // current index (0.. zoom_ndx_range-1)
     //bool use_float_fft; // made into a define
     uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
+    uint8_t settle_count; // counts how many settle cycles we have done
 };
 
 struct calibrator_stats {

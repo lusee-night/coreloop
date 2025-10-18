@@ -83,6 +83,7 @@ void set_calibrator(struct calibrator_state *cal)
 
     if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE) {
         calib_set_Navg(0, cal->Navg3);
+        cal->settle_count = 0;
     }
 
     if ((cal->mode == CAL_MODE_SNR_SETTLE) || (cal->mode == CAL_MODE_BIT_SLICER_SETTLE))
@@ -462,7 +463,7 @@ void process_calibrator(struct core_state *state)
 
                 bool range_ok = ((ptop_shift == 0) && (sd_shift == 0) && (fd_shift == 0));
 
-                if (range_ok)
+                if (range_ok || (cal->settle_count >= MAX_SETTLE_COUNT))
                 {
                     // We have converged, time to move onto the next mode;
                     calib_set_Navg(cal->Navg2, cal->Navg3);
@@ -473,7 +474,7 @@ void process_calibrator(struct core_state *state)
                 }
                 else
                 {
-
+                    cal->settle_count++;
                     // if powertop changes, we need to adjust the slice, but wait with FD/SD since SD=sum0*sum2+sum1**2
                     if (ptop_shift > 0) cal->powertop_slice = MAX(0, (int)(cal->powertop_slice) - ptop_shift);
                     if (sd_shift > 0) {
@@ -538,8 +539,12 @@ void process_calibrator(struct core_state *state)
                 {
                     continue;
                 }
-
-                int ratio = (stats.SNR_max[ant] * 8 / stats.SNR_min[ant]);  // ratio is float(ratio)*8
+                int ratio;
+                if (stats.SNR_min[ant] == 0) {
+                    ratio = (stats.SNR_max[ant] * 8 / 1);
+                } else {
+                    ratio = (stats.SNR_max[ant] * 8 / stats.SNR_min[ant]); // ratio is float(ratio)*8
+                }                
                 int diff = stats.SNR_max[ant] - stats.SNR_min[ant];                
                 debug_print_dec(ant);
                 debug_print(":");
@@ -690,8 +695,13 @@ void dispatch_calibrator_data(struct core_state *state)
         }
         //debug_print_hex(appid); debug_print(" "); debug_print_hex(AppID_Calibrator_Debug); debug_print(" "); debug_print_hex((AppID_Calibrator_Data+ CAL_MODE3_NPACKETS)); debug_print(" | ");
         if ((appid>=AppID_Calibrator_Debug) & (appid< (AppID_Calibrator_Debug+ CAL_MODE3_NPACKETS))) {
-            size_t size = rle_encode((const uint8_t *)(CAL_DATA + start), CAL_MODE3_PACKETSIZE, (uint8_t *)(ptr), CAL_MODE3_PACKETSIZE, 37);
-            while (size%4>0) { ptr[size]=0; size++; }
+            // remove rle econde for the time being
+            size_t size = rle_encode((void *)(ptr), (void *)(CAL_DATA + start), d->cal_packet_size);
+            // old way, next two lines
+            //size_t size = d->cal_packet_size;
+            //memcpy((void *)(ptr), (void *)(CAL_DATA + start), d->cal_packet_size);
+
+            while (size%4>0) { size++; }
             cdi_dispatch_uC(&(state->cdi_stats), appid, size + 12); // +12 for the header
             debug_print("r");
         } else {

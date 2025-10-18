@@ -46,7 +46,7 @@
 #define HK_REQUEST_STATE 0
 #define HK_REQUEST_ADC 1
 #define HK_REQUEST_HEALTH 2
-#define HK_REQUEST_CAL_WEIGHT_CRC 3
+#define HK_REQUEST_CAL_WEIGHT_CHECKSUM 3
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
 // tap counter increased in the interrupt
@@ -453,8 +453,7 @@ void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out);
 void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out);
 
 // rle encoding for cal packets
-size_t rle_encode(const uint8_t* stream, size_t stream_len, uint8_t* encoded, size_t max_encoded_len, uint8_t magic);
-size_t rle_decode(const uint8_t* stream, size_t stream_len, uint8_t* decoded, size_t max_decoded_len, uint8_t magic, size_t max_length);
+size_t rle_encode(void *tgt, const void *src, size_t size);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);

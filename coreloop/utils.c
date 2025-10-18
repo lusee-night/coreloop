@@ -307,116 +307,88 @@ size_t get_free_stack() {
 
 
 
-/**
- * RLE encode data using magic byte approach
- * Returns encoded length, or 0 on error
- * If encoded data would be larger than original, returns original data unchanged
- */
-size_t rle_encode(const uint8_t* stream, size_t stream_len, uint8_t* encoded, size_t max_encoded_len, uint8_t magic) {
-    if (!stream || !encoded || stream_len == 0) {
-        return 0;
-    }
-    
-    size_t encoded_pos = 0;
-    size_t count = 1;
-    uint8_t prev_char = stream[0];
-    
-    for (size_t i = 1; i < stream_len; i++) {
-        uint8_t char_val = stream[i];
-        
-        if (char_val == prev_char) {
-            count++;
-            if (count == 255) {
-                // Write magic, count, char
-                if (encoded_pos + 3 > max_encoded_len) break;
-                encoded[encoded_pos++] = magic;
-                encoded[encoded_pos++] = (uint8_t)count;
-                encoded[encoded_pos++] = prev_char;
-                count = 0; // This will be incremented to 1 on next iteration
-            }
-        } else {
-            // Write previous character(s)
-            if (count > 2 || prev_char == magic) {
-                    encoded[encoded_pos++] = magic;
-                    encoded[encoded_pos++] = (uint8_t)count;
-                    encoded[encoded_pos++] = prev_char;
-            } else if (count == 2) { // for two character just write them out, twice (second time below)
-                    encoded[encoded_pos++] = prev_char;
-                    encoded[encoded_pos++] = prev_char;
-            } else if (count == 1) {
-                encoded[encoded_pos++] = prev_char;
-            }
-            count = 1;
-            prev_char = char_val;
-        }        
-    }
-    
-    // Handle final character(s)
-    if (count > 0) {
-            if (count > 2 || prev_char == magic) {
-                    encoded[encoded_pos++] = magic;
-                    encoded[encoded_pos++] = (uint8_t)count;
-                    encoded[encoded_pos++] = prev_char;
-            } else if (count == 2) { // for two character just write them out, twice (second time below)
-                    encoded[encoded_pos++] = prev_char;
-                    encoded[encoded_pos++] = prev_char;
-            } else if (count == 1) {
-                encoded[encoded_pos++] = prev_char;
-            }
-    }
-    
-    // If encoded data is not smaller, return original data
-    if (encoded_pos >= stream_len) {
-        memcpy(encoded, stream, stream_len);
-        return stream_len;
-    }
-    return encoded_pos;
-}
+size_t rle_encode(void *tgt, const void *src, size_t size) {
+/*
+We will RLE encode the most common bytes as followos:
 
-/**
- * RLE decode data using magic byte approach
- * Returns decoded length, or 0 on error
- * If input length >= max_length, returns original data unchanged
- */
-size_t rle_decode(const uint8_t* stream, size_t stream_len, uint8_t* decoded, size_t max_decoded_len, uint8_t magic, size_t max_length) {
-    if (!stream || !decoded || stream_len == 0) {
+ - An isolated 0x00 is encoded as 0x00
+ - A stream of 0x00 is encoded as 0x8c,N where N is the number of 0x00
+ - An isolated 0x8c is encoded as 0x8c,0
+ - An isolated 0xFF is encoded as 0xFF
+ - A stream of 0xFF is encoded as 0x8d,N where N is the number of 0xFF
+ - An isolated 0x8d is encoded as 0x8d,0
+ - All other bytes are left as is
+
+*/
+
+    const unsigned char *in = (const unsigned char *)src;
+    unsigned char *out = (unsigned char *)tgt;
+    size_t produced = 0;
+    size_t i = 0;
+
+    if (size == 0) {
         return 0;
     }
-    
-    // If input is already at max length, return unchanged
-    if (stream_len >= max_length) {
-        if (stream_len > max_decoded_len) return 0;
-        memcpy(decoded, stream, stream_len);
-        return stream_len;
-    }
-    
-    size_t decoded_pos = 0;
-    size_t i = 0;
-    
-    while (i < stream_len) {
-        if (stream[i] == magic && i + 2 < stream_len) {
-            uint8_t count = stream[i + 1];
-            uint8_t char_val = stream[i + 2];
-            
-            // Check output buffer space
-            if (decoded_pos + count > max_decoded_len) {
-                return 0;
+
+    while (i < size) {
+        unsigned char byte = in[i];
+        if (byte == 0x00 || byte == 0xFF) {
+            unsigned char marker = (byte == 0x00) ? 0x8C : 0x8D;
+            size_t run = 1;
+            while (i + run < size && in[i + run] == byte) {
+                run++;
             }
-            
-            // Expand the run
-            for (uint8_t j = 0; j < count; j++) {
-                decoded[decoded_pos++] = char_val;
+            size_t remaining = run;
+            while (remaining > 255) {
+                if (produced + 2 > size) {
+                    goto original_copy;
+                }
+                out[produced++] = marker;
+                out[produced++] = 255;
+                remaining -= 255;
             }
-            i += 3;
+            if (remaining == 1) {
+                if (produced + 1 > size) {
+                    goto original_copy;
+                }
+                out[produced++] = byte;
+            } else if (remaining > 1) {
+                if (produced + 2 > size) {
+                    goto original_copy;
+                }
+                out[produced++] = marker;
+                out[produced++] = (unsigned char)remaining;
+            }
+            i += run;
+        } else if (byte == 0x8C || byte == 0x8D) {
+            if (produced + 2 > size) {
+                goto original_copy;
+            }
+            out[produced++] = byte;
+            out[produced++] = 0;
+            i += 1;
         } else {
-            // Regular character
-            if (decoded_pos >= max_decoded_len) {
-                return 0;
+            if (produced + 1 > size) {
+                goto original_copy;
             }
-            decoded[decoded_pos++] = stream[i];
-            i++;
+            out[produced++] = byte;
+            i += 1;
         }
     }
-    
-    return decoded_pos;
+
+    if (size <= 4) {
+        goto original_copy;
+    }
+
+    if (produced >= size - 4) {
+        goto original_copy;
+    }
+    out[produced] = 13; //    null terminate for safety since CDI might round to next 3 bytes
+    out[produced+1] = 13; 
+    out[produced+2] = 13; 
+    return produced;
+
+original_copy:
+    memcpy(out, in, size);
+    return size;
 }
