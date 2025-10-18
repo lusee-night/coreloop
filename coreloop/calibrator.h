@@ -79,7 +79,15 @@ struct calibrator_stats {
   int32_t FD_max[4], FD_min[4];
   int32_t SD_max[4], SD_min[4];
   uint16_t SD_positive_count[4];
-  int16_t lock_count;
+  int32_t lock_count; // keep this 32 bit to avoid alignment issues
+};
+
+struct calibrator_error_reg {
+  uint32_t cal_phaser_err[2];
+  uint32_t averager_err[16];
+  uint32_t process_err[8];
+  uint32_t stage3_err[4];
+  uint32_t check; // fix to 0xFEEDDAD0
 };
 
 
@@ -90,23 +98,18 @@ struct calibrator_metadata {
   uint16_t time_16;
   uint16_t have_lock[4];
   uint32_t SNRon, SNRoff;
+  uint8_t mode;
   uint8_t powertop_slice;
   uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
   uint8_t prod1_slice, prod2_slice;
   uint32_t errors, bitslicer_errors;
-  uint8_t drift_shift;
-  int16_t drift [128];
-  uint32_t error_regs [30];    
   struct calibrator_stats stats;
+  struct calibrator_error_reg error_reg;  
+  int16_t drift [128];    
+  uint8_t drift_shift;
+
 };
 
-struct calibrator_errors {
-  uint32_t cal_phaser_err[2];
-  uint32_t averager_err[16];
-  uint32_t process_err[8];
-  uint32_t stage3_err[4];
-  uint32_t check; // fix to 0xFEEDDAD0
-};
 
 struct saved_calibrator_weights {
   uint32_t in_use;

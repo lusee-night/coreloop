@@ -202,49 +202,13 @@ uint16_t get_mode11_lock_count()
     return count;
 }
 
-
-
-void packetize_mode11_raw(struct core_state *state)
+void copy_cal_metadata(struct calibrator_metadata *out, struct core_state *state, struct calibrator_stats* stats)
 {
-
-    // first repack into 16 bytes
-    uint32_t *have_lock = (uint32_t *)(CAL_DF);
-    uint16_t *have_lock_tgt = (uint16_t *)(CAL_DATA);
-    for (int i = 0; i < 1024; i++)
-    {
-        *have_lock_tgt = ((*have_lock) & 0xFF) | (((*have_lock) & 0xFF0000) >> 8);
-        have_lock++;
-        have_lock_tgt++;
-    }
-    void *lock_ant = (void *)CAL_DATA + 1024 * sizeof(uint16_t);
-    cal_copy_errors((struct calibrator_errors *)lock_ant);
-
-    memcpy((void *)(CAL_DATA + CAL_MODE3_CHUNKSIZE), (void *)(CAL_DF + CAL_MODE3_CHUNKSIZE),
-           CAL_MODE3_DATASIZE - CAL_MODE3_CHUNKSIZE);
-
-    // nextmode //debug
-    cal_clear_df_flag();
-    state->cdi_dispatch.cal_count = 0;
-    new_unique_packet_id(state);
-    state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
-    state->cdi_dispatch.cal_appId = AppID_Calibrator_Debug;
-    state->cdi_dispatch.cal_size = CAL_MODE3_DATASIZE;
-    state->cdi_dispatch.cal_packet_size = CAL_MODE3_PACKETSIZE;
-}
-
-
-void packetize_mode11_processed(struct core_state *state, struct calibrator_stats* stats)
-{
-
-    struct calibrator_metadata *out = (struct calibrator_metadata *)CAL_DATA;
     struct calibrator_state *cal = &(state->cal);
- 
     out->version = VERSION_ID;
-    new_unique_packet_id(state);
-    out->unique_packet_id = state->unique_packet_id;
     out->time_32 = state->base.time_32;
     out->time_16 = state->base.time_16;
-
+    out->mode = cal->mode;
     out->SNRon = cal->SNRon;
     out->SNRoff = cal->SNRoff;
     out->powertop_slice = cal->powertop_slice;
@@ -293,9 +257,56 @@ void packetize_mode11_processed(struct core_state *state, struct calibrator_stat
             out->have_lock[3]++;
         have_lock++;
     }
-
-    out->stats = *stats;
+    cal_copy_errors(&out->error_reg);
     
+    out->stats = *stats;
+}
+
+
+void packetize_mode11_raw(struct core_state *state,  struct calibrator_stats* stats)
+{
+
+    // we treat the first chunk specially
+
+    // first repack into 16 bytes. This will give 2k of free space
+    uint32_t *have_lock = (uint32_t *)(CAL_DF);
+    uint16_t *have_lock_tgt = (uint16_t *)(CAL_DATA);
+    for (int i = 0; i < 1024; i++)
+    {
+        *have_lock_tgt = ((*have_lock) & 0xFF) | (((*have_lock) & 0xFF0000) >> 8);
+        have_lock++;
+        have_lock_tgt++;
+    }
+    // at +2k we put in the std cal metadata
+    struct calibrator_metadata *meta = (struct calibrator_metadata *)((void *)CAL_DATA + 1024 * 2);
+    copy_cal_metadata(meta, state, stats);
+    meta->unique_packet_id = 0; // saved elsewhere
+
+    // now copy rest of data from CAL_MODE3_CHUNKSIZE (+4k) onwards
+    memcpy((void *)(CAL_DATA + CAL_MODE3_CHUNKSIZE), (void *)(CAL_DF + CAL_MODE3_CHUNKSIZE),
+           CAL_MODE3_DATASIZE - CAL_MODE3_CHUNKSIZE);
+
+    // nextmode //debug
+    cal_clear_df_flag();
+    state->cdi_dispatch.cal_count = 0;
+    new_unique_packet_id(state);
+    state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
+    state->cdi_dispatch.cal_appId = AppID_Calibrator_Debug;
+    state->cdi_dispatch.cal_size = CAL_MODE3_DATASIZE;
+    state->cdi_dispatch.cal_packet_size = CAL_MODE3_PACKETSIZE;
+}
+
+
+void packetize_mode11_processed(struct core_state *state, struct calibrator_stats* stats)
+{
+
+    struct calibrator_metadata *out = (struct calibrator_metadata *)CAL_DATA;
+    struct calibrator_state *cal = &(state->cal);
+
+    copy_cal_metadata(out, state, stats);
+    new_unique_packet_id(state);
+    out->unique_packet_id = state->unique_packet_id;
+  
     cal_clear_df_flag();
     state->cdi_dispatch.cal_count = 0;
     state->cdi_dispatch.cal_packet_id = state->unique_packet_id;
@@ -323,7 +334,7 @@ void process_cal_mode11 (struct core_state *state, struct calibrator_stats *stat
     cal->raw11_counter++;
     if ((cal->raw11_every < 0xff) && (cal->raw11_counter >= cal->raw11_every)) {
         cal->raw11_counter = 0;
-        packetize_mode11_raw(state);
+        packetize_mode11_raw(state, stats);
     } else {
         packetize_mode11_processed(state, stats);
     }
@@ -549,6 +560,7 @@ void process_calibrator(struct core_state *state)
                 debug_print_dec(ant);
                 debug_print(":");
                 debug_print_dec (stats.SNR_max[ant]); debug_print (" "); debug_print_dec(stats.SNR_min[ant]);
+                debug_print("; ");
                 if (ratio < cal->SNR_minratio)
                 {
                     // we do not have the calibrator around, let's set the bar just over
@@ -613,7 +625,7 @@ void process_calibrator(struct core_state *state)
             } 
 
 
-            if ((stats.lock_count>800) && ((SD_pos[0]>430) && (SD_pos[1]>430) && (SD_pos[2]>430) && (SD_pos[3]>430)) )
+            if (stats.lock_count < 512 || ((SD_pos[0] > 430) && (SD_pos[1] > 430) && (SD_pos[2] > 430) && (SD_pos[3] > 430)))
             {
                 // we have lost the lock, let's go back to SNR settled mode
                 for (int i = 0; i < 4; i++)

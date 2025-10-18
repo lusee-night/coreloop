@@ -188,4 +188,4 @@ void calib_set_ddrift_max(int val) { }
 
 void calib_set_gphase_max(int val) { }
 
-void cal_copy_errors(struct calibrator_errors* err) { }
+void cal_copy_errors(struct calibrator_error_reg* err) { }
