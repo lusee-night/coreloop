@@ -106,6 +106,9 @@
 // arg = 0x13 - stop feed uC WD, 0x49 - simulate a watchdog trip
 #define RFS_SET_TEST_WATCHDOG  0x1A 
 
+// Empty buffers before accepting next command
+#define RFS_SET_EMPTY_BUFFERS  0x1B 
+
 // RFS_SPECIAL only! Marks beginnig of the sequence. Nothing will be executed unti SEQ_END
 #define RFS_SET_SEQ_BEGIN  0x20 
 
@@ -145,7 +148,7 @@
 // Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
 #define RFS_SET_BITSLICE_HIGH  0x35 
 
-// Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
+// Uses automatic bitslicing, 0 disables, positive number <32 sets number of SB for lowest product, >32 sets number of SB for highest product
 #define RFS_SET_BITSLICE_AUTO  0x36 
 
 // set routing for ADC channels 0 bits 0-2 are minus, bits 3-6 are plus
@@ -213,6 +216,12 @@
 
 // Enable Grimm's tales mode
 #define RFS_SET_GRIMMS_TALES  0x66 
+
+// Index for the Grimm's weights
+#define RFS_SET_GRIMM_W_NDX  0x67 
+
+// Value for the Grimm's weights
+#define RFS_SET_GRIMM_W_VAL  0x68 
 
 // Enable the calibrator, arg = mode. Use 0x10 for automatic, use 0xFF to disable
 #define RFS_SET_CAL_ENABLE  0x70 
@@ -298,11 +307,32 @@
 // How often to send full raw11. 0=always, 0xFF disable
 #define RFS_SET_CAL_RAW11_EVERY  0x8B 
 
-// Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
+// Set zoom channels / prods to use. Bits 0-1 for ZCHA and 2-3 for ZCHB, 4-5 for ZCHA_minus, 6-7 for ZCHB_minus
 #define RFS_SET_ZOOM_CH  0x90 
 
 // log 2 averaging (of NFFT chunks) before spitting out data
 #define RFS_SET_ZOOM_NAVG  0x92 
+
+// Set cal_ndx_range using (arg + arg*arg//32)
+#define RFS_SET_ZOOM_RANGE  0x93 
+
+// Enable CH differencing for zoom (bit 0 for CHA and bit 1 for CHB)
+#define RFS_SET_ZOOM_DIFF  0x94 
+
+// Call with arg = 0xAB to enable messing with regions
+#define RFS_SET_REGION_UNLOCK  0xA0 
+
+// Get all region info in Housekpeeping packet
+#define RFS_SET_REGION_INFO  0xA1 
+
+// src = low 4 bits, tgt is upper 4 bits.
+#define RFS_SET_REGION_CPY  0xA2 
+
+// arg= region number to enable by writing correct metadata
+#define RFS_SET_REGION_ENABLE  0xA3 
+
+// arg= region number to enable by writing correct metadata
+#define RFS_SET_REGION_DISABLE  0xA4 
 
 
 

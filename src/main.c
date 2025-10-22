@@ -9,6 +9,8 @@
 #include "cdi_options.h"
 #include "main.h"
 
+#include "interface_utils.h"
+
 enum cmd_format cdi_format = CMD_FILE;
 struct cdi_dtype cdi_in;
 struct cdi_dtype cdi_out;
@@ -23,12 +25,14 @@ int main(int argc, char *argv[]) {
     cdi_in.port = DEFAULT_PORT_IN;
     cdi_out.port = DEFAULT_PORT_OUT;
     cdi_format = CMD_FILE;
+
+    strcpy(user_spectrum_filename, "");
     
     int opt;
-    while ((opt = getopt(argc, argv, "hm:i:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "hm:i:o:s:")) != -1) {
         switch (opt) {
             case 'h':
-                fprintf(stdout, "Usage: %s -m [\"file\" | \"port\"] -i [input file/port] -o [output file/port]\n", argv[0]);
+                fprintf(stdout, "Usage: %s -m [\"file\" | \"port\"] -i [input file/port] -o [output file/port] -s spectrum_file\n", argv[0]);
                 exit(EXIT_SUCCESS);
             case 'm':
                 if (!strcmp(optarg, "file") || !strcmp(optarg, "f")) {
@@ -47,6 +51,10 @@ int main(int argc, char *argv[]) {
             case 'o':
                 strcpy(cdi_out.file, optarg);
                 cdi_out.port = atoi(cdi_out.file); // try to convert to in, don't worry if it fails
+                break;
+            case 's':
+                fprintf(stderr, "Reading spectrum from %s\n", optarg);
+                strcpy(user_spectrum_filename, optarg);
                 break;
             default:
                 raiseError("", argv);

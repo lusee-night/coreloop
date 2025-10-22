@@ -38,6 +38,7 @@
 | 0x18 | RFS_SET_WR_VAL_3           | Val bits 24-32 
 | 0x19 | RFS_SET_ENABLE_WATCHDOGS   | Enables or disables the watchdogs. Accepts a single byte argument.
 | 0x1A | RFS_SET_TEST_WATCHDOG      | arg = 0x13 - stop feed uC WD, 0x49 - simulate a watchdog trip 
+| 0x1B | RFS_SET_EMPTY_BUFFERS      | Empty buffers before accepting next command
 
 ### 0x2X Program flow control
 
@@ -62,7 +63,7 @@
 | 0x33 | RFS_SET_GAIN_ANA_CFG_MULT | automatic analog gains setting, max ADC = min ADC  * mult. Low 2 bits are channels, remaming bits are multiplier.
 | 0x34 | RFS_SET_BITSLICE_LOW | Sets manual bitslicing for XCOR 1-8 (3 LSB bits) to values 1-32 (5 MSB bits)
 | 0x35 | RFS_SET_BITSLICE_HIGH | Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
-| 0x36 | RFS_SET_BITSLICE_AUTO | Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
+| 0x36 | RFS_SET_BITSLICE_AUTO | Uses automatic bitslicing, 0 disables, positive number <32 sets number of SB for lowest product, >32 sets number of SB for highest product 
 
 ### 0x4X Signal Routing Settings
 
@@ -101,6 +102,9 @@
 | 0x64 | RFS_SET_TR_ST_MSB    | Time-resolved spectra stopping MSB (b4-7), starting MSB (b0-3)       |
 | 0x65 | RFS_SET_TR_AVG_SHIFT | frequency averaging       |
 | 0x66 | RFS_SET_GRIMMS_TALES | Enable Grimm's tales mode 
+| 0x67 | RFS_SET_GRIMM_W_NDX  | Index for the Grimm's weights 
+| 0x68 | RFS_SET_GRIMM_W_VAL  | Value for the Grimm's weights 
+
 
 
 
@@ -148,7 +152,21 @@ input ADC channel using 0x90 command below
 
 | 0x9M | Name                 |  Description                                       |
 |------|----------------------|----------------------------------------------------|                             
-| 0x90 | RFS_SET_ZOOM_CH      | Set zoom channels / prods to use. Bits 0-1 for ZCH0 and 1-2 for ZCH2, bits 3-4 for mode: 00 = auto 00, 01 = 00+11 auto, 10 = 00+11+cross
+| 0x90 | RFS_SET_ZOOM_CH      | Set zoom channels / prods to use. Bits 0-1 for ZCHA and 2-3 for ZCHB, 4-5 for ZCHA_minus, 6-7 for ZCHB_minus
 | 0x92 | RFS_SET_ZOOM_NAVG    | log 2 averaging (of NFFT chunks) before spitting out data
+| 0x93 | RFS_SET_ZOOM_RANGE   | Set cal_ndx_range using (arg + arg*arg//32)
+| 0x94 | RFS_SET_ZOOM_DIFF    | Enable CH differencing for zoom (bit 0 for CHA and bit 1 for CHB)
 
+
+### 0xAX boot region support
+
+Note that during region mess, no housekeeping packets are emitted.
+
+| 0XAM | Name                   |  Description                                                   |
+|------|------------------------|----------------------------------------------------------------|                             
+| 0xA0 | RFS_SET_REGION_UNLOCK  | Call with arg = 0xAB to enable messing with regions            |
+| 0xA1 | RFS_SET_REGION_INFO    | Get all region info in Housekpeeping packet                    |
+| 0xA2 | RFS_SET_REGION_CPY     | src = low 4 bits, tgt is upper 4 bits.                         |
+| 0xA3 | RFS_SET_REGION_ENABLE  | arg= region number to enable by writing correct metadata       |
+| 0xA4 | RFS_SET_REGION_DISABLE | arg= region number to enable by writing correct metadata       |
 

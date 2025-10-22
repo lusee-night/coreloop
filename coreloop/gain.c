@@ -84,24 +84,46 @@ bool bitslice_control(struct core_state* state) {
 
     for (int i = 0; i < 4; i++) {
         if (state->base.bitslice[i] != 0xFF) continue; // Don't do anything unless bitslice is auto
-        uint8_t keep = 32-state->leading_zeros_max[i];
-        if ((keep>(state->base.bitslice_keep_bits+2)) && ( state->base.actual_bitslice[i] != 0x1F)) {
-            // we're keeping more bits than we should (with buffer of 2)
-            // slicer should be increased
-            state->base.actual_bitslice[i] += (keep-state->base.bitslice_keep_bits);
-            if (state->base.actual_bitslice[i] > 0x1F) {
-                state->base.actual_bitslice[i] = 0x1F;
+        if (state->base.bitslice_keep_bits < 32) {
+            uint8_t keep = 32-state->leading_zeros_max[i];
+            if ((keep>(state->base.bitslice_keep_bits+2)) && ( state->base.actual_bitslice[i] != 0x1F)) {
+                // we're keeping more bits than we should (with buffer of 2)
+                // slicer should be increased
+                state->base.actual_bitslice[i] += (keep-state->base.bitslice_keep_bits);
+                if (state->base.actual_bitslice[i] > 0x1F) {
+                    state->base.actual_bitslice[i] = 0x1F;
+                }
+                bitslice_changed = true;
+                state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
+            } else if ((keep<(state->base.bitslice_keep_bits-2)) && (state->base.actual_bitslice[i] != 0)) {
+                // we're keeping fewer bits than we should (with buffer of 2)
+                // slicer should be decreased
+                state->base.actual_bitslice[i] -= MIN(state->base.bitslice_keep_bits-keep, state->base.actual_bitslice[i]);                
+                bitslice_changed = true;
+                state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
             }
-            bitslice_changed = true;
-            state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
-        } else if (keep<(state->base.bitslice_keep_bits-2)) {
-            // we're keeping fewer bits than we should (with buffer of 2)
-            // slicer should be decreased
-            state->base.actual_bitslice[i] -= MIN(state->base.bitslice_keep_bits-keep, state->base.actual_bitslice[i]);
-            bitslice_changed = true;
-            state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
+        } else {
+            uint8_t keep = state->leading_zeros_min[i];
+            uint8_t target_keep = 64 - state->base.bitslice_keep_bits;
+            if ((keep < (target_keep - 2)) && (state->base.actual_bitslice[i] != 0x1F)) {
+                // we're keeping more bits than we should (with buffer of 2)
+                // slicer should be increased
+                state->base.actual_bitslice[i] += (target_keep-keep);
+                if (state->base.actual_bitslice[i] > 0x1F) {
+                    state->base.actual_bitslice[i] = 0x1F;
+                }
+                bitslice_changed = true;
+                state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
+            } else if ((keep>(target_keep+2)) && (state->base.actual_bitslice[i] != 0)) {
+                // we're keeping fewer bits than we should (with buffer of 2)
+                // slicer should be decreased
+                state->base.actual_bitslice[i] -= MIN(keep-target_keep, state->base.actual_bitslice[i]);
+                bitslice_changed = true;
+                state->base.errors |= (DIGITAL_AGC_ACTION_CH0 << i);
+            }
         }
     }
+
     if (bitslice_changed) {
 
         

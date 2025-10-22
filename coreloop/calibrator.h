@@ -3,6 +3,9 @@
 #pragma pack(1)
 #include <inttypes.h>
 
+// Forward declaration
+struct core_state;
+
 // set of modes for the calibrator
 
 // first few modes are for manual control and actually writeablle to the correct register
@@ -29,6 +32,17 @@
 #define CAL_MODE_ZOOM  0x50
 
 
+// finetuning of where to adjust slices
+#define AUTO_SLICE_SETTLE 0b0001
+#define AUTO_SLICE_SNR    0b0010
+#define AUTO_SLICE_RUN    0b0100
+#define AUTO_SLICE_PROD   0b1000
+
+#define USE_FLOAT_FFT (true)
+// happens to be the same as NCHANNELS, but semantically very different
+#define NPFB (2048)
+#define MAX_SETTLE_COUNT (6)
+
 
 
 
@@ -36,7 +50,7 @@
 struct calibrator_state {
     uint8_t mode; // this is the actual model of calibrator. If >4 we are in various auto modes
     uint8_t Navg2, Navg3; // averaging for calibrator
-    uint8_t drift_guard, drift_step; // drift guard and step
+    uint16_t drift_guard, drift_step; // drift guard and step
     uint8_t antenna_mask;
     uint8_t notch_index;
     uint32_t SNRon, SNRoff;
@@ -46,18 +60,22 @@ struct calibrator_state {
     uint16_t pfb_index; // for PFB and spectral zoom mode
     // for saving weights
     uint16_t weight_ndx; // weight index when storing weights
-    bool auto_slice;
+    uint8_t auto_slice;
     uint8_t powertop_slice;
     uint8_t delta_powerbot_slice;
     uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
     uint8_t prod1_slice, prod2_slice;
     uint32_t errors, bitslicer_errors;
     uint8_t zoom_ch1, zoom_ch2;
-    uint8_t zoom_prod;
-    uint16_t zoom_Navg;
-    uint16_t zoom_avg_idx;
-    bool use_float_fft;
-    uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time.
+    bool zoom_diff_1, zoom_diff_2; // if true we difference the two channels
+    uint8_t zoom_ch1_minus, zoom_ch2_minus; // if set we difference with channels    
+    int32_t zoom_Navg;
+    int32_t zoom_avg_idx; // we make this into to be able to use -1 to force it to drop one sample
+    int16_t zoom_ndx_range; // range up from pfb_index
+    int16_t zoom_ndx_current; // current index (0.. zoom_ndx_range-1)
+    //bool use_float_fft; // made into a define
+    uint8_t raw11_every, raw11_counter; //  we output raw11 every raw11_every time. 
+    uint8_t settle_count; // counts how many settle cycles we have done
 };
 
 struct calibrator_stats {
@@ -66,8 +84,16 @@ struct calibrator_stats {
   uint32_t pbot_max[4], pbot_min[4];
   int32_t FD_max[4], FD_min[4];
   int32_t SD_max[4], SD_min[4];
-  int16_t SD_positive_count[4];
-  int16_t lock_count;
+  uint16_t SD_positive_count[4];
+  int32_t lock_count; // keep this 32 bit to avoid alignment issues
+};
+
+struct calibrator_error_reg {
+  uint32_t cal_phaser_err[2];
+  uint32_t averager_err[16];
+  uint32_t process_err[8];
+  uint32_t stage3_err[4];
+  uint32_t check; // fix to 0xFEEDDAD0
 };
 
 
@@ -78,23 +104,18 @@ struct calibrator_metadata {
   uint16_t time_16;
   uint16_t have_lock[4];
   uint32_t SNRon, SNRoff;
+  uint8_t mode;
   uint8_t powertop_slice;
   uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;
   uint8_t prod1_slice, prod2_slice;
   uint32_t errors, bitslicer_errors;
-  uint8_t drift_shift;
-  int16_t drift [128];
-  uint32_t error_regs [30];
   struct calibrator_stats stats;
+  struct calibrator_error_reg error_reg;  
+  int16_t drift [128];    
+  uint8_t drift_shift;
+
 };
 
-struct calibrator_errors {
-  uint32_t cal_phaser_err[2];
-  uint32_t averager_err[16];
-  uint32_t process_err[8];
-  uint32_t stage3_err[4];
-  uint32_t check; // fix to 0xFEEDDAD0
-};
 
 struct saved_calibrator_weights {
   uint32_t in_use;

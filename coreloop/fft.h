@@ -14,10 +14,9 @@
 #define NUM_FFTS_IN_ONE_GO 8
 #define ZOOM_NFFT (NCHANNELS >> FFT_BIT_SIZE)
 
-extern int32_t sine_table_int[TABLE_SIZE];
-extern float sine_table_float[TABLE_SIZE];
+extern const int32_t sine_table_int[TABLE_SIZE];
+extern const float sine_table_float[TABLE_SIZE];
 
-void fft_precompute_tables();
 
 int32_t get_sine_int(int index);
 int32_t get_cosine_int(int index);

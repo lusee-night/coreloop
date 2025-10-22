@@ -1,11 +1,12 @@
 #include "LuSEE_IO.h"
 #include "LuSEE_SPI.h"
-
+#include "lusee_appIds.h"
 
 #include "lusee_appIds.h"
 #include "core_loop.h"
 #include "calibrator.h"
 #include "calibrator_interface.h"
+#include "cdi_interface.h"
 #include "flash_interface.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -175,4 +176,127 @@ bool flash_calweights_restore(uint8_t slot, bool just_check) {
     debug_print("[FWR fail]");
     return false;
 }
+
+
+void region_get_info(uint32_t region, bool *valid, uint32_t *size, uint32_t *checksum) {
+    if ((region<1)||(region>6)) {
+        *valid = false;
+        *size = 0;
+        *checksum = 0xFFFFFFFF;        
+        return;
+    }
+    memcpy_from_flash((void *)FLASH_WORK, (uint32_t)(Flash_Region_1  + (region-1)*Flash_Region_Size + Flash_Meta_Offset), 12);
+    uint32_t *ptr = (uint32_t *)(FLASH_WORK);
+    *valid = (region == ptr[0]);
+    *size = ptr[1];
+    *checksum = ptr[2];
+}
+
+void region_set_info(uint32_t region, uint32_t size, uint32_t checksum, bool enable) {
+    if ((region<1)||(region>6)) {
+        return;
+    }    
+    uint32_t *ptr = (uint32_t *)(FLASH_WORK);
+    ptr[0] = enable ? (uint32_t) region : 0;
+    ptr[1] = size;
+    ptr[2] = checksum;
+    memcpy_to_flash((uint32_t)(Flash_Region_1  + (region-1)*Flash_Region_Size + Flash_Meta_Offset), (void *)FLASH_WORK, 12);
+}
+
+void flash_region_enable (int region, bool enable){
+    bool valid;
+    uint32_t size, checksum;
+    region_get_info(region, &valid, &size, &checksum);
+    // we only change it if needed
+    if (enable != valid) region_set_info(region, size, checksum, enable);    
+}
+
+
+
+
+
+void region_check_checksum(uint32_t region, bool* valid, uint32_t *size, uint32_t* info_checksum, uint32_t* data_checksum) {
+    if ((region<1) || (region>6 )) {
+        *info_checksum = 0;
+        *data_checksum = 0xFFFFFFFF;
+        *valid = false;
+        *size = 0 ;
+        return;
+    }
+    region_get_info(region, valid, size, info_checksum);
+    memcpy_from_flash((void *)FLASH_WORK, (uint32_t)(Flash_Region_1  + (region-1)*Flash_Region_Size), (*size)*4); // size is in words
+    uint32_t *ptr = (uint32_t *)(FLASH_WORK);
+    uint32_t checksum = 0;
+    for (int i=0; i<*size;i++) checksum+= ptr[i];
+    *data_checksum = ~checksum + 1;
+}
+
+void region_copy_region (int region_src, int region_tgt, struct flash_copy_report_t *report){
+    if ((region_src<1) || (region_src>6 ) || (region_tgt<1) || (region_tgt>6)) {
+        report->status = FLASH_BAD_REGIONS;
+        return;
+    }
+    report->region_1 = region_src;
+    report->region_2 = region_tgt;
+    bool valid;
+    region_check_checksum(region_src, &valid, &report->size_1, &report->checksum_1_meta, &report->checksum_1_data);
+    if ((report->size_1==0) || (report->checksum_1_meta != report->checksum_1_data)) {
+        report->status = FLASH_COPY_BAD_CHECKSUM_IN;
+        return;
+    }
+    // ok, we can copy
+    debug_print_hex (report->size_1);
+    debug_print(" ");
+    debug_print_hex(report->checksum_1_data);
+    debug_print(" ");
+    debug_print_hex(report->checksum_1_meta);
+
+    memcpy_to_flash ((uint32_t)(Flash_Region_1  + (region_tgt-1)*Flash_Region_Size), (void *)(FLASH_WORK), (report->size_1)*4);
+    debug_print("done writing")
+    region_set_info (region_tgt, report->size_1, report->checksum_1_data, true);
+    debug_print("done setting info")
+    region_check_checksum(region_tgt, &valid, &report->size_2, &report->checksum_2_meta, &report->checksum_2_data);
+    if (report->checksum_2_meta != report->checksum_2_data) {
+        report->status = FLASH_COPY_BAD_CHECKSUM_OUT;
+        return;
+    }
+    debug_print("done");
+        debug_print_hex (report->size_2);
+    debug_print(" ");
+    debug_print_hex(report->checksum_2_data);
+    debug_print(" ");
+    debug_print_hex(report->checksum_2_meta);
+    report->status = FLASH_COPY_SUCCESS;
+}
+
+void flash_send_region_info(struct core_state *state) {
+    struct housekeeping_data_100 *data = (struct housekeeping_data_100 *)TLM_BUF;
+    update_time(state);
+    wait_for_cdi_ready();
+    data->base.version = VERSION_ID;
+    new_unique_packet_id(state);
+    data->base.unique_packet_id = state->unique_packet_id;
+    data->base.errors = state->base.errors;
+    data->base.housekeeping_type = 100;
+    for (int i=0; i<6; i++) {
+        bool valid; 
+        region_check_checksum(i+1, &valid, &data->size[i], &data->checksum_meta[i], &data->checksum_data[i]);
+        data->meta_valid[i] = valid;
+    }
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Housekeeping, sizeof(struct housekeeping_data_100));
+}
+
+void flash_copy_region_cmd(struct core_state *state, int region_src, int region_tgt) {
+    struct housekeeping_data_101 *data = (struct housekeeping_data_101 *)TLM_BUF;
+    update_time(state);
+    wait_for_cdi_ready();
+    data->base.version = VERSION_ID;
+    new_unique_packet_id(state);
+    data->base.unique_packet_id = state->unique_packet_id;
+    data->base.errors = state->base.errors;
+    data->base.housekeeping_type = 101;
+    region_copy_region(region_src, region_tgt, &data->report);
+    cdi_dispatch_uC(&(state->cdi_stats),AppID_uC_Housekeeping, sizeof(struct housekeeping_data_101));
+}
+
 

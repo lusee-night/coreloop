@@ -1,5 +1,3 @@
-#ifndef WATCHDOGS_H
-#define WATCHDOGS_H
 #include "core_loop.h"
 #include "core_loop_errors.h"
 #include "LuSEE_IO.h"
@@ -58,6 +56,3 @@ bool process_watchdogs (struct core_state* state) {
     
     return false;
 }
-
-
-#endif

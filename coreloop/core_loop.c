@@ -56,6 +56,7 @@ void core_init_state(struct core_state* state){
     default_state (&state->base);
     calibrator_default_state(&state->cal);
     state->soft_reset_flag = false;
+    state->clear_buffers = false;
     state->base.errors = 0;
     state->cmd_ptr = state->cmd_end = 0;
     state->sequence_upload = false;
@@ -91,6 +92,7 @@ void core_init_state(struct core_state* state){
     state->cmd_counter = 0;
     state->cdi_stats.cdi_packets_sent = 0;
     state->cdi_stats.cdi_bytes_sent = 0;
+    state->bitslicer_action_counter = 0;
 
     set_spectrometer(state);
 
@@ -103,8 +105,14 @@ void core_init_state(struct core_state* state){
     state->request_waveform = 0 ;
     state->request_eos = 0;
     state->range_adc = 0;
+    state->region_have_lock = false;
     loop_count = loop_count_max = 0;
     loop_count_min = UINT16_MAX;
+
+    const int32_t grimm_default_weights[NGRIMM_WEIGHTS] = {0x4, 0x3, 0xff, 0xeb, 0xbb, 0xf9, 0x4, 0x4, 0x9, 0x6, 0x100, 0x74, 0x57, 0xfc, 0x8, 0x7, 0x10, 0x67, 0x100, 0x1a, 0x1e, 0xe6, 0x69, 0x13,0x39, 0x25, 0x100, 0x3, 0x2, 0xf9, 0x30, 0x2a};
+    
+    memcpy(state->grimm_weights, grimm_default_weights, sizeof(int32_t)*NGRIMM_WEIGHTS);
+    
 
     // TODO: remove this
     state->fft_time = 0;
@@ -155,6 +163,17 @@ static void display_greeting(void)
     
 }
 
+void process_dispatches(struct core_state* state) {
+    if (cdi_ready()) {
+        if (process_hearbeat(state)) {}
+        else if (process_delayed_cdi_dispatch(state)) {}
+        else if (process_housekeeping(state)) {}
+        else if (process_waveform(state)) {}
+        else process_eos(state);
+    }
+}
+
+
 void core_loop(struct core_state* state)
 {
     // this is the outer soft-reboot loop
@@ -174,8 +193,6 @@ void core_loop(struct core_state* state)
         send_hello_packet(state);
         // ignore any data waiting in the data formatter
         spec_clear_df_flag();
-        // precomput the FFT tables for zoom (FIX THIS)
-        fft_precompute_tables();
     
         // now empty the CDI command buffer in case we are doing the reset.
         #ifndef NOTREAL
@@ -188,7 +205,7 @@ void core_loop(struct core_state* state)
         #endif
         
         restore_state(state);
-        
+                
         // this is the inner loop, the actual core loop that provides some sort of
         // cooperative multitasking.
         for (;;)
@@ -201,15 +218,7 @@ void core_loop(struct core_state* state)
             process_calibrator(state);
             process_gain_range(state);
             if (state->soft_reset_flag) { break; }
-            // we always process just one CDI interfacing things
-            // compiler
-            if (cdi_ready()) {
-                if (process_hearbeat(state)) {}
-                else if (process_delayed_cdi_dispatch(state)) {}
-                else if (process_housekeeping(state)) {}
-                else if (process_waveform(state)) {}
-                else process_eos(state);
-            }
+            process_dispatches(state);
             loop_count++;
             
             #ifdef NOTREAL
@@ -233,12 +242,8 @@ void core_loop(struct core_state* state)
             clear_current_slot(state);
             // empty buffers
             while (true) {
-                if (process_hearbeat(state)) {}
-                else if (process_delayed_cdi_dispatch(state)) {}
-                else if (process_housekeeping(state)) {}
-                else if (process_waveform(state)) {}
-                else if (process_eos(state)) {}
-                else if (delayed_cdi_dispatch_done(state)  && cdi_ready()) {break;}
+                process_dispatches(state);
+                if (delayed_cdi_dispatch_done(state) && cdi_ready()) {break;}
             }
             
             if (state->watchdog.tripped_mask > 0) {
@@ -364,7 +369,6 @@ void RFS_start(struct core_state* state) {
     state->base.weight = state->base.weight_current = 0;
     state->base.num_bad_min = state->base.num_bad_min_current = 0xFFFF;
     state->base.num_bad_max = state->base.num_bad_min_current = 0;
-    state->bitslicer_action_counter = 0;
     state->avg_counter = 0;
     memset((void *)SPEC_TICK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));
     memset((void *)SPEC_TOCK, 0, NSPECTRA*NCHANNELS * sizeof(uint32_t));

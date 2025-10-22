@@ -10,6 +10,8 @@
 #include <time.h>
 #include "LuSEE_IO.h"
 #include <stdbool.h>
+#include <string.h>
+
 #include "core_loop.h" // for tap_counter
 #include "interface_utils.h"
 
@@ -17,6 +19,8 @@ const char* true_spectrum_filename = CORELOOP_ROOT "/data/true_spectrum.dat";
 uint32_t true_spectrum[NCHANNELS*NSPECTRA];
 const char* ramp_spectrum_filename = CORELOOP_ROOT "/data/ramp_spectrum.dat";
 double ramp_spectrum[NCHANNELS];
+int32_t* user_spectrum = NULL;
+int32_t user_spectrum_size = 0;
 struct timespec time_spec_start;
 
 
@@ -46,6 +50,10 @@ const int ch_ant2[] = {0,1,2,3, 1,1,  2,2,  3,3,  2,2,  3,3, 3, 3};
 void spectrometer_pre_init() {
     read_array_uint(true_spectrum_filename, true_spectrum, NCHANNELS * NSPECTRA);
     read_array_double(ramp_spectrum_filename, ramp_spectrum, NCHANNELS);
+
+    if (strlen(user_spectrum_filename)) {
+        user_spectrum_size = read_dynamic_array(user_spectrum_filename, &user_spectrum);
+    }
 
     SPEC_BUF = malloc(NCHANNELS*NSPECTRA*sizeof(int32_t));
     adc_trigger = false;
@@ -84,15 +92,20 @@ void spec_set_spectrometer_enable(bool on) {
 
 
 bool spec_new_spectrum_ready() {
+    static int call_idx = 0;
     df_flag = false;
+
     if (!spectrometer_enable) {
         return false;
     }
+
+
     clock_gettime(CLOCK_REALTIME, &time_now);
     long ns_passed = (time_now.tv_sec - time_spec_start.tv_sec) * 1e9 + time_now.tv_nsec - time_spec_start.tv_nsec;
     long topass = (long)(floor((4096/102.4e6)*1e9*Navg1));
     //printf ("%li %li \n",ns_passed,topass);
     if (ns_passed > topass) {
+        // fprintf(stderr, "is_ramp: %d, ADC_mode = %d, user_spectrum_size = %d\n", ADC_mode == ADC_RAMP, ADC_mode, user_spectrum_size);
         time_spec_start = time_now;
         df_flag = true;
         int32_t* SPEC_BUF_INT32 = (int32_t*)SPEC_BUF;    
@@ -106,6 +119,18 @@ bool spec_new_spectrum_ready() {
             }
             return true;
         }
+
+        if (user_spectrum_size) {
+            int offset = call_idx * NCHANNELS * NSPECTRA;
+            memcpy(SPEC_BUF_INT32, user_spectrum + offset, NCHANNELS * NSPECTRA * sizeof(int32_t));
+            // fprintf(stderr, "Using user spectrum number %d, offset = %d, sp[0] = %d, sp[1] = %d, sp[2] = %d, sp[3] = %d, sp[4] = %d, sp[5] = %d, sp[6] = %d, sp[7] = %d, sp[8] = %d, sp[9] = %d \n", call_idx, offset, SPEC_BUF_INT32[0], SPEC_BUF_INT32[1], SPEC_BUF_INT32[2], SPEC_BUF_INT32[3], SPEC_BUF_INT32[4], SPEC_BUF_INT32[5], SPEC_BUF_INT32[6], SPEC_BUF_INT32[7], SPEC_BUF_INT32[8], SPEC_BUF_INT32[9]);
+            call_idx = (call_idx + 1) % (user_spectrum_size / (NCHANNELS * NSPECTRA));
+
+
+
+            return true;
+        }
+
         for (int i = 0; i < NSPECTRA; i++) {
             for (int j = 0; j < NCHANNELS; j++) {
                 int32_t spec = true_spectrum[i*NCHANNELS+j];
@@ -126,7 +151,8 @@ bool spec_new_spectrum_ready() {
                 SPEC_BUF_INT32[i*NCHANNELS+j] = spec;
             }
         }
-    return true;
+
+        return true;
     }
     return false;
 }

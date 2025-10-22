@@ -1,6 +1,29 @@
 
 # CHANGELOG
 
+### Version 3r06
+ * Relaxed calibration lock count requirement to avoid issues in the initial lock
+ * Made bitslicer control in calibrator more fine grained
+ * Enabled bitslicer control during RUN stage to help with signals that increase in strength
+ * fixed underflow logic in auto bitslicer, added option to keep max instead of min in range 
+ * ensured we are outputing unique packet id wherever possible
+ * prevent calibrator to get stuck in bit slicer settle
+ * increased stack size to 12k (we were running out of stack but were saved by some static buffer!!)
+ * moved calibrator weights checking from CRC to checksum for HK3 (but we still store with CRC)
+ * Added region copy/disable/enable capability
+ * RLE encoding for calibrator debug packets
+ * remove int version of FFTs to save some space 
+ * clear buffers before taking commands on spectrometer stop
+ * fixed missing last few outputs in 4-5 output 
+ * fixed bug in rejection 
+ * fixed bug in zoom channel select and differencing 
+ * Report zoom bin in zoom packets 
+ * fixed zoom average counter to be 32 bits to allow long integration times
+ * fixed Grimm's tales mode to take weights
+ * fixed bug and changed the bitslicer stuck logic (now reset counter only after pushing some data out)
+ * waveforms request feed the uC watchdog
+ * fixed bug in 40bit averaging
+
 ### Version 3r05
  * Many tweaks to the calibrator algorithm
  * Can save calibrator weights to flash

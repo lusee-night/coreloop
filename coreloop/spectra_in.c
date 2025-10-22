@@ -9,8 +9,10 @@
 #include "LuSEE_IO.h"
 #include "high_prec_avg.h"
 
+// #define CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
 
-static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
+
+static inline int32_t get_with_zeros(int32_t val, uint32_t *min, uint32_t *max) {
     int32_t zeros = __builtin_clz(val);
     *min = MIN(*min, zeros);
     *max = MAX(*max, zeros);
@@ -26,16 +28,32 @@ static inline int32_t safe_abs_val(int32_t val)
 bool transfer_time_resolved_from_df(struct core_state* state);
 bool transfer_grimm_from_df(struct core_state* state);
 
-static inline uint32_t is_bad_int32(const int32_t* df_ptr, const void* ddr_ptr_prev, int total_idx, uint8_t weight, uint8_t reject_ratio)
+static inline uint32_t is_bad_int32(const int32_t curr_val, const void* ddr_ptr_prev, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift, bool all_prev_accepted)
 {
-    // in int32 mode we divide by 2^Navg2_shift immediately, before storing to ddr buffer, no need to multiply here
-    int32_t prev_val = ((int32_t*)ddr_ptr_prev)[total_idx] / weight;
-    int32_t val = *df_ptr;
+    // too small values should be ignored: we divide by Navg2 _before_ accumulating
+    // so for a small bin many values can become 0
+    if (curr_val < reject_ratio * (1 << Navg2_shift))
+        return 0;
 
-    if (abs(val-prev_val)>(prev_val/reject_ratio))
+    int32_t prev_val = ((int32_t*)ddr_ptr_prev)[total_idx];
+    if (!all_prev_accepted) {
+        // we may lose some precision here, but it's cheaper than int64
+        prev_val = (prev_val / weight ) << Navg2_shift;
+    }
+
+#ifdef CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
+    // we multiply by reject_ratio, may overflow - must use int64
+    int64_t diff_times_ratio = llabs((int64_t)(curr_val) - (int64_t)prev_val) * reject_ratio;
+    if (diff_times_ratio > prev_val)
         return 1;
     else
         return 0;
+#else
+    if (abs(curr_val-prev_val)>(prev_val/reject_ratio))
+        return 1;
+    else
+        return 0;
+#endif
 }
 
 static inline float my_fabsf(float x)
@@ -43,51 +61,78 @@ static inline float my_fabsf(float x)
     return (x >= 0) ? x : -x;
 }
 
-static inline uint32_t is_bad_float(const int32_t* df_ptr, const void* ddr_ptr_prev, int total_idx, uint8_t weight, uint8_t reject_ratio)
+static inline uint32_t is_bad_float(const int32_t val, const void* ddr_ptr_prev, int total_idx, uint8_t weight, uint8_t reject_ratio)
 {
-    float prev_val = ((float*)ddr_ptr_prev)[total_idx] / weight;
-    int32_t val = *df_ptr;
+#ifdef CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
+    // | curr_val - (prev_val / weight) | > (prev_val / weight) / reject_ratio <=> | curr_val * reject_ratio * weight - prev_val * reject_ratio | > prev_val
+    // we may lose some precision, but avoid costly division
 
+    float prev_val_sum = ((float*)ddr_ptr_prev)[total_idx];
+
+    if (my_fabsf((float)val * weight - prev_val_sum) * reject_ratio > prev_val_sum)
+        return 1;
+    else
+        return 0;
+#else
+    float prev_val = ((float*)ddr_ptr_prev)[total_idx] / weight;
     if (my_fabsf(val-prev_val)>(prev_val/reject_ratio))
         return 1;
     else
         return 0;
+#endif
 }
 
-static inline uint32_t is_bad_int40(const int32_t* df_ptr, const void* ddr_ptr_prev, const uint32_t* ddr_ptr_prev_high, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift)
+static inline uint32_t is_bad_int40(const int32_t curr_val, const void* ddr_ptr_prev, const uint32_t* ddr_ptr_prev_high, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift, bool all_prev_accepted)
 {
-    int64_t prev_val_big = (get_packed_value(ddr_ptr_prev, ddr_ptr_prev_high, total_idx) >> Navg2_shift);
+#ifdef CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
+    int64_t prev_val = get_packed_value(ddr_ptr_prev, ddr_ptr_prev_high, total_idx);
+    if (all_prev_accepted) {
+        int64_t curr_val_ = ((int64_t)curr_val << Navg2_shift);
+        if (llabs(curr_val_ - prev_val) * reject_ratio > prev_val)
+            return 1;
+        else
+            return 0;
+    } else {
+        int64_t curr_val_ = (int64_t)curr_val * weight;
+        if (llabs(curr_val_ - prev_val) * reject_ratio > prev_val)
+            return 1;
+        else
+            return 0;
+    }
+#else
+    int64_t prev_val_big = get_packed_value(ddr_ptr_prev, ddr_ptr_prev_high, total_idx);
     prev_val_big /= weight;
     int32_t previous_val = (int32_t)(prev_val_big & 0xFFFFFFFF);
-    int32_t val = *df_ptr;
 
-    if (abs(val-previous_val)>(previous_val/reject_ratio))
+    if (abs(curr_val-previous_val)>(previous_val/reject_ratio))
         return 1;
     else
         return 0;
+#endif
 }
 
+
 static inline uint32_t
-is_bad(const int32_t* df_ptr, const void* ddr_ptr_prev, const uint32_t* ddr_ptr_prev_high, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift, uint8_t averaging_mode)
+is_bad(const int32_t val, const void* ddr_ptr_prev, const uint32_t* ddr_ptr_prev_high, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift, uint8_t averaging_mode, bool all_prev_accepted)
 {
     if (averaging_mode == AVG_INT32) {
-        return is_bad_int32(df_ptr, ddr_ptr_prev, total_idx, weight, reject_ratio);
+        return is_bad_int32(val, ddr_ptr_prev, total_idx, weight, reject_ratio, Navg2_shift, all_prev_accepted);
     } else if (averaging_mode == AVG_INT_40_BITS) {
-        return is_bad_int40(df_ptr, ddr_ptr_prev, ddr_ptr_prev_high, total_idx, weight, reject_ratio, Navg2_shift);
+        return is_bad_int40(val, ddr_ptr_prev, ddr_ptr_prev_high, total_idx, weight, reject_ratio, Navg2_shift, all_prev_accepted);
     } else if (averaging_mode == AVG_FLOAT) {
-        return is_bad_float(df_ptr, ddr_ptr_prev, total_idx, weight, reject_ratio);
+        return is_bad_float(val, ddr_ptr_prev, total_idx, weight, reject_ratio);
     }
 }
 
 static inline void
-write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int offset, uint8_t Navg2_shift, uint8_t averaging_mode, int avg_counter, uint32_t* ddr_ptr_high)
+write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int offset, uint8_t Navg2_shift, uint8_t averaging_mode, int current_weight, uint32_t* ddr_ptr_high)
 {
     if (averaging_mode == AVG_INT32) {
 
         int32_t* ddr_ptr = (int32_t*)(_ddr_ptr);
 
         // we divide immediately in this mode
-        if (avg_counter == 0)
+        if (current_weight == 0)
             ddr_ptr[total_idx] = (value >> Navg2_shift);
         else
             ddr_ptr[total_idx] += (value >> Navg2_shift);
@@ -96,41 +141,58 @@ write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int off
 
         float* ddr_ptr = (float*)(_ddr_ptr);
 
-        if (avg_counter == 0)
+        if (current_weight == 0)
             ddr_ptr[total_idx] = (float)(value);
         else
             ddr_ptr[total_idx] += (float)(value);
 
     } else if (averaging_mode == AVG_INT_40_BITS) {
+        uint32_t* ddr_ptr = _ddr_ptr;
 
-        struct SpectraIn* ddr_ptr = (struct SpectraIn*)(_ddr_ptr);
+        const uint32_t byte_shift = (total_idx % 4) * 8;
+        const uint32_t sign_mask  = 0x80u << byte_shift;
+        const uint32_t high_idx   = total_idx >> 2;
 
-        bool is_negative = value < 0;
-        uint32_t uvalue = safe_abs_val(value);
+        // if (total_idx == 8 * NCHANNELS || total_idx == 8 * NCHANNELS + 1 || total_idx == 8 * NCHANNELS + 2 || total_idx == 8 * NCHANNELS + 3)
 
-        if (avg_counter) {
-            unsigned int new_low_bits;
-            bool overflow = __builtin_uadd_overflow(ddr_ptr->low[total_idx], uvalue, &new_low_bits);
 
-            if (overflow) {
-                ddr_ptr_high[total_idx >> 2] += (1 << ((total_idx %4) * 8));
-            }
-
-            ddr_ptr->low[total_idx] = new_low_bits;
-        } else {
-            // set low bits to value, set high bits to zero in one go for this spectrum
-            ddr_ptr->low[total_idx] = uvalue;
-            if (total_idx == offset) {
-                memset(ddr_ptr_high + (offset / 4), 0, (NCHANNELS / 4) * sizeof(uint32_t));
-            }
+        if (current_weight == 0) {
+            // First value in this frame -- overflow impossible, high bits only contain sign
+            ddr_ptr[total_idx] = (value < 0) ? -value : value;
+            if (total_idx == offset)
+                memset(ddr_ptr_high + offset / 4, 0, (NCHANNELS / 4) * sizeof(int32_t));
+            if (value < 0)
+                ddr_ptr_high[high_idx] |= sign_mask;
+            else
+                ddr_ptr_high[high_idx] &= ~sign_mask;
+            return;
         }
 
-        // highest of 8 extra bits: sign
-        // NB: must be after memset, don't move up
-        if (is_negative) {
-            ddr_ptr_high[total_idx >> 2] |= (1 << (7 + (total_idx %4) * 8));
-        }
+        // extract current 40-bit signed value
+        uint32_t extra_byte = (ddr_ptr_high[high_idx] >> byte_shift) & 0xFF;
+        uint32_t high_mag   = extra_byte & 0x7F;   // magnitude high bits
+        bool old_neg        = (extra_byte & 0x80) != 0;
 
+        int64_t current_val = ((int64_t)high_mag << 32) | ddr_ptr[total_idx];
+        if (old_neg)
+            current_val = -current_val;
+
+        // accumulate: add value
+        int64_t new_val = current_val + (int64_t)value;
+
+        // store back into arrays
+        bool new_neg = (new_val < 0);
+        uint64_t abs_val = (new_val < 0) ? -new_val : new_val;
+
+        uint32_t low32  = (uint32_t)(abs_val & 0xFFFFFFFFu);
+        uint32_t new_hi = (uint32_t)(abs_val >> 32) & 0x7F; // only 7 bits
+
+        ddr_ptr[total_idx] = low32;
+
+        // Replace magnitude bits in extra byte, keep sign separate
+        uint32_t new_extra = new_hi | (new_neg ? 0x80 : 0);
+        ddr_ptr_high[high_idx] &= ~(0xFFu << byte_shift);
+        ddr_ptr_high[high_idx] |= (new_extra << byte_shift);
     }
 }
 
@@ -149,9 +211,11 @@ bool transfer_from_df(struct core_state* state)
     const uint32_t* ddr_ptr_prev_high = spectra_read_buffer_high(state->tick_tock);
     uint16_t mask = 1;
     bool accept = true;
+
     //debug_print("Processing spectra...\n\r");
-    if ((state->base.reject_ratio>0) & (state->base.weight>(get_Navg2(state)/2))) {
+    if ((state->base.reject_ratio>0) && (state->base.weight>(get_Navg2(state)/2))) {
         uint32_t bad = 0;
+        bool all_prev_accepted = get_Navg2(state) == state->base.weight;
 
         for (uint16_t sp = 0; sp < NSPECTRA_AUTO; sp++) {
 
@@ -159,9 +223,12 @@ bool transfer_from_df(struct core_state* state)
 
             if (state->base.corr_products_mask & mask) {                
                 for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                    bad += is_bad(df_ptr, ddr_ptr_prev, ddr_ptr_prev_high, total_idx, state->base.weight, state->base.reject_ratio, state->base.Navg2_shift, state->base.averaging_mode);
+                    bad += is_bad(*df_ptr, ddr_ptr_prev, ddr_ptr_prev_high, total_idx, state->base.weight, state->base.reject_ratio, state->base.Navg2_shift, state->base.averaging_mode, all_prev_accepted);
                     df_ptr++;
                 }
+
+                // print(stderr, "spectrum:%d, bad: %d, maxbad=%d, reject_ration=%d\n", sp, bad, state->base.reject_maxbad, state->base.reject_ratio);
+
             } else {
                 df_ptr += NCHANNELS;
             }
@@ -183,27 +250,36 @@ bool transfer_from_df(struct core_state* state)
     }
 
     if (accept) {
-        state->base.weight_current++;
         for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
             int offset = sp * NCHANNELS;
             //debug_print_dec(sp); debug_print("\r\n");
             if (state->base.corr_products_mask & mask) {
-                    if (sp < NSPECTRA_AUTO) {
-                        state->leading_zeros_min[sp] = 32;
-                        state->leading_zeros_max[sp] = 0;
+                if (sp < NSPECTRA_AUTO) {
+                    // we need to do this to deal with 32 bit alignment
+                    int32_t leading_zeros_min = 32;
+                    int32_t leading_zeros_max = 0;
 
                     for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                        int32_t data = get_with_zeros(df_ptr[total_idx], &state->leading_zeros_min[sp], &state->leading_zeros_max[sp]);
-                        write_spectrum_value(data, ddr_ptr, total_idx, offset, state->base.Navg2_shift, state->base.averaging_mode, state->avg_counter, ddr_ptr_high);
+                        int32_t data = get_with_zeros(df_ptr[total_idx], &leading_zeros_min, &leading_zeros_max);
+                        write_spectrum_value(data, ddr_ptr, total_idx, offset, state->base.Navg2_shift, state->base.averaging_mode, state->base.weight_current, ddr_ptr_high);
                     }
+                    state->leading_zeros_min[sp] = leading_zeros_min;
+                    state->leading_zeros_max[sp] = leading_zeros_max;
+                    /* debug_print("W");
+                    debug_print_dec(leading_zeros_min);
+                    debug_print("/");
+                    debug_print_dec(leading_zeros_max);
+                    debug_print(" "); */
+
                 } else {
                     for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                        write_spectrum_value(df_ptr[total_idx], ddr_ptr, total_idx, offset, state->base.Navg2_shift, state->base.averaging_mode, state->avg_counter, ddr_ptr_high);
+                        write_spectrum_value(df_ptr[total_idx], ddr_ptr, total_idx, offset, state->base.Navg2_shift, state->base.averaging_mode, state->base.weight_current, ddr_ptr_high);
                     }
                 }
             }
             mask <<= 1;
         }
+        state->base.weight_current++;
     }
 
     transfer_time_resolved_from_df(state);
@@ -215,16 +291,52 @@ bool transfer_from_df(struct core_state* state)
 
 bool transfer_grimm_from_df (struct core_state* state) {
     if (!state->base.grimm_enable) return false;
+    uint16_t vals_out[NSPECTRA*5]; // buffer to make we deal with alignment
     for (uint16_t sp = 0; sp < NSPECTRA; sp++) {
         const int32_t* const spectrum_ptr = (int32_t *)SPEC_BUF + sp * NCHANNELS;
-        uint32_t vals_in[4];
-        vals_in[0] = spectrum_ptr[GRIMM_NDX0];
-        vals_in[1] = spectrum_ptr[GRIMM_NDX1];
-        vals_in[2] = spectrum_ptr[GRIMM_NDX2];
-        vals_in[3] = spectrum_ptr[GRIMM_NDX3];
-        uint16_t* const grimm_ptr = grimm_spectra_write_buffer(state->tick_tock) + state->avg_counter * NSPECTRA * 5 * sizeof(uint16_t);
-        encode_4_into_5(vals_in, grimm_ptr);
+        int32_t vals_in[4];
+        int64_t value;
+        vals_in[0] = ( (int64_t)state->grimm_weights[0] * spectrum_ptr[GRIMM_NDX0-3]
+                     + (int64_t)state->grimm_weights[1] * spectrum_ptr[GRIMM_NDX0-2]
+                     + (int64_t)state->grimm_weights[2] * spectrum_ptr[GRIMM_NDX0-1]
+                     + (int64_t)state->grimm_weights[3] * spectrum_ptr[GRIMM_NDX0]
+                     + (int64_t)state->grimm_weights[4] * spectrum_ptr[GRIMM_NDX0+1]
+                     + (int64_t)state->grimm_weights[5] * spectrum_ptr[GRIMM_NDX0+2]
+                     + (int64_t)state->grimm_weights[6] * spectrum_ptr[GRIMM_NDX0+3]
+                     + (int64_t)state->grimm_weights[7] * spectrum_ptr[GRIMM_NDX0+4] ) / 1024;
+
+        vals_in[1] = ( (int64_t)state->grimm_weights[8]  * spectrum_ptr[GRIMM_NDX1-3]
+                     + (int64_t)state->grimm_weights[9]  * spectrum_ptr[GRIMM_NDX1-2]
+                     + (int64_t)state->grimm_weights[10] * spectrum_ptr[GRIMM_NDX1-1]
+                     + (int64_t)state->grimm_weights[11] * spectrum_ptr[GRIMM_NDX1]
+                     + (int64_t)state->grimm_weights[12] * spectrum_ptr[GRIMM_NDX1+1]
+                     + (int64_t)state->grimm_weights[13] * spectrum_ptr[GRIMM_NDX1+2]
+                     + (int64_t)state->grimm_weights[14] * spectrum_ptr[GRIMM_NDX1+3]
+                     + (int64_t)state->grimm_weights[15] * spectrum_ptr[GRIMM_NDX1+4] ) / 1024;
+
+        vals_in[2] = ( (int64_t)state->grimm_weights[16] * spectrum_ptr[GRIMM_NDX2-3]
+                     + (int64_t)state->grimm_weights[17] * spectrum_ptr[GRIMM_NDX2-2]
+                     + (int64_t)state->grimm_weights[18] * spectrum_ptr[GRIMM_NDX2-1]
+                     + (int64_t)state->grimm_weights[19] * spectrum_ptr[GRIMM_NDX2]
+                     + (int64_t)state->grimm_weights[20] * spectrum_ptr[GRIMM_NDX2+1]
+                     + (int64_t)state->grimm_weights[21] * spectrum_ptr[GRIMM_NDX2+2]
+                     + (int64_t)state->grimm_weights[22] * spectrum_ptr[GRIMM_NDX2+3]
+                     + (int64_t)state->grimm_weights[23] * spectrum_ptr[GRIMM_NDX2+4] ) / 1024;
+
+        vals_in[3] = ( (int64_t)state->grimm_weights[24] * spectrum_ptr[GRIMM_NDX3-3]
+                     + (int64_t)state->grimm_weights[25] * spectrum_ptr[GRIMM_NDX3-2]
+                     + (int64_t)state->grimm_weights[26] * spectrum_ptr[GRIMM_NDX3-1]
+                     + (int64_t)state->grimm_weights[27] * spectrum_ptr[GRIMM_NDX3]
+                     + (int64_t)state->grimm_weights[28] * spectrum_ptr[GRIMM_NDX3+1]
+                     + (int64_t)state->grimm_weights[29] * spectrum_ptr[GRIMM_NDX3+2]
+                     + (int64_t)state->grimm_weights[30] * spectrum_ptr[GRIMM_NDX3+3]
+                     + (int64_t)state->grimm_weights[31] * spectrum_ptr[GRIMM_NDX3+4] ) / 1024;              
+        encode_4_into_5(vals_in, &(vals_out[sp*5]));
     }
+    
+    void* const grimm_ptr = grimm_spectra_write_buffer(state->tick_tock) + state->avg_counter * NSPECTRA * 5 * sizeof(uint16_t);    
+    memcpy(grimm_ptr, vals_out, NSPECTRA * 5 * sizeof(uint16_t));
+    
 }
 
 
@@ -292,9 +404,9 @@ void process_spectrometer(struct core_state* state) {
 
                 if (bit_slice_changed) {
                     (state->bitslicer_action_counter)++;
+                    debug_print(" B");
+                    debug_print_dec(state->bitslicer_action_counter);
                     restart_spectrometer(state); // Restart the spectrometer if the bit slice has changed; avg_counter will be reset so we don't need to worry about triggering the CDI write
-                 } else {
-                    state ->bitslicer_action_counter = 0;
                  }
             } else {
                 state->base.errors |= DIGITAL_AGC_STUCK;
@@ -311,6 +423,7 @@ void process_spectrometer(struct core_state* state) {
                 state->base.num_bad_min_current = 0xFFFF;
                 state->base.num_bad_max_current = 0;
                 state->base.weight_current = 0;
+                if (state->bitslicer_action_counter>0) state->bitslicer_action_counter--;
                 // Now one by one, we will loop through the packets placed in DDR Memory
                 // For each channel, set the APID, send it to the SRAM
                 // Then check to see if this software or the client will control the CDI writes

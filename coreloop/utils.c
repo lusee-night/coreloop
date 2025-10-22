@@ -63,6 +63,10 @@ int32_t decode_10plus6(uint16_t val) {
     return out;
 }
 
+
+
+
+
 static inline int8_t get_shift_by(uint32_t val)
 {
     int8_t lz = __builtin_clz(val);
@@ -277,7 +281,7 @@ uint32_t CRC(const void* data, size_t size) {
 }
 
 
-uint32_t print_buf(const void* data, size_t size) {
+void print_buf(const void* data, size_t size) {
     uint8_t *b = (uint8_t *)(data);
     for (int i=0; i<size; i++) {
         debug_print_hex(b[i]);
@@ -300,3 +304,91 @@ size_t get_free_stack() {
     return total_stack - used_stack;
 }
 #endif
+
+
+
+size_t rle_encode(void *tgt, const void *src, size_t size) {
+/*
+We will RLE encode the most common bytes as followos:
+
+ - An isolated 0x00 is encoded as 0x00
+ - A stream of 0x00 is encoded as 0x8c,N where N is the number of 0x00
+ - An isolated 0x8c is encoded as 0x8c,0
+ - An isolated 0xFF is encoded as 0xFF
+ - A stream of 0xFF is encoded as 0x8d,N where N is the number of 0xFF
+ - An isolated 0x8d is encoded as 0x8d,0
+ - All other bytes are left as is
+
+*/
+
+    const unsigned char *in = (const unsigned char *)src;
+    unsigned char *out = (unsigned char *)tgt;
+    size_t produced = 0;
+    size_t i = 0;
+
+    if (size == 0) {
+        return 0;
+    }
+
+    while (i < size) {
+        unsigned char byte = in[i];
+        if (byte == 0x00 || byte == 0xFF) {
+            unsigned char marker = (byte == 0x00) ? 0x8C : 0x8D;
+            size_t run = 1;
+            while (i + run < size && in[i + run] == byte) {
+                run++;
+            }
+            size_t remaining = run;
+            while (remaining > 255) {
+                if (produced + 2 > size) {
+                    goto original_copy;
+                }
+                out[produced++] = marker;
+                out[produced++] = 255;
+                remaining -= 255;
+            }
+            if (remaining == 1) {
+                if (produced + 1 > size) {
+                    goto original_copy;
+                }
+                out[produced++] = byte;
+            } else if (remaining > 1) {
+                if (produced + 2 > size) {
+                    goto original_copy;
+                }
+                out[produced++] = marker;
+                out[produced++] = (unsigned char)remaining;
+            }
+            i += run;
+        } else if (byte == 0x8C || byte == 0x8D) {
+            if (produced + 2 > size) {
+                goto original_copy;
+            }
+            out[produced++] = byte;
+            out[produced++] = 0;
+            i += 1;
+        } else {
+            if (produced + 1 > size) {
+                goto original_copy;
+            }
+            out[produced++] = byte;
+            i += 1;
+        }
+    }
+
+    if (size <= 4) {
+        goto original_copy;
+    }
+
+    if (produced >= size - 4) {
+        goto original_copy;
+    }
+    out[produced] = 13; //    null terminate for safety since CDI might round to next 3 bytes
+    out[produced+1] = 13; 
+    out[produced+2] = 13; 
+    return produced;
+
+original_copy:
+    memcpy(out, in, size);
+    return size;
+}

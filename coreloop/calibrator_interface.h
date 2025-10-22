@@ -78,7 +78,7 @@ void calib_set_slicers (uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t 
 
 
 
-uint32_t calib_get_slicer_errors();
+uint32_t calib_get_slicer_errors(uint8_t antenna_mask);
 
 uint32_t calib_get_errors();
 
@@ -94,7 +94,7 @@ int calib_get_readout_mode();
 void cal_copy_registers(uint32_t *buffer);
 
 // copy just error registers
-void cal_copy_errors (struct calibrator_errors* err);
+void cal_copy_errors (struct calibrator_error_reg* err);
 
 // get and set the PFB index
 int calib_get_PFB_index();

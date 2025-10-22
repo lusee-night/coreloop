@@ -4,7 +4,7 @@
 
 // This 16 bit version ID goes with metadata and startup packets.
 // MSB is code version, LSB is metatada version
-#define VERSION_ID 0x00000305
+#define VERSION_ID 0x00000306
 
 
 #include <inttypes.h>
@@ -12,7 +12,7 @@
 #include "spectrometer_interface.h"
 #include "calibrator.h"
 #include "core_loop_errors.h"
-
+#include "flash_interface.h"
 
 
 // Constants
@@ -32,6 +32,7 @@
 #define LOOP_COUNT_RST 1024 // number of clock ticks before we reset loop count
 
 #define GRIMM_BINS 4 // number of bins in grimm's tales mode
+#define NGRIMM_WEIGHTS (GRIMM_BINS*8) // number of bins we take into account when caclulating those tones.
 // Rover frequencies are 14.3625,  20.8875,  29.5625,  41.8125 MHz
 // Corresponding to bins 
 #define GRIMM_NDX0 574
@@ -45,7 +46,7 @@
 #define HK_REQUEST_STATE 0
 #define HK_REQUEST_ADC 1
 #define HK_REQUEST_HEALTH 2
-#define HK_REQUEST_CAL_WEIGHT_CRC 3
+#define HK_REQUEST_CAL_WEIGHT_CHECKSUM 3
 
 /***************** UNAVOIDABLE GLOBAL STATE ******************/
 // tap counter increased in the interrupt
@@ -110,7 +111,7 @@ struct core_state_base {
     uint8_t Navgf; // frequency averaging
     uint8_t hi_frac, med_frac;
     uint8_t bitslice[NSPECTRA]; // for spectra 0x1F is all MSB, 0xFF is auto
-    uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra
+    uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra or largest spectra (if >32) in auto mode
     uint8_t format; // output format to save data in
     uint8_t reject_ratio; // how far we should be to reject stuff, zero to remove rejection
     uint8_t reject_maxbad; // how many need to be bad to reject.
@@ -185,12 +186,13 @@ struct core_state {
     struct delayed_cdi_sending cdi_dispatch;
     struct time_counters timing;
     struct watchdog_state watchdog;
+    bool clear_buffers;
     bool soft_reset_flag;
     uint16_t cdi_wait_spectra;
     uint16_t avg_counter;
     uint32_t unique_packet_id;
-    uint8_t leading_zeros_min[NSPECTRA];
-    uint8_t leading_zeros_max[NSPECTRA];
+    uint8_t leading_zeros_min[NSPECTRA_AUTO];
+    uint8_t leading_zeros_max[NSPECTRA_AUTO];
     uint8_t housekeeping_request;
     uint8_t range_adc, resettle, request_waveform, request_eos;
     bool tick_tock;
@@ -212,7 +214,10 @@ struct core_state {
     int32_t reg_value; // value to be written to the register
     int8_t bitslicer_action_counter;  // counting how many times in a row we have changed bit slicer to prevent infinite loop
     uint32_t fft_time;
+    uint32_t grimm_weights[NGRIMM_WEIGHTS]; // weights for Grimm's tales mode
+    uint8_t grimm_weight_ndx; // index of the weight we are changing
     bool fft_computed;
+    bool region_have_lock;
 };
 
 struct saved_state {
@@ -297,8 +302,22 @@ struct housekeeping_data_2 {
 // cal weights sanity
 struct housekeeping_data_3 {
     struct housekeeping_data_base base;
-    uint32_t crc;
+    uint32_t checksum; // checksum of the weights
     uint16_t weight_ndx; // weight index when storing weights, to make sure we have reached the end
+};
+
+struct housekeeping_data_100 {
+    struct housekeeping_data_base base;
+    uint8_t meta_valid[6];
+    uint32_t size [6];
+    uint32_t checksum_meta [6];
+    uint32_t checksum_data [6];
+    
+};
+
+struct housekeeping_data_101 {
+    struct housekeeping_data_base base;
+    struct flash_copy_report_t report;
 };
 
 
@@ -383,9 +402,15 @@ void calib_set_mode (struct core_state* state, uint8_t mode);
 void process_calibrator(struct core_state* state);
 void dispatch_calibrator_data(struct core_state* state);
 
-// Update random stae in state.base.rand_state
+// Update random state in state.base.rand_state
 inline static void update_random_state(struct core_state* s) {s->base.rand_state = 1103515245 * s->base.rand_state + 12345;}
 inline static void new_unique_packet_id(struct core_state* s) {s->unique_packet_id++;}
+
+
+// region stuff
+void flash_send_region_info(struct core_state *state); 
+void flash_copy_region_cmd(struct core_state *state, int region_src, int region_tgt);
+void flash_region_enable (int region, bool enable);
 
 // utility functions
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -426,6 +451,9 @@ void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size
 // encode/decode 4 int32_t values into 5 int16_t values: first one for shift info
 void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out);
 void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out);
+
+// rle encoding for cal packets
+size_t rle_encode(void *tgt, const void *src, size_t size);
 
 // CRC
 uint32_t CRC(const void* data, size_t size);
