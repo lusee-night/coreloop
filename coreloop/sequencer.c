@@ -17,29 +17,29 @@ void set_spectrometer(struct core_state* state)
 }
 
 
-void default_state (struct core_state_base *seq)
+void default_state (struct core_state_base *base)
 {
     for (int i = 0; i < NINPUT; i++) {
-        seq->gain[i] = GAIN_MED;
-        seq->route[i].plus = i;
-        seq->route[i].minus = 0xFF;
-        seq->gain[i] = GAIN_MED;
-        seq->gain_auto_min[i] = (1 << 7);
-        seq->gain_auto_mult[i] = (1 << 4);
+        base->gain[i] = GAIN_MED;
+        base->route[i].plus = i;
+        base->route[i].minus = 0xFF;
+        base->gain[i] = GAIN_MED;
+        base->gain_auto_min[i] = (1 << 7);
+        base->gain_auto_mult[i] = (1 << 4);
     }
-    seq->Navg1_shift = 14;
-    seq->Navg2_shift = 3;
-    seq->Navgf = 1;
-    for (int i = 0; i < NSPECTRA; i++) seq->bitslice[i] = 0x1F;
-    seq->notch = 0;
-    seq->hi_frac = 0xFF;
-    seq->med_frac = 0x00;
-    seq->bitslice_keep_bits = 13;
-    seq->format = OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
-    seq->reject_ratio = 0; // no rejection by default
-    seq->reject_maxbad = 0;
-    seq->tr_start = 1;
-    seq->tr_stop = 0;
-    seq->grimm_enable = 0;
+    base->Navg1_shift = 14;
+    base->Navg2_shift = 3;
+    base->Navgf = 1;
+    for (int i = 0; i < NSPECTRA; i++) {base->bitslice[i] = 0x1F; base->actual_bitslice[i] = 0x1F;}
+    base->notch = 0;
+    base->hi_frac = 0xFF;
+    base->med_frac = 0x00;
+    base->bitslice_keep_bits = 13;
+    base->format = OUTPUT_32BIT; // OUTPUT_16BIT_UPDATES;
+    base->reject_ratio = 0; // no rejection by default
+    base->reject_maxbad = 0;
+    base->tr_start = 1;
+    base->tr_stop = 0;
+    base->grimm_enable = 0;
 }
 

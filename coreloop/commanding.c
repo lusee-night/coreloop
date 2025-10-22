@@ -346,11 +346,11 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_BITSLICE_AUTO:
-            if (arg_low > 0) {
+            if ((arg_low > 0) && (arg_low < 64)) {
                 for (int i=0; i<NSPECTRA; i++) state->base.bitslice[i] = 0xFF;
-                state->base.bitslice_keep_bits = arg_low;
+                state->base.bitslice_keep_bits = arg_low;                
             } else {
-                for (int i=0; i<NSPECTRA; i++) state->base.bitslice[i] = 0x1F;
+                state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
             break;
 
@@ -638,7 +638,7 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_CAL_BITSLICE_AUTO: 
-            state->cal.auto_slice = (arg_low>0);
+            state->cal.auto_slice = arg_low;
             break;
 
         case RFS_SET_CAL_DDRIFT_GUARD:

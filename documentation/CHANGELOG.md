@@ -2,6 +2,9 @@
 # CHANGELOG
 
 ### Version 3r06
+ * Made bitslicer control in calibrator more fine grained
+ * Enabled bitslicer control during RUN stage to help with signals that increase in strength
+ * fixed underflow logic in auto bitslicer, added option to keep max instead of min in range 
  * ensured we are outputing unique packet id wherever possible
  * prevent calibrator to get stuck in bit slicer settle
  * increased stack size to 12k (we were running out of stack but were saved by some static buffer!!)

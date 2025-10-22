@@ -32,10 +32,16 @@ struct core_state;
 #define CAL_MODE_ZOOM  0x50
 
 
+// finetuning of where to adjust slices
+#define AUTO_SLICE_SETTLE 0b0001
+#define AUTO_SLICE_SNR    0b0010
+#define AUTO_SLICE_RUN    0b0100
+#define AUTO_SLICE_PROD   0b1000
+
 #define USE_FLOAT_FFT (true)
 // happens to be the same as NCHANNELS, but semantically very different
 #define NPFB (2048)
-#define MAX_SETTLE_COUNT (8)
+#define MAX_SETTLE_COUNT (6)
 
 
 
@@ -44,7 +50,7 @@ struct core_state;
 struct calibrator_state {
     uint8_t mode; // this is the actual model of calibrator. If >4 we are in various auto modes
     uint8_t Navg2, Navg3; // averaging for calibrator
-    uint8_t drift_guard, drift_step; // drift guard and step
+    uint16_t drift_guard, drift_step; // drift guard and step
     uint8_t antenna_mask;
     uint8_t notch_index;
     uint32_t SNRon, SNRoff;
@@ -54,7 +60,7 @@ struct calibrator_state {
     uint16_t pfb_index; // for PFB and spectral zoom mode
     // for saving weights
     uint16_t weight_ndx; // weight index when storing weights
-    bool auto_slice;
+    uint8_t auto_slice;
     uint8_t powertop_slice;
     uint8_t delta_powerbot_slice;
     uint8_t sum1_slice, sum2_slice, fd_slice, sd2_slice;

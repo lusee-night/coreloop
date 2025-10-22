@@ -12,7 +12,7 @@
 // #define CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
 
 
-static inline int32_t get_with_zeros(int32_t val, uint8_t *min, uint8_t *max) {
+static inline int32_t get_with_zeros(int32_t val, uint32_t *min, uint32_t *max) {
     int32_t zeros = __builtin_clz(val);
     *min = MIN(*min, zeros);
     *max = MAX(*max, zeros);
@@ -254,14 +254,23 @@ bool transfer_from_df(struct core_state* state)
             int offset = sp * NCHANNELS;
             //debug_print_dec(sp); debug_print("\r\n");
             if (state->base.corr_products_mask & mask) {
-                    if (sp < NSPECTRA_AUTO) {
-                        state->leading_zeros_min[sp] = 32;
-                        state->leading_zeros_max[sp] = 0;
+                if (sp < NSPECTRA_AUTO) {
+                    // we need to do this to deal with 32 bit alignment
+                    int32_t leading_zeros_min = 32;
+                    int32_t leading_zeros_max = 0;
 
                     for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
-                        int32_t data = get_with_zeros(df_ptr[total_idx], &state->leading_zeros_min[sp], &state->leading_zeros_max[sp]);
+                        int32_t data = get_with_zeros(df_ptr[total_idx], &leading_zeros_min, &leading_zeros_max);
                         write_spectrum_value(data, ddr_ptr, total_idx, offset, state->base.Navg2_shift, state->base.averaging_mode, state->base.weight_current, ddr_ptr_high);
                     }
+                    state->leading_zeros_min[sp] = leading_zeros_min;
+                    state->leading_zeros_max[sp] = leading_zeros_max;
+                    /* debug_print("W");
+                    debug_print_dec(leading_zeros_min);
+                    debug_print("/");
+                    debug_print_dec(leading_zeros_max);
+                    debug_print(" "); */
+
                 } else {
                     for (int total_idx = offset; total_idx < offset + NCHANNELS; total_idx++) {
                         write_spectrum_value(df_ptr[total_idx], ddr_ptr, total_idx, offset, state->base.Navg2_shift, state->base.averaging_mode, state->base.weight_current, ddr_ptr_high);

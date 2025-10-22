@@ -111,7 +111,7 @@ struct core_state_base {
     uint8_t Navgf; // frequency averaging
     uint8_t hi_frac, med_frac;
     uint8_t bitslice[NSPECTRA]; // for spectra 0x1F is all MSB, 0xFF is auto
-    uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra
+    uint8_t bitslice_keep_bits; // how many bits to keep for smallest spectra or largest spectra (if >32) in auto mode
     uint8_t format; // output format to save data in
     uint8_t reject_ratio; // how far we should be to reject stuff, zero to remove rejection
     uint8_t reject_maxbad; // how many need to be bad to reject.
@@ -191,8 +191,8 @@ struct core_state {
     uint16_t cdi_wait_spectra;
     uint16_t avg_counter;
     uint32_t unique_packet_id;
-    uint8_t leading_zeros_min[NSPECTRA];
-    uint8_t leading_zeros_max[NSPECTRA];
+    uint8_t leading_zeros_min[NSPECTRA_AUTO];
+    uint8_t leading_zeros_max[NSPECTRA_AUTO];
     uint8_t housekeeping_request;
     uint8_t range_adc, resettle, request_waveform, request_eos;
     bool tick_tock;
@@ -402,7 +402,7 @@ void calib_set_mode (struct core_state* state, uint8_t mode);
 void process_calibrator(struct core_state* state);
 void dispatch_calibrator_data(struct core_state* state);
 
-// Update random stae in state.base.rand_state
+// Update random state in state.base.rand_state
 inline static void update_random_state(struct core_state* s) {s->base.rand_state = 1103515245 * s->base.rand_state + 12345;}
 inline static void new_unique_packet_id(struct core_state* s) {s->unique_packet_id++;}
 

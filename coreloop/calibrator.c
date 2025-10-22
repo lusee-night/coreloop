@@ -44,7 +44,7 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->pfb_index = 0;
     cal->weight_ndx = 0;
     // the following slices are not touched by auto slicer
-    cal->auto_slice = true;
+    cal->auto_slice = 1;
     cal->delta_powerbot_slice = 2;
     cal->sd2_slice = 0;
     cal->fd_slice = 8;
@@ -320,7 +320,7 @@ void process_cal_mode11 (struct core_state *state, struct calibrator_stats *stat
     struct calibrator_state *cal = &(state->cal);
     cal_transfer_data(0b11);
     cal->errors = calib_get_errors();
-    cal->bitslicer_errors = calib_get_slicer_errors();
+    cal->bitslicer_errors = calib_get_slicer_errors(cal->antenna_mask);
     
     // now get stats;
     get_mode11_minmax_unsigned(stats->SNR_max, stats->SNR_min, 20);
@@ -421,6 +421,21 @@ int check_range_signed(int32_t fields_max[4], int32_t *fields_min, int32_t value
     return maxshift;
 }
 
+void return_to_bitslicer_settle(struct calibrator_state *cal)
+{
+    cal->powertop_slice += 7;
+    cal->sum1_slice += 5;
+    cal->sum2_slice += 5;
+    cal->fd_slice += 5;
+    cal->mode = CAL_MODE_BIT_SLICER_SETTLE;
+    cal->settle_count = 0;
+    calib_set_Navg(0, cal->Navg3); // set to fast settling
+    calib_set_SNR_lock_on(0xFFFFFF);
+    calibrator_set_slices(cal);
+    debug_print("\r\n[ -> SLICER SETTLE]");
+    cal_reset();
+}
+
 void process_calibrator(struct core_state *state)
 {
 
@@ -428,7 +443,6 @@ void process_calibrator(struct core_state *state)
     static int32_t old_errors = 0xFF;
     static int32_t old_bitslicer_errors = 0;
     struct calibrator_stats stats;
-    bool pass_on = false; // passing stats from one mode to another
 
     // if we are not enabled, return
     if (!state->base.calibrator_enable)
@@ -454,7 +468,7 @@ void process_calibrator(struct core_state *state)
 
     if (cal->mode == CAL_MODE_BIT_SLICER_SETTLE)
     {
-        if (cal->auto_slice)
+        if (cal->auto_slice & AUTO_SLICE_SETTLE)
         {
             calib_set_Navg(0, cal->Navg3);
             if (df_ready[3])
@@ -480,7 +494,6 @@ void process_calibrator(struct core_state *state)
                     calib_set_Navg(cal->Navg2, cal->Navg3);
                     cal_reset();
                     cal->mode = CAL_MODE_SNR_SETTLE;
-                    pass_on = true;
                     debug_print("\r\n[ -> SNR]")
                 }
                 else
@@ -526,6 +539,7 @@ void process_calibrator(struct core_state *state)
                     debug_print(".0.");
                     debug_print_dec(cal->fd_slice);
                     debug_print(".0 ]\n\r");
+                    
                 }
             }
        }
@@ -535,13 +549,25 @@ void process_calibrator(struct core_state *state)
             // if not on auto slicer we can just move on            
             cal->mode = CAL_MODE_SNR_SETTLE;
         }
-    }
-
-    if (cal->mode == CAL_MODE_SNR_SETTLE)
+    } else if (cal->mode == CAL_MODE_SNR_SETTLE)
     {
-        if (df_ready[3] || (pass_on))
+        if (df_ready[3])
         {
-            if (!pass_on) process_cal_mode11(state, &stats); // this allow for passing STATS directly from previous mode
+            process_cal_mode11(state, &stats); // this allow for passing STATS directly from previous mode
+            if (cal->auto_slice & AUTO_SLICE_SNR) {
+                uint32_t bit_slicer_flags = state->cal.bitslicer_errors;
+                // SUM2 on purpose missing here since it seems to trigger randomly
+                if (bit_slicer_flags & (SLICER_ERR_SUM1 | SLICER_ERR_FD | SLICER_ERR_SD1 | SLICER_ERR_SD2 | SLICER_ERR_SD3 | SLICER_ERR_PTOP | SLICER_ERR_PBOT))
+                {
+                    
+                    debug_print_dec(bit_slicer_flags);
+                    return_to_bitslicer_settle(cal);
+                    //debug_print("here");
+                    //debug_print_dec(cal->mode);
+
+                    return;
+                }
+            }   
             
             uint32_t SNR_on = 0;
             
@@ -581,9 +607,7 @@ void process_calibrator(struct core_state *state)
             }    
             return;                
         }
-    }
-    
-    if (mode == CAL_MODE_RUN) {
+    } else if (mode == CAL_MODE_RUN) {
         if (df_ready[0])
         {
             process_cal_mode00(state);
@@ -593,7 +617,7 @@ void process_calibrator(struct core_state *state)
         {
             process_cal_mode11(state, &stats);
             // now check prod1 and prod2 slices
-            if (cal->auto_slice)
+            if (cal->auto_slice & AUTO_SLICE_PROD)
             {
                 uint32_t bit_slicer_flags = state->cal.bitslicer_errors;
                 if (bit_slicer_flags & SLICER_ERR_PROD2)
@@ -608,7 +632,21 @@ void process_calibrator(struct core_state *state)
                 }
                 calibrator_set_slices(cal);
             }
-        
+            if (cal->auto_slice & AUTO_SLICE_RUN)
+            {
+                uint32_t bit_slicer_flags = state->cal.bitslicer_errors;
+                if (bit_slicer_flags & (SLICER_ERR_SUM1 | SLICER_ERR_FD | SLICER_ERR_SD1 | SLICER_ERR_SD2 | SLICER_ERR_SD3 | SLICER_ERR_PTOP | SLICER_ERR_PBOT))
+                {
+                    
+                    debug_print_dec(bit_slicer_flags);
+                    return_to_bitslicer_settle(cal);
+                    //debug_print("here");
+                    //debug_print_dec(cal->mode);
+
+                    return;
+                }
+            }
+
             // now check if we are actually loosing lock; in steady state approximately half (512) are positive, other half negative
             // so 430 is about 5 sigma in binomial
             // this also only makes sense if we are lock, otherwise we might be transitioning towards lock

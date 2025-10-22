@@ -178,7 +178,7 @@ void cal_reset() { };
 void calib_set_slicers(uint8_t powertop_slice, uint8_t powerbot_slice, uint8_t sum1_slice, \
                         uint8_t sum2_slice, uint8_t fd_slice, uint8_t sd2_slice, uint8_t prod1_slice, uint8_t prod2_slice) { }
 
-uint32_t calib_get_slicer_errors() { return 0; }
+uint32_t calib_get_slicer_errors(uint8_t antenna_mask) { return 0; }
 
 uint32_t calib_get_errors() { return 0; }
 
