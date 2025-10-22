@@ -148,7 +148,7 @@
 // Sets manual bitslicing for XCOR 9-16 (3 LSB bits) to values 1-32 (5 MSB bits)
 #define RFS_SET_BITSLICE_HIGH  0x35 
 
-// Uses automatic bitslicing, 0 disables, positive number sets number of SB for lowest product
+// Uses automatic bitslicing, 0 disables, positive number <32 sets number of SB for lowest product, >32 sets number of SB for highest product
 #define RFS_SET_BITSLICE_AUTO  0x36 
 
 // set routing for ADC channels 0 bits 0-2 are minus, bits 3-6 are plus

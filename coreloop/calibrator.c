@@ -662,8 +662,9 @@ void process_calibrator(struct core_state *state)
                 debug_print(" ");
             } 
 
-
-            if (stats.lock_count < 512 || ((SD_pos[0] > 430) && (SD_pos[1] > 430) && (SD_pos[2] > 430) && (SD_pos[3] > 430)))
+            // the request on lock_count should not be too stringent, since we are looking
+            // for the lock in the first iteration.
+            if (stats.lock_count < 100 || ((SD_pos[0] > 430) && (SD_pos[1] > 430) && (SD_pos[2] > 430) && (SD_pos[3] > 430)))
             {
                 // we have lost the lock, let's go back to SNR settled mode
                 for (int i = 0; i < 4; i++)

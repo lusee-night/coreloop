@@ -2,6 +2,7 @@
 # CHANGELOG
 
 ### Version 3r06
+ * Relaxed calibration lock count requirement to avoid issues in the initial lock
  * Made bitslicer control in calibrator more fine grained
  * Enabled bitslicer control during RUN stage to help with signals that increase in strength
  * fixed underflow logic in auto bitslicer, added option to keep max instead of min in range 
