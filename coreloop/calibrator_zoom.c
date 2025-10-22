@@ -211,7 +211,7 @@ void process_cal_zoom(struct core_state* state) {
             int32_t* ch1m_imag = ch1m_real + NPFB;
             for(int i = 0; i < 2*NPFB; i++) {
                 ch1_real[i] -= ch1m_real[i];
-                //ch1_imag[i] -= ch1m_imag[i];
+                ch1_imag[i] -= ch1m_imag[i];
             }
         }
         if (state->cal.zoom_diff_2) {
