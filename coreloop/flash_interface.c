@@ -224,6 +224,12 @@ void region_check_checksum(uint32_t region, bool* valid, uint32_t *size, uint32_
         return;
     }
     region_get_info(region, valid, size, info_checksum);
+    if ((*size==0) || (*size > Flash_Meta_Offset/4)) {
+        *data_checksum = 0xFFFFFFFF;
+        *valid = false;
+        return;
+    }
+
     memcpy_from_flash((void *)FLASH_WORK, (uint32_t)(Flash_Region_1  + (region-1)*Flash_Region_Size), (*size)*4); // size is in words
     uint32_t *ptr = (uint32_t *)(FLASH_WORK);
     uint32_t checksum = 0;
@@ -240,7 +246,7 @@ void region_copy_region (int region_src, int region_tgt, struct flash_copy_repor
     report->region_2 = region_tgt;
     bool valid;
     region_check_checksum(region_src, &valid, &report->size_1, &report->checksum_1_meta, &report->checksum_1_data);
-    if ((report->size_1==0) || (report->checksum_1_meta != report->checksum_1_data)) {
+    if ((report->size_1==0) || (report->size_1 > Flash_Meta_Offset/4) || (report->checksum_1_meta != report->checksum_1_data)) {
         report->status = FLASH_COPY_BAD_CHECKSUM_IN;
         return;
     }

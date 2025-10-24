@@ -1,6 +1,9 @@
 
 # CHANGELOG
 
+### Version 3r07
+ * fixed region copy/check deal with corrupted sizes in headers
+
 ### Version 3r06
  * Relaxed calibration lock count requirement to avoid issues in the initial lock
  * Made bitslicer control in calibrator more fine grained
