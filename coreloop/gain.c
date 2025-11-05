@@ -3,6 +3,10 @@
 #include "LuSEE_IO.h"
 
 
+/* Update the spectrometer hardware with the current actual gain settings.
+ * Iterates over all input channels and programs the hardware gain registers
+ * using the values stored in `state->base.actual_gain`.
+ */
 void update_spec_gains(struct core_state* state) {
     for (int8_t i = 0; i < NINPUT; i++) {
         spec_set_gain(i, state->base.actual_gain[i]);
@@ -10,6 +14,11 @@ void update_spec_gains(struct core_state* state) {
     debug_print("gains changed\r\n");
 }
 
+/* Configure the routing for a specific spectrometer channel.
+ * `ch` is the channel index. `arg_low` contains the plus and minus route
+ * selections packed into bits: low 3 bits for the plus side, next 3 bits for the
+ * minus side. The function updates the state and programs the hardware.
+ */
 void set_route(struct core_state* state, uint8_t ch, uint8_t arg_low) {
     state->base.route[ch].plus = arg_low & 0b111;
     state->base.route[ch].minus = ((arg_low & 0b111000) >> 3);
@@ -22,6 +31,12 @@ void set_route(struct core_state* state, uint8_t ch, uint8_t arg_low) {
 }
 
 
+/* Perform automatic analog gain control (AGC) for each input channel.
+ * The function examines ADC statistics, compares the signal amplitude
+ * against configured thresholds, and increments or decrements the actual gain
+ * accordingly. It returns true if any gain was changed, triggering a hardware
+ * update via `update_spec_gains`.
+ */
 bool analog_gain_control(struct core_state* state) {
 
     bool gains_changed = false;
@@ -53,6 +68,12 @@ bool analog_gain_control(struct core_state* state) {
     return gains_changed;
 }
 
+/* Process the ADC range and handle gain updates.
+ * This function checks if new ADC statistics are available. If AGC caused a gain
+ * change, it schedules a resettle period before restarting the spectrometer.
+ * If no gain change occurred and a range request is pending, it clears the request
+ * and triggers a housekeeping update.
+ */
 void process_gain_range(struct core_state* state) {
     if (spec_get_ADC_stat(state->base.ADC_stat)) {
         if (analog_gain_control(state)) {
@@ -79,6 +100,11 @@ void process_gain_range(struct core_state* state) {
     }
 }
   
+/* Perform digital bitslice (gain) control for each channel.
+ * Adjusts the number of bits retained from the ADC based on leading-zero
+ * statistics to maintain signal dynamic range. Updates the hardware settings
+ * and records any changes in the error flags.
+ */
 bool bitslice_control(struct core_state* state) {
     bool bitslice_changed = false;
 

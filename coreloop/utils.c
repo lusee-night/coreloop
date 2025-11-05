@@ -9,6 +9,10 @@
 #include "LuSEE_IO.h"
 
 
+/* Returns the absolute value of a 32‑bit integer, handling INT32_MIN safely.
+ * If the input is INT32_MIN (which cannot be negated in two's complement),
+ * the function returns INT32_MAX as a saturating value.
+ */
 static inline int32_t safe_abs_val(int32_t val)
 {
     if (val >= 0) return val;
@@ -16,6 +20,11 @@ static inline int32_t safe_abs_val(int32_t val)
     return -val;
 }
 
+/* Encode a signed 32-bit integer into a 10-bit value plus a 5-bit leading-zero count.
+ * The format packs a sign bit (bit 5), a 5-bit count of leading zeros (bits 0-4),
+ * and the 10 most significant bits of the absolute value (bits 6-15). Zero is
+ * encoded as 0.
+ */
 uint16_t encode_10plus6(int32_t val) {
     if (val == 0) {
         return 0;
@@ -44,6 +53,10 @@ uint16_t encode_10plus6(int32_t val) {
 }
 
 
+/* Decode a 10+6 encoded value back to a signed 32‑bit integer.
+ * The input contains a sign bit (bit 5), a 5‑bit leading zero count,
+ * and the most significant bits of the absolute value. Zero decodes to 0.
+ */
 int32_t decode_10plus6(uint16_t val) {
     if (val == 0)
         return 0;
@@ -63,16 +76,27 @@ int32_t decode_10plus6(uint16_t val) {
     return out;
 }
 
-
-
-
-
+/* Compute the number of bits to shift right for shared-LZ compression.
+ * The function determines the leading-zero count of the input value and
+ * returns a shift amount such that the value fits within approximately 15 bits,
+ * with 1 bit of margin. The result is clamped to a minimum of 0 and may be
+ * adjusted by the caller if it equals 17.
+ */
 static inline int8_t get_shift_by(uint32_t val)
 {
     int8_t lz = __builtin_clz(val);
     return MAX(16 - lz + 1, 0);
 }
 
+/* Encode an array of unsigned 32-bit spectrum values using shared-LZ compression.
+ * The algorithm groups consecutive values that require similar shift amounts
+ * (determined by leading-zero count) into segments. For each segment it emits:
+ *   - a signed 8-bit shift amount (0-16)
+ *   - an 8-bit count of values in the segment (1-255)
+ *   - the compressed 16-bit values (original value >> shift)
+ * This reduces the payload size when values have many leading zeros.
+ * currently not used
+ */
 int encode_shared_lz_positive(const uint32_t* spectra, unsigned char* cdi_ptr, int size) {
     const unsigned char* const orig_cdi_ptr = cdi_ptr;
     int i = 0;
@@ -128,6 +152,12 @@ void decode_shared_lz_positive(const unsigned char* data_buf, uint32_t* x, int s
     }
 }
 
+/* Encode an array of signed 32‑bit spectrum values using shared‑LZ compression.
+ * The algorithm mirrors the unsigned version but also records the sign of each
+ * value. It groups consecutive values with the same sign and similar shift
+ * amounts, emitting a combined sign/shift byte, a segment length, and the
+ * compressed 16‑bit magnitude values.
+ */
 int encode_shared_lz_signed(const int32_t* spectra, unsigned char* cdi_ptr, int size) {
     unsigned char* orig_cdi_ptr = cdi_ptr;
     int i = 0;
@@ -203,6 +233,13 @@ void decode_shared_lz_signed(const unsigned char* data_buf, int32_t* x, int size
     }
 }
 
+
+/* Encode a signed 32-bit integer into a 12-bit value plus a 4-bit leading-zero count.
+ * The result packs the most significant 12 bits of the value (after removing the
+ * leading zeros and the first 1 bit) and a 4-bit count of leading zeros (capped
+ * at 15). Note: This function does not handle zero specially and relies on
+ * __builtin_clz behavior.
+ */
 uint16_t encode_12plus4(int32_t val) {
     uint32_t out = 0;
     uint8_t lz = __builtin_clz(abs(val));
@@ -212,6 +249,11 @@ uint16_t encode_12plus4(int32_t val) {
     return out;
 }
 
+/* Decode a 12+4 encoded value back to a signed 32‑bit integer.
+ * The input contains a 4‑bit leading‑zero count (lowest bits) and the
+ * 12‑bit most‑significant part of the original value. The function restores
+ * the original signed integer by re‑applying the leading‑zero shift.
+ */
 int32_t decode_12plus4(uint16_t val) {
     uint8_t lz = val & 0x0F;
     uint32_t val_wo_msb = val & 0xFFF0;
@@ -225,6 +267,11 @@ int32_t decode_12plus4(uint16_t val) {
 // 32 bits -> lower 14 bits
 // bit 16: sign
 // bit 15: sign of lz
+/* Encode four signed 32‑bit integers into five 16‑bit words using a custom compression scheme.
+ * The first 16‑bit word stores four 4‑bit shift values (difference from 16) for each input.
+ * Subsequent words contain the shifted absolute values, with sign and in‑place shift bits
+ * embedded. This reduces the number of bits when inputs share similar magnitude.
+ */
 void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out)
 {
     uint16_t* const shifts = vals_out;
@@ -248,6 +295,12 @@ void encode_4_into_5(const int32_t* const vals_in, uint16_t* vals_out)
     }
 }
 
+/* Decode five 16‑bit words back into four signed 32‑bit integers.
+ * The first word provides the 4‑bit shift values for each output. Subsequent
+ * words contain the shifted magnitude with embedded sign and in‑place shift bits.
+ * The function reconstructs the original signed values by left‑shifting the
+ * stored magnitude and applying the sign.
+ */
 void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out)
 {
     const uint16_t shifts = *vals_in;
@@ -262,6 +315,10 @@ void decode_5_into_4(const uint16_t* const vals_in, int32_t* vals_out)
 }
 
 
+/* Compute CRC-32 (IEEE 802.3) checksum for a data buffer.
+ * The algorithm processes each byte, applying the standard polynomial
+ * 0xEDB88320. The returned value is the bitwise‑inverted CRC.
+ */
 uint32_t CRC(const void* data, size_t size) {
     const uint8_t* bytes = (const uint8_t*)data;
     uint32_t crc = 0xFFFFFFFF;
@@ -281,6 +338,9 @@ uint32_t CRC(const void* data, size_t size) {
 }
 
 
+/* Print a buffer of bytes in hexadecimal format followed by a newline.
+ * Useful for debugging binary data sent over CDI.
+ */
 void print_buf(const void* data, size_t size) {
     uint8_t *b = (uint8_t *)(data);
     for (int i=0; i<size; i++) {
@@ -294,6 +354,11 @@ void print_buf(const void* data, size_t size) {
 extern char __stack_bottom;  // Defined in linker script
 extern char __stack_top;    // Defined in linker script
 
+/* Compute the amount of free stack space (in bytes) available at runtime.
+ * Assumes the stack grows downward from __stack_top to __stack_bottom. Uses
+ * linker-provided symbols to determine the total stack region, then compares
+ * with the current stack pointer to calculate how much stack space remains unused.
+ */
 size_t get_free_stack() {
     volatile char dummy;
     char *current_sp = (char*)&dummy;
@@ -307,6 +372,13 @@ size_t get_free_stack() {
 
 
 
+/* Run‑length encode the source buffer.
+ * This simple RLE scheme compresses runs of 0x00, 0xFF, and the marker bytes
+ * 0x8C/0x8D. Isolated marker bytes are escaped as a byte followed by 0.
+ * The function writes the encoded data to `tgt` and returns the number of
+ * produced bytes. If the encoded size would not be smaller than the original
+ * (or if the buffer is too small), the original data is copied unchanged.
+ */
 size_t rle_encode(void *tgt, const void *src, size_t size) {
 /*
 We will RLE encode the most common bytes as followos:

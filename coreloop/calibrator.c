@@ -25,6 +25,7 @@
 #define CAL_MODE3_APPID_OFFSET 11
 uint32_t register_scratch[CAL_NREGS];
 
+// Initializes calibrator state with default parameters
 void calibrator_default_state(struct calibrator_state *cal)
 {
 
@@ -62,6 +63,7 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->zoom_ndx_range = 0;
 }
 
+// Configures hardware calibrator registers based on the current calibrator state; uses fields mode, Navg2, Navg3, drift_guard, drift_step, antenna_mask, notch_index, etc.
 void set_calibrator(struct calibrator_state *cal)
 {
     calib_set_Navg(cal->Navg2, cal->Navg3);
@@ -101,6 +103,7 @@ void set_calibrator(struct calibrator_state *cal)
     cal_clear_df_flag();
 }
 
+// Sets calibrator SNR lock thresholds based on calibrator state fields SNRon and SNRoff
 void calibrator_set_SNR(struct calibrator_state *cal)
 {
     calib_set_SNR_lock_on(cal->SNRon);
@@ -263,6 +266,7 @@ void copy_cal_metadata(struct calibrator_metadata *out, struct core_state *state
 }
 
 
+// Packages raw mode‑11 calibrator data into a CDI packet, preparing metadata and copying raw buffers
 void packetize_mode11_raw(struct core_state *state,  struct calibrator_stats* stats)
 {
 
@@ -297,6 +301,7 @@ void packetize_mode11_raw(struct core_state *state,  struct calibrator_stats* st
 }
 
 
+// Packages processed mode‑11 calibrator data into a CDI packet, including metadata and compressed data
 void packetize_mode11_processed(struct core_state *state, struct calibrator_stats* stats)
 {
 

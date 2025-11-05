@@ -10,12 +10,14 @@
 #include "high_prec_avg.h"
 
 
+// Sends a CDI packet for a given app ID and length, updating stats counters
 void cdi_dispatch_uC (struct cdi_stats* cdi_stats, uint16_t appID, uint32_t length) {
     cdi_stats->cdi_packets_sent++;
     cdi_stats->cdi_bytes_sent += length;
     cdi_dispatch(appID, length);
 }
 
+// Sends metadata packet containing version, packet ID and base state; uses state fields unique_packet_id and base
 void send_metadata_packet(struct core_state* state) {
     struct meta_data *meta = (struct meta_data *)TLM_BUF;
     wait_for_cdi_ready();
@@ -26,6 +28,7 @@ void send_metadata_packet(struct core_state* state) {
     reset_errormasks(state);
 }
 
+// Computes shift amount based on Navgf and Navg2_shift settings for averaging; used in spectrum extraction
 static int get_shift(struct core_state* state) {
     if (state->base.Navgf == 1)
         return state->base.Navg2_shift;
@@ -41,6 +44,7 @@ static int get_shift(struct core_state* state) {
     return state->base.Navg2_shift;
 }
 
+// Prepares a CDI spectrum packet: computes sizes and sets data/CRC pointers
 static void prepare_spectrum_packet(struct core_state* state, uint32_t* data_size, uint32_t* packet_size, char** data_ptr, char** crc_ptr) {
     // compute sizes
     uint8_t format = state->cdi_dispatch.format;
@@ -70,6 +74,7 @@ static void prepare_spectrum_packet(struct core_state* state, uint32_t* data_siz
 }
 
 
+// Dispatches a single spectrum product as a CDI packet; handles different output formats and uses averaging shift
 static void dispatch_data(struct core_state* state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
     const void *ddr_ptr = spectra_read_buffer(state->tick_tock);
@@ -134,6 +139,7 @@ static void dispatch_data(struct core_state* state) {
     cdi_dispatch_uC(&(state->cdi_stats),state->cdi_dispatch.appId, packet_size);
 }
 
+// Dispatches Grimm calibrated spectra as a CDI packet; uses current tick/tock buffer and packet ID
 void dispatch_grimm_data(struct core_state *state) {
     // if we are in tick, we are copyng over TOCK, otherwise TICK !!
     const void* ddr_ptr = grimm_spectra_read_buffer(state->tick_tock);
@@ -148,6 +154,7 @@ void dispatch_grimm_data(struct core_state *state) {
 }
 
 // send NSPECTRA packets
+// Dispatches time‑resolved spectra packets; iterates over averaging frames and updates state.tr counters
 void dispatch_tr_data(struct core_state* state) {
     // TODOS:
     // 1. for loop can incur high cost (cache misses). Just send in contiguous chunks
@@ -208,6 +215,7 @@ void dispatch_tr_data(struct core_state* state) {
 }
 
 
+// Generates the next base application ID for spectrum packets based on random state and configured fractions
 uint32_t get_next_baseAppID(struct core_state* state) {
     // constants from the C standard library implementation of LCG
     update_random_state(state);
@@ -224,6 +232,7 @@ uint32_t get_next_baseAppID(struct core_state* state) {
 }
 
 
+// Generates the next time‑resolved application ID based on random state and configured fractions
 uint32_t get_next_tr_baseAppID(struct core_state* state) {
     update_random_state(state);
     uint8_t rand = state->base.rand_state & 0xFF;
@@ -237,6 +246,7 @@ uint32_t get_next_tr_baseAppID(struct core_state* state) {
 }
 
 
+// Prepares and sends all spectrum data (metadata, products, time‑resolved, Grimm, calibrator) to CDI; updates state counters and packet IDs accordingly
 void transfer_to_cdi(struct core_state* state) {
     debug_print ("$");
     new_unique_packet_id(state);
@@ -262,6 +272,13 @@ void transfer_to_cdi(struct core_state* state) {
     state->timing.cdi_dispatch_counter = tap_counter + state->dispatch_delay;
 }
 
+/*
+ * Checks whether all delayed CDI dispatch components have been sent.
+ * Returns true only when the required number of spectrum products,
+ * time‑resolved spectra, Grimm spectra, and calibrator packets have
+ * been dispatched. These thresholds are defined by the constants
+ * NSPECTRA and NCALPACKETS and the state counters.
+ */
 bool delayed_cdi_dispatch_done (struct core_state* state) {
     return (state->cdi_dispatch.prod_count >= NSPECTRA && 
             state->cdi_dispatch.tr_count >=  NSPECTRA   && 
@@ -270,6 +287,16 @@ bool delayed_cdi_dispatch_done (struct core_state* state) {
 }
 
 
+/*
+ * Handles the delayed CDI dispatch loop.
+ * This function is called from the core loop whenever the dispatch
+ * timer expires. It checks whether a dispatch is pending, sends the
+ * next pending spectrum product, time‑resolved spectra, Grimm spectra,
+ * or calibrator packets based on the current counters, and updates the
+ * dispatch timer for the next interval. It returns true while there are
+ * more packets to send (i.e., the dispatch is still in progress) and
+ * false when all required packets have been transmitted.
+ */
 bool process_delayed_cdi_dispatch (struct core_state* state) {
 
     // if we are waiting, let's prevent anyone else to send stuff until we are done

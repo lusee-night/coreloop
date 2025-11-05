@@ -2,6 +2,10 @@
 #include "LuSEE_IO.h"
 
 
+/* Configure the spectrometer hardware according to the current core state.
+ * This function programs gains, routing, bitslice settings, averaging, and
+ * notch filter options for each input channel, then initializes the calibrator.
+ */
 void set_spectrometer(struct core_state* state)
 {
     for (int i = 0; i < NINPUT; i++) {
@@ -17,6 +21,11 @@ void set_spectrometer(struct core_state* state)
 }
 
 
+/* Initialize a core_state_base structure with default configuration.
+ * Sets default gains, routing, averaging shifts, bitslice values, notch settings,
+ * fraction thresholds, output format, and other parameters to sensible defaults
+ * for a fresh start.
+ */
 void default_state (struct core_state_base *base)
 {
     for (int i = 0; i < NINPUT; i++) {

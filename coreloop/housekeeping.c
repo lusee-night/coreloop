@@ -10,6 +10,10 @@
 #include "LuSEE_IO.h"
 #include <string.h>
 
+/* Send a startup hello packet over CDI.
+ * Populates a `startup_hello` payload with version information, firmware identifiers,
+ * timestamps, and a unique packet ID, then dispatches it using `cdi_dispatch_uC`.
+ */
 void send_hello_packet(struct core_state *state)
 {
 
@@ -29,6 +33,11 @@ void send_hello_packet(struct core_state *state)
     cdi_dispatch_uC(&(state->cdi_stats), AppID_uC_Start, sizeof(struct startup_hello));
 }
 
+/* Fill a heartbeat payload with current telemetry data.
+ * Populates packet count, timestamps, TVS sensor readings, CDI statistics,
+ * error flags, and a magic signature. The caller provides a pre‑allocated
+ * `struct heartbeat` buffer.
+ */
 void update_heartbeat(struct core_state *state, struct heartbeat *payload)
 {
     payload->packet_count = state->heartbeat_packet_count;
@@ -50,6 +59,11 @@ void update_heartbeat(struct core_state *state, struct heartbeat *payload)
     payload->magic[5] = 'L';
 }
 
+/* Process the heartbeat timer.
+ * If the heartbeat interval has elapsed, this function builds and sends a
+ * heartbeat packet via CDI, updates the next scheduled time and increments the
+ * heartbeat packet counter. Returns true when a packet was sent.
+ */
 bool process_hearbeat(struct core_state *state)
 {
     if (state->timing.heartbeat_counter >= tap_counter)
@@ -64,6 +78,13 @@ bool process_hearbeat(struct core_state *state)
     return true;
 }
 
+/* Process a housekeeping request.
+ * Depending on the pending `housekeeping_request` value, this function
+ * assembles the appropriate housekeeping data structure (state dump, ADC stats,
+ * health status, or calibrator checksum) and dispatches it via CDI. After
+ * sending, it clears the request and error flags.
+ * Returns true if a packet was sent.
+ */
 bool process_housekeeping(struct core_state *state)
 {
     if (state->housekeeping_request == 0)
@@ -133,6 +154,13 @@ bool process_housekeeping(struct core_state *state)
     return true;
 }
 
+/* Process an End‑Of‑Sequence (EOS) request.
+ * This function checks that all pending CDI dispatches are finished and that
+ * no housekeeping or waveform requests are outstanding. It then builds an
+ * `end_of_sequence` packet containing a unique packet ID and the EOS argument
+ * supplied by the user, dispatches it, and clears the request flag.
+ * Returns false if the EOS cannot be processed yet; true when the packet is sent.
+ */
 bool process_eos(struct core_state *state)
 {
     if (state->request_eos == 0)
