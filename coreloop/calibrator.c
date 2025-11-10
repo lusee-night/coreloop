@@ -25,7 +25,9 @@
 #define CAL_MODE3_APPID_OFFSET 11
 uint32_t register_scratch[CAL_NREGS];
 
-// Initializes calibrator state with default parameters
+// Initializes calibrator state structure with default configuration values including
+// mode settings, averaging parameters, SNR thresholds, slice positions, antenna masks,
+// and zoom configuration parameters.
 void calibrator_default_state(struct calibrator_state *cal)
 {
 
@@ -63,7 +65,10 @@ void calibrator_default_state(struct calibrator_state *cal)
     cal->zoom_ndx_range = 0;
 }
 
-// Configures hardware calibrator registers based on the current calibrator state; uses fields mode, Navg2, Navg3, drift_guard, drift_step, antenna_mask, notch_index, etc.
+//  Configures the hardware calibrator by applying settings from the calibrator state to hardware registers,
+//  including averaging parameters, drift guards, antenna masks, SNR thresholds, and slice configurations.
+//  Handles special modes like bit-slicer settle and SNR settle by adjusting relevant parameters.
+//  Uses fields mode, Navg2, Navg3, drift_guard, drift_step, antenna_mask, notch_index, etc.
 void set_calibrator(struct calibrator_state *cal)
 {
     calib_set_Navg(cal->Navg2, cal->Navg3);
@@ -110,13 +115,16 @@ void calibrator_set_SNR(struct calibrator_state *cal)
     calib_set_SNR_lock_off(cal->SNRoff);
 }
 
+// Configures the hardware bit-slicer positions for various calibrator processing stages including power
+// top/bottom, sum channels, frequency/slow drift, and product channels using values from the calibrator state.
 void calibrator_set_slices(struct calibrator_state *cal)
 {
     // second one was plus +4
     calib_set_slicers(cal->powertop_slice, cal->powertop_slice + cal->delta_powerbot_slice, cal->sum1_slice, cal->sum2_slice, cal->fd_slice, cal->sd2_slice, cal->prod1_slice, cal->prod2_slice);
 }
 
-
+// Analyzes mode-11 calibrator data for a specific register to find minimum and maximum
+// signed 32-bit values across all four antenna channels, processing 1024 samples per antenna.
 void get_mode11_minmax_signed(int32_t *max, int32_t *min, int reg)
 {
 
@@ -141,6 +149,8 @@ void get_mode11_minmax_signed(int32_t *max, int32_t *min, int reg)
     }
 }
 
+//  Analyzes mode-11 calibrator data for a specific register to find minimum and maximum unsigned 32-bit values
+//  across all four antenna channels, processing 1024 samples per antenna.
 void get_mode11_minmax_unsigned(uint32_t *max, uint32_t *min, int reg)
 {
 
@@ -173,6 +183,8 @@ void get_mode11_minmax_unsigned(uint32_t *max, uint32_t *min, int reg)
     }
 }
 
+// Counts the number of positive values in mode-11 calibrator data for a specific register
+// across all four antenna channels, examining 1024 samples per antenna.
 void get_mode11_positive_count(uint16_t *count, int reg)
 {
     int32_t *tgt = (int32_t *)(CAL_DF + reg * CAL_MODE3_CHUNKSIZE);
@@ -189,6 +201,8 @@ void get_mode11_positive_count(uint16_t *count, int reg)
     }
 }
 
+// Counts the number of samples where the calibrator has lock by examining
+// the first 1024 samples of mode-11 data, returning the total count of non-zero values.
 uint16_t get_mode11_lock_count()
 {
 
@@ -205,6 +219,9 @@ uint16_t get_mode11_lock_count()
     return count;
 }
 
+// Copies calibrator metadata including version info, timestamps, mode settings, slice positions,
+// error flags, drift data (compressed to 16-bit with shift factor), lock counts per antenna,
+// and error register contents into the output metadata structure.
 void copy_cal_metadata(struct calibrator_metadata *out, struct core_state *state, struct calibrator_stats* stats)
 {
     struct calibrator_state *cal = &(state->cal);
@@ -265,8 +282,9 @@ void copy_cal_metadata(struct calibrator_metadata *out, struct core_state *state
     out->stats = *stats;
 }
 
-
-// Packages raw mode‑11 calibrator data into a CDI packet, preparing metadata and copying raw buffers
+// Packages raw mode-11 calibrator data for transmission by repacking lock status into 16-bit format,
+// embedding calibrator metadata, copying remaining raw data buffers,
+// and setting up CDI dispatch parameters for sending the complete raw dataset.
 void packetize_mode11_raw(struct core_state *state,  struct calibrator_stats* stats)
 {
 
@@ -301,7 +319,9 @@ void packetize_mode11_raw(struct core_state *state,  struct calibrator_stats* st
 }
 
 
-// Packages processed mode‑11 calibrator data into a CDI packet, including metadata and compressed data
+// Packages processed mode-11 calibrator data into a compact metadata-only packet
+// containing calibrator statistics, configuration, and compressed drift information,
+// preparing it for CDI transmission.
 void packetize_mode11_processed(struct core_state *state, struct calibrator_stats* stats)
 {
 
@@ -320,6 +340,10 @@ void packetize_mode11_processed(struct core_state *state, struct calibrator_stat
 
 }
 
+// Processes mode-11 calibrator data by transferring it from hardware,
+// extracting statistics (SNR, power, drift min/max values), counting lock status,
+// and then either packaging raw data (periodically) or processed metadata
+// based on the raw11_every counter setting.
 void process_cal_mode11 (struct core_state *state, struct calibrator_stats *stats)
 {
     struct calibrator_state *cal = &(state->cal);
@@ -346,7 +370,9 @@ void process_cal_mode11 (struct core_state *state, struct calibrator_stats *stat
 
 }
 
-
+// Processes mode-0 calibrator data by transferring it from hardware,
+// validating that sufficient averaging has occurred (at least half the integration period),
+// copying data to output buffer, and setting up CDI dispatch parameters for transmission.
 void process_cal_mode00(struct core_state *state)
 {
     // now that we have the flag, transfer data over;
@@ -370,6 +396,8 @@ void process_cal_mode00(struct core_state *state)
     state->cdi_dispatch.cal_packet_size = CAL_MODE0_PACKETSIZE;
 }
 
+// Processes mode-1 or mode-2 calibrator data (raw PFB samples) by transferring data from hardware,
+// copying to output buffer, and configuring CDI dispatch for transmission of the raw PFB data.
 void process_cal_mode_01_10(struct core_state *state, int mode)
 {
     cal_transfer_data(mode);
@@ -383,6 +411,8 @@ void process_cal_mode_01_10(struct core_state *state, int mode)
     state->cdi_dispatch.cal_packet_size = CAL_MODE1_PACKETSIZE;
 }
 
+//  Determines the minimum bit shift required to scale unsigned 32-bit values from all enabled antennas
+//  to fit within a specified target value, used for automatic gain adjustment of calibrator data.
 int check_range_unsigned(uint32_t *fields, uint32_t value, uint8_t antenna_mask)
 {
     int maxshift = 0;
@@ -404,6 +434,9 @@ int check_range_unsigned(uint32_t *fields, uint32_t value, uint8_t antenna_mask)
     return maxshift;
 }
 
+// Determines the minimum bit shift required to scale signed 32-bit values
+// (considering both positive and negative extremes) from all enabled antennas to fit
+// within a specified target value, used for automatic gain adjustment.
 int check_range_signed(int32_t fields_max[4], int32_t *fields_min, int32_t value, uint8_t antenna_mask)
 {
     int maxshift = 0;
@@ -426,6 +459,9 @@ int check_range_signed(int32_t fields_max[4], int32_t *fields_min, int32_t value
     return maxshift;
 }
 
+// Resets the calibrator to bit-slicer settling mode after detecting overflow conditions,
+// incrementing slice positions by conservative amounts to prevent saturation,
+// resetting SNR lock thresholds, and restarting the settling process.
 void return_to_bitslicer_settle(struct calibrator_state *cal)
 {
     cal->powertop_slice += 7;
@@ -441,6 +477,9 @@ void return_to_bitslicer_settle(struct calibrator_state *cal)
     cal_reset();
 }
 
+// Main calibrator processing state machine that handles different operational modes (bit-slicer settle, SNR settle,
+// run, raw modes, zoom), monitors for data availability, performs automatic slice adjustments based on
+// signal statistics, manages mode transitions, and dispatches appropriate data packets.
 void process_calibrator(struct core_state *state)
 {
 
@@ -719,6 +758,9 @@ void process_calibrator(struct core_state *state)
     }
 }
 
+// Sends calibrator data packets via CDI interface, handling both metadata-only packets and multi-packet data transfers,
+// adding packet headers with ID and timestamp information, applying RLE compression for debug packets,
+// and managing packet sequencing for large data transfers.
 void dispatch_calibrator_data(struct core_state *state)
 {
 
