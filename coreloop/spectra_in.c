@@ -12,12 +12,15 @@
 // #define CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
 
 
+// Retrieves the value and updates leading‑zero min/max counters used for compression
 static inline int32_t get_with_zeros(int32_t val, uint32_t *min, uint32_t *max) {
     int32_t zeros = __builtin_clz(val);
     *min = MIN(*min, zeros);
     *max = MAX(*max, zeros);
     return val;
 }
+
+// Returns absolute value, handling INT32_MIN edge case
 static inline int32_t safe_abs_val(int32_t val)
 {
     if (val >= 0) return val;
@@ -25,9 +28,11 @@ static inline int32_t safe_abs_val(int32_t val)
     return -val;
 }
 
+// Transfers time‑resolved spectra from DF buffer to output buffer. Returns false if time‑resolved range is invalid.
 bool transfer_time_resolved_from_df(struct core_state* state);
 bool transfer_grimm_from_df(struct core_state* state);
 
+// Determines if a 32‑bit sample is bad based on reject_ratio and averaging settings; uses state.base fields weight, reject_ratio, Navg2_shift
 static inline uint32_t is_bad_int32(const int32_t curr_val, const void* ddr_ptr_prev, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift, bool all_prev_accepted)
 {
     // too small values should be ignored: we divide by Navg2 _before_ accumulating
@@ -56,11 +61,13 @@ static inline uint32_t is_bad_int32(const int32_t curr_val, const void* ddr_ptr_
 #endif
 }
 
+// Simple absolute value for float, used in bad‑value checks
 static inline float my_fabsf(float x)
 {
     return (x >= 0) ? x : -x;
 }
 
+// Determines if a floating‑point sample is bad based on reject_ratio; uses state.base fields weight and reject_ratio
 static inline uint32_t is_bad_float(const int32_t val, const void* ddr_ptr_prev, int total_idx, uint8_t weight, uint8_t reject_ratio)
 {
 #ifdef CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
@@ -82,6 +89,7 @@ static inline uint32_t is_bad_float(const int32_t val, const void* ddr_ptr_prev,
 #endif
 }
 
+// Determines if a 40‑bit packed sample is bad; uses state.base fields weight, reject_ratio, Navg2_shift, and handling of previous accepted flag
 static inline uint32_t is_bad_int40(const int32_t curr_val, const void* ddr_ptr_prev, const uint32_t* ddr_ptr_prev_high, int total_idx, uint8_t weight, uint8_t reject_ratio, uint8_t Navg2_shift, bool all_prev_accepted)
 {
 #ifdef CORELOOP_SPECTRA_IN_AVOID_DIV_IN_BAD
@@ -124,6 +132,7 @@ is_bad(const int32_t val, const void* ddr_ptr_prev, const uint32_t* ddr_ptr_prev
     }
 }
 
+// Writes a single spectrum sample into the DDR buffer, handling different averaging modes (INT32, FLOAT, INT_40_BITS) and updating leading‑zero stats; uses state.base.Navg2_shift, averaging_mode, weight_current
 static inline void
 write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int offset, uint8_t Navg2_shift, uint8_t averaging_mode, int current_weight, uint32_t* ddr_ptr_high)
 {
@@ -196,10 +205,12 @@ write_spectrum_value(const int32_t value, void* _ddr_ptr, int total_idx, int off
     }
 }
 
+// Transfers time‑resolved spectra from DF buffer to output buffer. Returns false if time‑resolved range is invalid.
 bool transfer_time_resolved_from_df(struct core_state* state);
 
 // return true, if spectra were accepted and copied to TICK/TOCK
 // return false, if not accepted
+// Transfers spectrum data to a TICK/TOCK buffer, applying rejection criteria and accumulation; updates state fields such as weight_current and avg_counter
 bool transfer_from_df(struct core_state* state)
 {
 // Want to now transfer all 16 pks worth of data to DDR memory
@@ -289,6 +300,7 @@ bool transfer_from_df(struct core_state* state)
     return accept;
 }
 
+// Transfers GRIMM spectra from DF buffer to output buffer. Returns false if GRIMM disabled.
 bool transfer_grimm_from_df (struct core_state* state) {
     if (!state->base.grimm_enable) return false;
     uint16_t vals_out[NSPECTRA*5]; // buffer to make we deal with alignment
@@ -378,8 +390,27 @@ bool transfer_time_resolved_from_df(struct core_state* state)
     return true;
 }
 
+/**
+ * process_spectrometer - Main entry point for handling incoming spectrometer data.
+ *
+ * This function is invoked each core‑loop iteration. It:
+ *   • Checks if a new spectrum packet is ready via `spec_new_spectrum_ready()`.
+ *   • Handles optional dropping of a DF frame (`state->drop_df`).
+ *   • Updates ADC statistics and transfers raw DF data to DDR buffers.
+ *   • Retrieves digital overflow flags and records them in the state.
+ *   • Performs automatic gain control / bitslice adjustments via `bitslice_control()`.
+ *   • Detects when the Stage‑2 averaging buffer is full (when `avg_counter`
+ *     reaches `get_Navg2(state)`) and then swaps the tick/tock buffers,
+ *     updates weight and bad‑sample statistics, and triggers CDI packet
+ *     transmission with `transfer_to_cdi(state)`.
+ *   • Records various error conditions (e.g., dropped DF frames, AGC stuck)
+ *     in `state->base.errors`.
+ *
+ * @param state Pointer to the core_state structure containing runtime
+ *              configuration, buffers, and statistics.
+ */
 void process_spectrometer(struct core_state* state) {
-    // Check if we have a new spectrum packet from the FPGA
+    // Check if we have a new spectrum packet
     if (spec_new_spectrum_ready()) {
         debug_print ("*");
 

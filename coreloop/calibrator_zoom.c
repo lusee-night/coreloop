@@ -11,6 +11,7 @@
 static float sqf(float x) { return x * x; }
 static int32_t sqi(int32_t x) { return x * x; }
 
+// Computes FFT for zoom mode for a batch of FFTs.
 void compute_fft_for_zoom_mult(int fft_batch_idx, const struct core_state* state,
                           int32_t* ch1_real, int32_t* ch1_imag,
                           int32_t* ch2_real, int32_t* ch2_imag)
@@ -44,6 +45,7 @@ void compute_fft_for_zoom_mult(int fft_batch_idx, const struct core_state* state
 }
 
 
+// Computes FFT for a single zoom FFT index.
 void compute_fft_for_zoom(int fft_idx, const struct core_state* state,
                           int32_t* ch1_real, int32_t* ch1_imag,
                           int32_t* ch2_real, int32_t* ch2_imag)
@@ -77,6 +79,7 @@ void compute_fft_for_zoom(int fft_idx, const struct core_state* state,
     }
 }
 
+// Correlates FFT results and accumulates them for the zoom mode. Handles both float and integer FFT paths.
 void correlate_and_accumulate(const struct core_state* state, int fft_idx, void* to_send) {
     if (USE_FLOAT_FFT) {
         float* ch1_re = (float*)(CAL_DATA) + fft_idx * FFT_SIZE;
@@ -138,6 +141,7 @@ void correlate_and_accumulate(const struct core_state* state, int fft_idx, void*
     }
 }
 
+// Dispatches zoom calibration data via CDI. Prepares packet header, copies calibration data, sends it, and restores previous CDI state.
 void dispatch_cal_zoom(struct core_state* state, void* to_send)
 {
     struct delayed_cdi_sending* d = &(state->cdi_dispatch);
@@ -176,10 +180,12 @@ void dispatch_cal_zoom(struct core_state* state, void* to_send)
     d->cal_size = old_cal_size;
 }
 
+// Returns pointer to the real part of PFB channel data for the specified channel.
 int32_t* pfb_channel_data_real (int channel) {
     return (int32_t*) CAL_DF + channel*2*NPFB;
 }
 
+// Processes zoom calibration: transfers data, runs FFTs, correlates, and dispatches calibration packets.
 void process_cal_zoom(struct core_state* state) {
     void* to_send = (void *)CAL_DATA + 4 * FFT_SIZE * ZOOM_NFFT * sizeof(int32_t);
 
