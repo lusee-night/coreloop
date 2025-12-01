@@ -141,6 +141,14 @@ const float sine_table_float[TABLE_SIZE] = {
  -0.0980171403295605,
 };
 
+/**
+ * Computes the sine of a value using Taylor series expansion.
+ * Approximates sin(x) using the first 5 terms of the Taylor series.
+ *
+ * @param x The input angle in radians
+ * @return The computed sine value
+ * NB: is NOT used, sines are hardcoded above
+ */
 float my_sin(float x) {
     float result = x;  // First term is x
     float term = x;    // Current term, initialized to x
@@ -155,30 +163,70 @@ float my_sin(float x) {
     return result;
 }
 
-
+/**
+ * Retrieves a sine value from the fixed-point integer lookup table.
+ * Uses modulo wrapping to ensure the index stays within table bounds.
+ *
+ * @param index The table index (automatically wrapped to valid range)
+ * @return The sine value as a fixed-point int32_t
+ */
 int32_t get_sine_int(int index) {
     index = index & (FFT_SIZE - 1);
     return sine_table_int[index];
 }
 
+/**
+ * Retrieves a cosine value from the fixed-point integer lookup table.
+ * Implements cosine by offsetting the sine lookup by 90 degrees (TABLE_SIZE/4).
+ *
+ * @param index The table index
+ * @return The cosine value as a fixed-point int32_t
+ */
 int32_t get_cosine_int(int index) {
     return get_sine_int(index + TABLE_SIZE / 4);
 }
 
+/**
+ * Retrieves a sine value from the floating-point lookup table.
+ * Uses modulo wrapping to ensure the index stays within table bounds.
+ *
+ * @param index The table index (automatically wrapped to valid range)
+ * @return The sine value as a float
+ */
 float get_sine_float(int index) {
     index = index & (FFT_SIZE - 1);
     return sine_table_float[index];
 }
 
+/**
+ * Retrieves a cosine value from the floating-point lookup table.
+ * Implements cosine by offsetting the sine lookup by 90 degrees (TABLE_SIZE/4).
+ *
+ * @param index The table index
+ * @return The cosine value as a float
+ */
 float get_cosine_float(int index) {
     return get_sine_float(index + TABLE_SIZE / 4);
 }
 
+/**
+ * Computes a complex exponential e^(i*theta) from the lookup table.
+ * Returns the complex value cos(theta) + i*sin(theta).
+ *
+ * @param index The angle index into the lookup tables
+ * @return A complex float value representing e^(i*theta)
+ * NB: is NOT used, does not work on real hardware
+ */
 float complex get_exp_complex(int index) {
     return get_cosine_float(index) + I * get_sine_float(index);
 }
 
-
+/**
+ * Prints the binary representation of an 8-bit unsigned integer.
+ * Outputs 32 bits (treating the 8-bit value with leading zeros) to stdout.
+ *
+ * @param n The unsigned 8-bit value to print in binary format
+ */
 void print_binary(uint8_t n) {
     unsigned int mask = 1 << 31; // Mask with the highest bit set
     for (int i = 0; i < 32; i++) {
@@ -192,6 +240,13 @@ void print_binary(uint8_t n) {
     printf("\n");
 }
 
+/**
+ * Reverses the bits of an 8-bit index for FFT bit-reversal permutation.
+ * Performs bit reversal appropriate for the configured FFT_BIT_SIZE.
+ *
+ * @param index The input index to reverse
+ * @return The bit-reversed index shifted appropriately for FFT size
+ */
 uint8_t reverse_bits(uint8_t index) {
     index = ((index & 0xAA) >> 1) | ((index & 0x55) << 1);
     index = ((index & 0xCC) >> 2) | ((index & 0x33) << 2);
@@ -200,6 +255,14 @@ uint8_t reverse_bits(uint8_t index) {
     return index;
 }
 
+/**
+ * Performs an in-place FFT using fixed-point integer arithmetic.
+ * Applies bit-reversal permutation followed by Cooley-Tukey FFT algorithm.
+ * Modifies the input arrays directly with scaling to prevent overflow.
+ *
+ * @param real_ptr Pointer to array of real components (modified in-place)
+ * @param imag_ptr Pointer to array of imaginary components (modified in-place)
+ */
 void fft_int_in_place(int32_t *real_ptr, int32_t *imag_ptr)
 {
     // Bit reversal
@@ -251,6 +314,16 @@ void fft_int_in_place(int32_t *real_ptr, int32_t *imag_ptr)
     }
 }
 
+/**
+ * Performs FFT with separate input and output buffers using fixed-point arithmetic.
+ * Copies input to output, then applies bit-reversal and Cooley-Tukey FFT algorithm.
+ * Uses scaling at each stage to prevent overflow.
+ *
+ * @param input_real Pointer to input real components
+ * @param input_imag Pointer to input imaginary components
+ * @param output_real Pointer to output real components
+ * @param output_imag Pointer to output imaginary components
+ */
 void fft_int(int32_t *input_real, int32_t *input_imag, int32_t *output_real, int32_t *output_imag)
 {
     // Copy input to output initially
@@ -308,6 +381,16 @@ void fft_int(int32_t *input_real, int32_t *input_imag, int32_t *output_real, int
     }
 }
 
+/**
+ * Performs multiple FFTs in batch using fixed-point integer arithmetic.
+ * Processes NUM_FFTS_IN_ONE_GO separate FFTs with interleaved data layout.
+ * Optimizes computation by sharing twiddle factor calculations across batches.
+ *
+ * @param input_real_beg Pointer to beginning of interleaved input real arrays
+ * @param input_imag_beg Pointer to beginning of interleaved input imaginary arrays
+ * @param output_real_beg Pointer to beginning of interleaved output real arrays
+ * @param output_imag_beg Pointer to beginning of interleaved output imaginary arrays
+ */
 void fft_int_multiple(int32_t* input_real_beg, int32_t* input_imag_beg, int32_t* output_real_beg, int32_t* output_imag_beg)
 {
     for(int arr_idx = 0; arr_idx < NUM_FFTS_IN_ONE_GO; ++arr_idx) {
@@ -371,6 +454,16 @@ void fft_int_multiple(int32_t* input_real_beg, int32_t* input_imag_beg, int32_t*
 
 }
 
+/**
+ * Performs FFT converting fixed-point input to floating-point output.
+ * Applies bit-reversal during input copy, then executes Cooley-Tukey FFT
+ * using floating-point arithmetic without scaling.
+ *
+ * @param input_real Pointer to fixed-point input real components
+ * @param input_imag Pointer to fixed-point input imaginary components
+ * @param output_real Pointer to floating-point output real components
+ * @param output_imag Pointer to floating-point output imaginary components
+ */
 void fft_float(int32_t *input_real, int32_t *input_imag, float* output_real, float* output_imag)
 {
     // copy with bit reversal
@@ -412,7 +505,16 @@ void fft_float(int32_t *input_real, int32_t *input_imag, float* output_real, flo
     }
 }
 
-
+/**
+ * Performs multiple FFTs in batch converting fixed-point input to floating-point output.
+ * Processes NUM_FFTS_IN_ONE_GO separate FFTs with interleaved data layout.
+ * Optimizes by sharing twiddle factor calculations and using floating-point precision.
+ *
+ * @param input_real_beg Pointer to beginning of interleaved fixed-point input real arrays
+ * @param input_imag_beg Pointer to beginning of interleaved fixed-point input imaginary arrays
+ * @param output_real_beg Pointer to beginning of interleaved floating-point output real arrays
+ * @param output_imag_beg Pointer to beginning of interleaved floating-point output imaginary arrays
+ */
 void fft_float_multiple(int32_t* input_real_beg, int32_t* input_imag_beg, float* output_real_beg, float* output_imag_beg)
 {
 

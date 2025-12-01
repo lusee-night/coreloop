@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+/* Send watchdog packet over CDI with given tripped status. Updates packet ID, timestamp, and ensures CDI buffer is ready before dispatch. */
 void send_watchdog_packet(struct core_state* state, uint8_t tripped) {
     struct watchdog_packet* payload = (struct watchdog_packet*)(TLM_BUF);
 
@@ -23,6 +24,7 @@ void send_watchdog_packet(struct core_state* state, uint8_t tripped) {
     cdi_dispatch_uC(&(state->cdi_stats), AppID_Watchdog, sizeof(struct watchdog_packet));
 }
 
+/* Process watchdogs: feed hardware watchdog, detect trips, report errors, and update temperature/state. Returns true if a watchdog event was reported. */
 bool process_watchdogs (struct core_state* state) {
     if (state->watchdog.watchdogs_enabled) {
         if (state->watchdog.feed_uc) {

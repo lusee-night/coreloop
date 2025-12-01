@@ -1,6 +1,11 @@
 
 # CHANGELOG
 
+### Version 3r08
+ * This is a documented and commented version of 0x307.
+ * Functionally it should be identical to 0x307, but we did a version bump for sanity
+ 
+
 ### Version 3r07
  * fixed region copy/check deal with corrupted sizes in headers
 

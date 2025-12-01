@@ -3,8 +3,9 @@
 #pragma pack(1)
 
 // This 16 bit version ID goes with metadata and startup packets.
-// MSB is code version, LSB is metatada version
-#define VERSION_ID 0x307
+// This commented version is 0x308, but we don't bump up the number
+// to maintain uncrate compatibiltity -- 0x307 should be *exactly the same* codewise
+#define VERSION_ID 0x307 
 
 
 #include <inttypes.h>
