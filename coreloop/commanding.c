@@ -74,7 +74,7 @@ bool process_cdi(struct core_state* state)
         } else if (cmd==RFS_SETTINGS)  {
             uint16_t cmd_end = (state->cmd_end + 1) % CMD_BUFFER_SIZE;
             if (cmd_end == state->cmd_ptr) {
-                state->base.errors != CDI_COMMAND_BUFFER_OVERFLOW;
+                state->base.errors |= CDI_COMMAND_BUFFER_OVERFLOW;
                 cmd_end = state->cmd_end;
                 return false;
             } else {
@@ -348,7 +348,7 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_BITSLICE_AUTO:
             if ((arg_low > 0) && (arg_low < 64)) {
                 for (int i=0; i<NSPECTRA; i++) state->base.bitslice[i] = 0xFF;
-                state->base.bitslice_keep_bits = arg_low;                
+                state->base.bitslice_keep_bits = arg_low;
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
@@ -495,7 +495,7 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
-        case RFS_SET_GRIMMS_TALES:            
+        case RFS_SET_GRIMMS_TALES:
             state->base.grimm_enable = arg_low;
             break;
 
@@ -512,7 +512,7 @@ bool process_cdi(struct core_state* state)
             else
                 state->grimm_weights[state->grimm_weight_ndx] = 0x100;
             break;
-            
+
         // CALIBRATOR SECTION
         case RFS_SET_CAL_ENABLE:
             if (arg_low<0xFF) {
@@ -534,7 +534,7 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_CAL_DRIFT_GUARD:
-            state->cal.drift_guard = arg_low*20;            
+            state->cal.drift_guard = arg_low*20;
             break;
 
         case RFS_SET_CAL_DRIFT_STEP:
@@ -590,7 +590,7 @@ bool process_cdi(struct core_state* state)
             // and does not seem to work either
             //if (arg_low == 0xff)
             //   calib_set_weight(state->cal.weight_ndx, 0x100);
-            //else                     
+            //else
             calib_set_weight(state->cal.weight_ndx, arg_low);
             state->cal.weight_ndx++;
             break;
@@ -602,13 +602,13 @@ bool process_cdi(struct core_state* state)
         case RFS_SET_CAL_PFB_NDX_LO:
             state->cal.pfb_index = arg_low + (state->cal.pfb_index & 0xFF00);
             calib_set_PFB_index(state->cal.pfb_index);
-            state->cal.zoom_avg_idx = -1; 
+            state->cal.zoom_avg_idx = -1;
             break;
 
         case RFS_SET_CAL_PFB_NDX_HI:
             state->cal.pfb_index = ((arg_low & 0x07) << 8) + (state->cal.pfb_index & 0x00FF);
             calib_set_PFB_index(state->cal.pfb_index);
-            state->cal.zoom_avg_idx = -1; 
+            state->cal.zoom_avg_idx = -1;
             break;
 
         case RFS_SET_CAL_BITSLICE: {
@@ -637,7 +637,7 @@ bool process_cdi(struct core_state* state)
             }
             break;
 
-        case RFS_SET_CAL_BITSLICE_AUTO: 
+        case RFS_SET_CAL_BITSLICE_AUTO:
             state->cal.auto_slice = arg_low;
             break;
 
@@ -667,7 +667,7 @@ bool process_cdi(struct core_state* state)
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
             break;
-        
+
         case RFS_SET_CAL_SNR_RATIO:
             state->cal.SNR_minratio = arg_low;
             break;
@@ -688,9 +688,9 @@ bool process_cdi(struct core_state* state)
             break;
 
         case RFS_SET_ZOOM_RANGE:
-            state->cal.zoom_ndx_range = MIN(arg_low + (arg_low*arg_low)/32, 2048); 
+            state->cal.zoom_ndx_range = MIN(arg_low + (arg_low*arg_low)/32, 2048);
             break;
-        
+
         case RFS_SET_ZOOM_DIFF:
             state->cal.zoom_diff_1 = (arg_low & 0b01) != 0;
             state->cal.zoom_diff_2 = (arg_low & 0b10) != 0;
@@ -711,7 +711,7 @@ bool process_cdi(struct core_state* state)
 
         case RFS_SET_REGION_INFO:
             if (state->region_have_lock) {
-                flash_send_region_info(state); 
+                flash_send_region_info(state);
             } else {
                 state->base.errors |= CDI_COMMAND_BAD_ARGS;
             }
