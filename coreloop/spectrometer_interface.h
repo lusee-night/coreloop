@@ -9,28 +9,10 @@
 
 #define NCHANNELS 2048
 #define NSPECTRA 16
-#define NCALPACKETS 16 
+#define NCALPACKETS 16
 #define NSPECTRA_AUTO 4
 #define NINPUT 4
 #define UINT14_MAX 16384
-
-// for bit slicing
-#define bit_select_A1   0x1F
-#define bit_select_A2   0x1F
-#define bit_select A3   0x1F
-#define bit_select_A4   0x1F
-#define bit_select_X12R 0x1F
-#define bit_select_X12I 0x1F
-#define bit_select_X13R 0x1F
-#define bit_select_X13I 0x1F
-#define bit_select_X14R 0x1F
-#define bit_select_X14I 0x1F
-#define bit_select_X23R 0x1F
-#define bit_select_X23I 0x1F
-#define bit_select_X24R 0x1F
-#define bit_select_X24I 0x1F
-#define bit_select_X34R 0x1F
-#define bit_select_X34I 0x1F
 
 #define WD_TICKS_PER_S (102400000)
 
@@ -123,7 +105,7 @@ void spec_set_avg1 (uint8_t Navg1_shift);
 void spec_set_bitslice(uint8_t *bitslice);
 
 // fires up the ADC statistic engine
-void spec_trigger_ADC_stat(uint16_t Nsamples); 
+void spec_trigger_ADC_stat(uint16_t Nsamples);
 // If we have ADC results, return true and get ADC level statistics into 4 element array in order to enable automatic gain, etc
 bool spec_get_ADC_stat(struct ADC_stat *stat);
 
@@ -134,7 +116,7 @@ void spec_get_time(uint32_t *time_sec, uint16_t *time_subsec);
 bool spec_new_spectrum_ready();
 
 // return true if DF dropped spectra
-bool spec_df_dropped(); 
+bool spec_df_dropped();
 
 // clears the DF flag
 void spec_clear_df_flag();

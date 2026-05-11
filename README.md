@@ -29,9 +29,9 @@ The version history (changelog) is found [here](documentation/CHANGELOG.md).
 
 Note that each version needs to be compiled with `LuSEE_MiV` of the same version.
 
-## Note on version 0x308:
+## Note on versions 0x308, 0x309:
 
-In general, the version commited and tagged in github contains a matching version in `coreloop.h`. Version 0x308 is an exception, since it is 0x307 + documentation and code comments. So coreloop.h version in this case still says 0x307.
+In general, the version commited and tagged in github contains a matching version in `coreloop.h`. Version 0x308 is an exception, since it is 0x307 + documentation and code comments. Version 0x309 is also an exception, since it fixes a single bug. So coreloop.h version in this case still says 0x307.
 
 # Code documentation
 

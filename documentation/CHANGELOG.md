@@ -1,6 +1,10 @@
 
 # CHANGELOG
 
+### Version 3r09
+ * Remove unused bit_select definitions from spectrometer_interface.h
+ * Fix bug in commanding.c (!= instead of |= on command buffer overflow)
+ 
 ### Version 3r08
  * This is a documented and commented version of 0x307.
  * Functionally it should be identical to 0x307, but we did a version bump for sanity
